@@ -1,0 +1,59 @@
+# Fichiers de log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Fichiers de configuration locaux
+.env.local
+.env.*.local
+
+# Le dossier des dépendances. Il est énorme et doit TOUJOURS être ignoré.
+# Exécutez `npm install` ou `yarn install` pour le régénérer.
+node_modules
+
+# Fichiers générés par le build de Vite
+dist
+dist-ssr
+
+# Cache de Vite
+.vite
+
+# Fichiers générés par les tests (par exemple Vitest)
+/coverage
+.nycrc
+
+# Fichiers de l'éditeur de code
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Fichiers système de macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Fichiers système de Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Fichiers de cache de Firebase
+.firebase/
+
+# Fichiers de configuration de l'émulateur Firebase
+*.firebase.log
+firebase-debug.log
+database-debug.log
+firestore-debug.log
+ui-debug.log
+storage-debug.log
+
+# Fichiers spécifiques à Firebase Functions (si vous en utilisez)
+# Assurez-vous d'ignorer le node_modules à l'intérieur du dossier functions
+functions/node_modules
+functions/lib

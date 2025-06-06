@@ -1,0 +1,15 @@
+{
+  "welcomeMessage": "Bienvenue sur Korean Party !",
+  "homePageDescription": "Ceci est la page d'accueil.",
+  "goToLoginPage": "Aller à la page de connexion",
+  "loginPageTitle": "Page de Connexion",
+  "loginPageDescription": "Ici, les utilisateurs pourront se connecter.",
+  "goToHomePage": "Retour à l'accueil",
+  "appTitle": "Académie K-Mage",
+  "loading": "Chargement...",
+  "statusConnected": "Status: Connecté",
+  "statusNotConnected": "Status: Non connecté",
+  "userAnonymous": "Anonyme",
+  "userIdentified": "Identifié",
+  "footerText": "© 2025 Korean Party"
+}
