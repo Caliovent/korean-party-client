@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebaseConfig';
-import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import PhaserGame from '../components/PhaserGame';
 
@@ -14,17 +14,26 @@ interface LastDiceRoll { playerId: string; value: number; }
 interface QuestStep { description: string; objective: string; completed: boolean; }
 interface Quest { questId: string; title: string; currentStep: number; steps: QuestStep[]; }
 interface Game {
-  id: string; hostId: string; players: string[]; playerDetails: Record<string, PlayerDetails>;
-  status: 'waiting' | 'in-progress' | 'finished'; turnOrder: string[]; currentPlayerId: string;
-  playerPositions: Record<string, number>; currentMiniGame?: MiniGame | null; currentEvent?: GameEvent | null; lastDiceRoll?: LastDiceRoll;
+  id: string; 
+  hostId: string;
+  hostPseudo?: string;
+  players: string[]; 
+  playerDetails: Record<string, PlayerDetails>;
+  status: 'waiting' | 'in-progress' | 'finished'; 
+  turnOrder: string[]; 
+  currentPlayerId: string;
+  playerPositions: Record<string, number>; 
+  currentMiniGame?: MiniGame | null; 
+  currentEvent?: GameEvent | null; 
+  lastDiceRoll?: LastDiceRoll;
   boardLayout: { type: string }[];
   playerQuests: Record<string, Quest>;
 }
 interface UserProfile { pseudo: string; level: number; manaCurrent: number; manaMax: number; }
 
 
-// --- Sous-composants ---
-const PlayerHUD: React.FC<{ profile: any | null }> = ({ profile }) => {
+// --- Sous-composants d'UI ---
+const PlayerHUD: React.FC<{ profile: UserProfile | null }> = ({ profile }) => {
     if (!profile) return <div className="player-hud"><span>Chargement...</span></div>;
     const manaPercentage = (profile.manaCurrent / profile.manaMax) * 100;
     return (
@@ -44,7 +53,7 @@ const PlayerHUD: React.FC<{ profile: any | null }> = ({ profile }) => {
 const WaitingRoom: React.FC<{ game: Game; onStartGame: () => void; }> = ({ game, onStartGame }) => {
     const { t } = useTranslation();
     const isHost = game.hostId === auth.currentUser?.uid;
-    const canStart = game.players.length >= 2;
+    const canStart = game.players.length >= 1; // On peut démarrer seul pour tester
     return (
         <>
             <h2>{t('gameRoomTitle', 'Salle d\'attente')}</h2>
@@ -123,9 +132,7 @@ const MiniGameUI: React.FC<{ game: Game; }> = ({ game }) => {
   );
 };
 
-
-// --- QuestTracker (mis à jour) ---
-const QuestTracker: React.FC<{ quest: any | null }> = ({ quest }) => {
+const QuestTracker: React.FC<{ quest: Quest | null }> = ({ quest }) => {
   const { t } = useTranslation();
   if (!quest) return null;
 
@@ -138,7 +145,7 @@ const QuestTracker: React.FC<{ quest: any | null }> = ({ quest }) => {
         <p>{t('questCompleted', 'Quête terminée !')}</p>
       ) : (
         <ul className="quest-steps-list">
-          {quest.steps.map((step: any, index: number) => (
+          {quest.steps.map((step: QuestStep, index: number) => (
             <li key={index} className={step.completed ? 'completed' : ''}>
               {step.description}
             </li>
@@ -149,7 +156,6 @@ const QuestTracker: React.FC<{ quest: any | null }> = ({ quest }) => {
   );
 };
 
-// --- GameBoard (mis à jour pour une meilleure mise en page) ---
 const GameBoard: React.FC<{ game: Game }> = ({ game }) => {
   const { t } = useTranslation();
   const [isRolling, setIsRolling] = useState(false);
@@ -181,7 +187,8 @@ const GameBoard: React.FC<{ game: Game }> = ({ game }) => {
       </div>
       
       <div className="phaser-game-container">
-        <PhaserGame gameData={game} />
+        {/* LA CORRECTION EST ICI : on passe bien game.id à PhaserGame */}
+        <PhaserGame gameId={game.id} />
       </div>
       
       <div className="game-controls">
@@ -198,9 +205,10 @@ const GameBoard: React.FC<{ game: Game }> = ({ game }) => {
 };
 
 
-// --- Composant Principal GamePage (mis à jour) ---
+// --- Composant Principal GamePage ---
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
   const [game, setGame] = useState<Game | null>(null);
   const [playerProfile, setPlayerProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -208,21 +216,35 @@ const GamePage: React.FC = () => {
   const currentUserId = auth.currentUser?.uid;
 
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId) {
+      console.error("Aucun ID de partie trouvé dans l'URL, redirection vers le lobby.");
+      navigate('/lobby');
+      return;
+    }
     const gameRef = doc(db, "games", gameId);
     const unsubscribe = onSnapshot(gameRef, (doc) => {
-      if (doc.exists()) setGame({ id: doc.id, ...doc.data() } as Game);
-      else setError("Partie non trouvée.");
+      if (doc.exists()) {
+        setGame({ id: doc.id, ...doc.data() } as Game);
+      } else {
+        setError("Partie non trouvée. Elle a peut-être été supprimée.");
+        navigate('/lobby');
+      }
+      setLoading(false);
+    }, (err) => {
+      console.error("Erreur d'écoute de la partie:", err);
+      setError("Erreur de connexion à la partie.");
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [gameId]);
+  }, [gameId, navigate]);
   
   useEffect(() => {
     if (!currentUserId) return;
     const profileRef = doc(db, "users", currentUserId);
     const unsubscribe = onSnapshot(profileRef, (doc) => {
-      if (doc.exists()) setPlayerProfile(doc.data() as UserProfile);
+      if (doc.exists()) {
+        setPlayerProfile(doc.data() as UserProfile);
+      }
     });
     return () => unsubscribe();
   }, [currentUserId]);
@@ -232,14 +254,14 @@ const GamePage: React.FC = () => {
     const functions = getFunctions();
     const startGame = httpsCallable(functions, 'startGame');
     try { await startGame({ gameId }); }
-    catch(err) { console.error(err); }
+    catch(err) { console.error("Erreur lors du démarrage de la partie:", err); }
   };
   
   const activeQuest = game && currentUserId ? game.playerQuests?.[currentUserId] : null;
 
-  if (loading) return <p>Chargement...</p>;
+  if (loading) return <p>Chargement de la partie...</p>;
   if (error) return <p className="error-message">{error}</p>;
-  if (!game) return <p>Partie non trouvée.</p>;
+  if (!game) return <p>Partie non trouvée. Redirection...</p>;
 
   return (
     <div className="game-page-layout">

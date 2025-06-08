@@ -1,109 +1,221 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Phaser from 'phaser';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
-// Constantes pour la configuration du plateau
-const TILE_SIZE = 70;
-const TILE_SPACING = 15;
-const BOARD_COLS = 8;
-const BOARD_ROWS = 6;
-const PLAYER_COLORS = [0x9b59b6, 0x3498db, 0x2ecc71, 0xf1c40f]; // Violet, Bleu, Vert, Jaune
+interface TileConfig {
+  type: 'start' | 'finish' | 'quiz' | 'bonus' | 'malus' | 'event' | 'duel' | 'teleport' | 'shop';
+  data?: {
+    mana?: number;
+    xp?: number;
+    quizId?: string;
+    targetPosition?: number;
+  };
+}
 
 export class MainBoardScene extends Phaser.Scene {
-  private playerTokens: { [key: string]: Phaser.GameObjects.Container } = {};
-  private tileCoordinates: { x: number, y: number }[] = [];
+  private playerSprites: { [key: string]: Phaser.GameObjects.Sprite } = {};
+  private playerPositions: { [key: string]: number } = {};
+  private gameId: string | null = null;
+  private unsubscribes: (() => void)[] = [];
+  private boardPath: { x: number; y: number }[] = [];
+  private tileObjects: Phaser.GameObjects.Image[] = [];
+  private boardIsDrawn = false;
 
   constructor() {
-    super({ key: 'MainBoardScene' });
+    super('MainBoardScene');
   }
 
-  // Méthode appelée par React pour passer les données initiales
-  init(data: any) {
-    this.registry.set('gameData', data);
+  init(data: { gameId: string }) {
+    this.gameId = data.gameId;
+    console.log(`[Phaser] Scene initialized for game: ${this.gameId}`);
+  }
+
+  preload() {
+    console.log('[Phaser] Preloading assets...');
+    this.load.image('board_background', '/assets/board_background.png'); // Utiliser la nouvelle image
+    this.load.image('player_token', '/assets/player_token.png');
+    this.load.image('tile_start', '/assets/tile_start_placeholder.png');
+    this.load.image('tile_finish', '/assets/tile_finish_placeholder.png');
+    this.load.image('tile_quiz', '/assets/tile_alt.png');
+    this.load.image('tile_bonus', '/assets/tile_bonus_placeholder.png');
+    this.load.image('tile_malus', '/assets/tile_malus_placeholder.png');
+    this.load.image('tile_event', '/assets/tile_event_placeholder.png');
+    this.load.image('tile_default', '/assets/tile.png');
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#1e1e1e');
-    this.drawBoard();
-    this.createPlayerTokens();
+    console.log('[Phaser] Creating scene...');
+    if (!this.gameId) {
+      console.error('Game ID is not set!');
+      return;
+    }
+    
+    const bg = this.add.image(0, 0, 'board_background').setOrigin(0, 0);
+    bg.setDisplaySize(this.scale.width, this.scale.height);
+    this.children.sendToBack(bg);
 
-    // Écouteur pour mettre à jour les positions si les données changent
-    this.registry.events.on('changedata', (parent: any, key: string, data: any) => {
-        if (key === 'gameData') {
-            this.updatePlayerPositions(data.playerPositions);
+    this.defineBoardPath();
+
+    const gameRef = doc(db, 'games', this.gameId);
+    
+    this.unsubscribes.push(
+      onSnapshot(gameRef, (doc) => {
+        if (doc.exists()) {
+          const gameData = doc.data();
+          console.log('[Phaser] Game data updated:', gameData);
+          
+          if (gameData.boardLayout && !this.boardIsDrawn) {
+            this.createBoard(gameData.boardLayout);
+            this.boardIsDrawn = true;
+          }
+
+          // La donnée 'players' de Firestore est un tableau d'IDs
+          if (Array.isArray(gameData.players) && gameData.playerPositions) {
+            this.updatePlayerSprites(gameData.players, gameData.playerPositions);
+          }
+          
+          if (gameData.currentMiniGame) {
+              this.events.emit('landedOnQuiz', { playerId: gameData.currentMiniGame.playerId });
+          }
         }
-    });
+      })
+    );
   }
 
-  // Dessine le chemin du plateau de jeu
-  drawBoard() {
-    const graphics = this.add.graphics();
-    const boardWidth = BOARD_COLS * (TILE_SIZE + TILE_SPACING) - TILE_SPACING;
-    const boardHeight = BOARD_ROWS * (TILE_SIZE + TILE_SPACING) - TILE_SPACING;
-    const startX = (this.cameras.main.width - boardWidth) / 2;
-    const startY = (this.cameras.main.height - boardHeight) / 2;
-    let tileIndex = 0;
-
-    const path = [
-        ...Array(BOARD_COLS).fill(0).map((_, i) => ({ x: i, y: 0 })),
-        ...Array(BOARD_ROWS - 1).fill(0).map((_, i) => ({ x: BOARD_COLS - 1, y: i + 1 })),
-        ...Array(BOARD_COLS - 1).fill(0).map((_, i) => ({ x: BOARD_COLS - 2 - i, y: BOARD_ROWS - 1 })),
-        ...Array(BOARD_ROWS - 2).fill(0).map((_, i) => ({ x: 0, y: BOARD_ROWS - 2 - i })),
+  defineBoardPath() {
+    const { width, height } = this.scale;
+    
+    this.boardPath = [
+      { x: width * 0.65, y: height * 0.85 }, { x: width * 0.72, y: height * 0.82 },
+      { x: width * 0.78, y: height * 0.77 }, { x: width * 0.82, y: height * 0.70 },
+      { x: width * 0.85, y: height * 0.63 }, { x: width * 0.86, y: height * 0.55 },
+      { x: width * 0.85, y: height * 0.47 }, { x: width * 0.82, y: height * 0.39 },
+      { x: width * 0.78, y: height * 0.32 }, { x: width * 0.72, y: height * 0.27 },
+      { x: width * 0.65, y: height * 0.24 }, { x: width * 0.58, y: height * 0.23 },
+      { x: width * 0.50, y: height * 0.23 }, { x: width * 0.42, y: height * 0.23 },
+      { x: width * 0.35, y: height * 0.24 }, { x: width * 0.28, y: height * 0.27 },
+      { x: width * 0.22, y: height * 0.32 }, { x: width * 0.18, y: height * 0.39 },
+      { x: width * 0.15, y: height * 0.47 }, { x: width * 0.14, y: height * 0.55 },
+      { x: width * 0.15, y: height * 0.63 }, { x: width * 0.18, y: height * 0.70 },
+      { x: width * 0.22, y: height * 0.77 }, { x: width * 0.28, y: height * 0.82 },
+      { x: width * 0.35, y: height * 0.85 }, { x: width * 0.42, y: height * 0.87 },
+      { x: width * 0.50, y: height * 0.87 }, { x: width * 0.55, y: height * 0.86 },
+      { x: width * 0.60, y: height * 0.85 }, { x: width * 0.62, y: height * 0.85 },
     ];
+  }
+  
+  createBoard(boardLayout: TileConfig[]) {
+    const TILE_SIZE = 64;
     
-    path.forEach(pos => {
-        const x = startX + pos.x * (TILE_SIZE + TILE_SPACING);
-        const y = startY + pos.y * (TILE_SIZE + TILE_SPACING);
-        graphics.fillStyle(0x2a2a2a, 1);
-        graphics.fillRoundedRect(x, y, TILE_SIZE, TILE_SIZE, 12);
-        graphics.lineStyle(2, 0x333333);
-        graphics.strokeRoundedRect(x, y, TILE_SIZE, TILE_SIZE, 12);
-        
-        const text = this.add.text(x + TILE_SIZE / 2, y + TILE_SIZE / 2, String(tileIndex), {
-            fontFamily: 'Poppins', fontSize: '24px', color: '#a0a0a0'
-        }).setOrigin(0.5);
-        
-        this.tileCoordinates[tileIndex] = { x: x + TILE_SIZE / 2, y: y + TILE_SIZE / 2 };
-        tileIndex++;
+    this.tileObjects.forEach(tile => tile.destroy());
+    this.tileObjects = [];
+
+    boardLayout.forEach((tileConfig, i) => {
+      if (i < this.boardPath.length) {
+        const { x, y } = this.boardPath[i];
+        const textureKey = this.getTextureForTileType(tileConfig.type);
+        const tile = this.add.image(x, y, textureKey)
+          .setOrigin(0.5)
+          .setDisplaySize(TILE_SIZE, TILE_SIZE);
+
+        tile.setData('tileConfig', tileConfig);
+        this.tileObjects.push(tile);
+      }
     });
   }
 
-  // Crée les pions pour chaque joueur
-  createPlayerTokens() {
-    const gameData = this.registry.get('gameData');
-    
-    gameData.players.forEach((playerId: string, index: number) => {
-      const position = this.tileCoordinates[gameData.playerPositions[playerId] || 0];
-      const playerColor = PLAYER_COLORS[index % PLAYER_COLORS.length];
+  getTextureForTileType(type: string): string {
+    const textureMap: { [key: string]: string } = {
+        'start': 'tile_start',
+        'finish': 'tile_finish',
+        'quiz': 'tile_quiz',
+        'bonus': 'tile_bonus',
+        'malus': 'tile_malus',
+        'event': 'tile_event',
+    };
+    return textureMap[type] || 'tile_default';
+  }
+  
+  updatePlayerSprites(players: string[], playerPositions: any) {
+    // --- CORRECTION ---
+    // On itère sur le tableau des joueurs (qui contient les vrais IDs)
+    // plutôt que sur les clés d'un objet.
+    players.forEach(playerId => {
+      // Création du sprite s'il n'existe pas
+      if (!this.playerSprites[playerId]) {
+        console.log(`[Phaser] Creating sprite for player: ${playerId}`);
+        const initialPosition = playerPositions[playerId] || 0;
+        const startPathIndex = initialPosition % this.boardPath.length;
+        const startPos = this.boardPath[startPathIndex] || { x: this.scale.width / 2, y: this.scale.height / 2 };
+        
+        this.playerSprites[playerId] = this.add.sprite(startPos.x, startPos.y, 'player_token')
+          .setOrigin(0.5)
+          .setDisplaySize(40, 40)
+          .setTint(this.getPlayerColor(playerId))
+          .setDepth(10); // S'assurer que le pion est au-dessus des cases
+        this.playerPositions[playerId] = initialPosition;
+      }
       
-      const circle = new Phaser.GameObjects.Arc(this, 0, 0, 18, 0, 360, false, playerColor, 1);
-      circle.setStrokeStyle(3, 0xffffff);
+      // Vérification et déclenchement du mouvement
+      const serverPosition = playerPositions[playerId];
+      const localPosition = this.playerPositions[playerId];
       
-      const pseudoInitial = gameData.playerDetails[playerId]?.pseudo.charAt(0).toUpperCase() || '?';
-      const text = new Phaser.GameObjects.Text(this, 0, 0, pseudoInitial, { 
-          fontFamily: 'Poppins', fontSize: '20px', color: '#ffffff', fontStyle: 'bold' 
-      }).setOrigin(0.5);
-
-      // On utilise un container pour grouper le pion et l'initiale
-      const container = this.add.container(position.x, position.y, [circle, text]);
-      this.playerTokens[playerId] = container;
+      if (serverPosition !== localPosition) {
+        console.log(`[Phaser] Moving player ${playerId} from ${localPosition} to ${serverPosition}`);
+        this.movePlayer(playerId, localPosition, serverPosition);
+      }
     });
+    // --- FIN DE LA CORRECTION ---
   }
 
-  // Met à jour la position d'un pion avec une animation
-  updatePlayerPositions(newPositions: Record<string, number>) {
-    Object.keys(newPositions).forEach(playerId => {
-        const tokenContainer = this.playerTokens[playerId];
-        const newTileIndex = newPositions[playerId];
-        const targetPosition = this.tileCoordinates[newTileIndex];
+  movePlayer(playerId: string, startPosition: number, endPosition: number) {
+    const playerSprite = this.playerSprites[playerId];
+    if (!playerSprite) return;
 
-        if (tokenContainer && targetPosition) {
-            this.tweens.add({
-                targets: tokenContainer,
-                x: targetPosition.x,
-                y: targetPosition.y,
-                ease: 'Power2',
-                duration: 500
-            });
+    const path = new Phaser.Curves.Path();
+    
+    const boardSize = this.boardPath.length;
+    let currentPathIndex = startPosition % boardSize;
+    path.moveTo(this.boardPath[currentPathIndex].x, this.boardPath[currentPathIndex].y);
+
+    const steps = endPosition - startPosition;
+    for (let i = 0; i < steps; i++) {
+        currentPathIndex = (startPosition + 1 + i) % boardSize;
+        if(this.boardPath[currentPathIndex]) {
+            path.lineTo(this.boardPath[currentPathIndex].x, this.boardPath[currentPathIndex].y);
         }
+    }
+    
+    this.tweens.add({
+      targets: playerSprite,
+      z: 1,
+      duration: path.getLength() * 5,
+      t: 1,
+      ease: 'Sine.easeInOut',
+      onUpdate: (tween, target) => {
+        const position = path.getPoint(tween.getValue());
+        target.setPosition(position.x, position.y);
+      },
+      onComplete: () => {
+        this.playerPositions[playerId] = endPosition;
+      },
     });
+  }
+
+  getPlayerColor(playerId: string): number {
+    let hash = 0;
+    for (let i = 0; i < playerId.length; i++) {
+        hash = playerId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    return parseInt("0x" + "00000".substring(0, 6 - color.length) + color);
+  }
+
+  shutdown() {
+    console.log('[Phaser] Shutting down scene...');
+    this.unsubscribes.forEach(unsub => unsub());
+    this.unsubscribes = [];
+    this.boardIsDrawn = false;
   }
 }

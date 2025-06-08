@@ -1,57 +1,54 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainBoardScene } from '../phaser/MainBoardScene';
 
 interface PhaserGameProps {
-  gameData: any; // L'objet complet de la partie
+  gameId: string;
 }
 
-const PhaserGame: React.FC<PhaserGameProps> = ({ gameData }) => {
+const PhaserGame = ({ gameId }: PhaserGameProps) => {
   const gameRef = useRef<Phaser.Game | null>(null);
-  const gameContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // S'assure que le conteneur est prêt
-    if (!gameContainerRef.current) return;
+    if (gameRef.current) {
+        return; // Empêche la réinitialisation si le jeu existe déjà
+    }
 
-    // Crée le jeu s'il n'existe pas
-    if (!gameRef.current && gameData) {
+    if (gameId) {
       const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
-        width: gameContainerRef.current.clientWidth,
-        height: 600, // Hauteur fixe pour le canvas
         parent: 'phaser-container',
-        backgroundColor: '#1e1e1e',
+        backgroundColor: '#2d2d2d',
         scale: {
-          mode: Phaser.Scale.FIT,
+          // --- MODIFICATION ---
+          // Le mode ENVELOP va s'assurer que le canvas remplit entièrement
+          // son conteneur, en conservant le ratio. Cela peut rogner les
+          // bords de l'image si le ratio de l'écran est différent,
+          // mais évite les bandes noires.
+          mode: Phaser.Scale.ENVELOP,
+          // --- FIN DE LA MODIFICATION ---
           autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: 1920,
+          height: 1080,
         },
         scene: [MainBoardScene],
       };
 
+
       gameRef.current = new Phaser.Game(config);
-      // Passe les données initiales à la scène
-      gameRef.current.scene.start('MainBoardScene', gameData);
-    } else if (gameRef.current && gameData) {
-      // Si le jeu existe déjà, on met juste à jour les données dans la scène
-      gameRef.current.registry.set('gameData', gameData);
+      gameRef.current.scene.start('MainBoardScene', { gameId: gameId });
     }
-    
-    // Nettoyage au démontage du composant
+
     return () => {
-      gameRef.current?.destroy(true);
-      gameRef.current = null;
+        if (gameRef.current) {
+            gameRef.current.destroy(true);
+            gameRef.current = null;
+        }
     };
-  }, []); // S'exécute une seule fois pour créer le jeu
+  }, [gameId]);
 
-  // Met à jour les données de la scène à chaque fois que gameData change
-  useEffect(() => {
-    if (gameRef.current && gameData) {
-      gameRef.current.registry.set('gameData', gameData);
-    }
-  }, [gameData]);
-
-  return <div id="phaser-container" ref={gameContainerRef} style={{ width: '100%', minHeight: '600px' }} />;
+  // Le conteneur doit occuper tout l'espace disponible pour que le Scale Manager fonctionne bien.
+  return <div id="phaser-container" style={{ width: '100%', height: '100%' }} />;
 };
 
 export default PhaserGame;
