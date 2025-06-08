@@ -11,29 +11,23 @@ const PhaserGame = ({ gameId }: PhaserGameProps) => {
 
   useEffect(() => {
     if (gameRef.current) {
-        return; // Empêche la réinitialisation si le jeu existe déjà
+        return;
     }
 
     if (gameId) {
       const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
         parent: 'phaser-container',
-        backgroundColor: '#2d2d2d',
+        backgroundColor: 'transparent',
         scale: {
-          // --- MODIFICATION ---
-          // Le mode ENVELOP va s'assurer que le canvas remplit entièrement
-          // son conteneur, en conservant le ratio. Cela peut rogner les
-          // bords de l'image si le ratio de l'écran est différent,
-          // mais évite les bandes noires.
-          mode: Phaser.Scale.ENVELOP,
-          // --- FIN DE LA MODIFICATION ---
+          mode: Phaser.Scale.FIT,
           autoCenter: Phaser.Scale.CENTER_BOTH,
           width: 1920,
           height: 1080,
         },
+        zoom: 0.9,
         scene: [MainBoardScene],
       };
-
 
       gameRef.current = new Phaser.Game(config);
       gameRef.current.scene.start('MainBoardScene', { gameId: gameId });
@@ -47,8 +41,7 @@ const PhaserGame = ({ gameId }: PhaserGameProps) => {
     };
   }, [gameId]);
 
-  // Le conteneur doit occuper tout l'espace disponible pour que le Scale Manager fonctionne bien.
-  return <div id="phaser-container" style={{ width: '100%', height: '100%' }} />;
+  return <div id="phaser-container" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: -1 }} />;
 };
 
 export default PhaserGame;

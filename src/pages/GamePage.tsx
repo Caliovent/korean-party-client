@@ -31,13 +31,12 @@ interface Game {
 }
 interface UserProfile { pseudo: string; level: number; manaCurrent: number; manaMax: number; }
 
-
 // --- Sous-composants d'UI ---
 const PlayerHUD: React.FC<{ profile: UserProfile | null }> = ({ profile }) => {
-    if (!profile) return <div className="player-hud"><span>Chargement...</span></div>;
+    if (!profile) return <div className="player-hud overlay-ui-element"><span>Chargement...</span></div>;
     const manaPercentage = (profile.manaCurrent / profile.manaMax) * 100;
     return (
-        <div className="player-hud">
+        <div className="player-hud overlay-ui-element">
             <div className="hud-item"><strong>Pseudo:</strong> {profile.pseudo}</div>
             <div className="hud-item"><strong>Niveau:</strong> {profile.level}</div>
             <div className="hud-item mana-bar-container">
@@ -50,12 +49,13 @@ const PlayerHUD: React.FC<{ profile: UserProfile | null }> = ({ profile }) => {
         </div>
     );
 };
+
 const WaitingRoom: React.FC<{ game: Game; onStartGame: () => void; }> = ({ game, onStartGame }) => {
     const { t } = useTranslation();
     const isHost = game.hostId === auth.currentUser?.uid;
-    const canStart = game.players.length >= 1; // On peut démarrer seul pour tester
+    const canStart = game.players.length >= 1;
     return (
-        <>
+        <div className="waiting-room-container overlay-ui-element centered">
             <h2>{t('gameRoomTitle', 'Salle d\'attente')}</h2>
             <p>{t('gameHostedBy', `Partie de ${game.hostPseudo}`)}</p>
             <div className="player-list">
@@ -76,15 +76,13 @@ const WaitingRoom: React.FC<{ game: Game; onStartGame: () => void; }> = ({ game,
                 </div>
             )}
             {!isHost && <p>{t('waitingForHost', 'En attente que l\'hôte lance la partie...')}</p>}
-        </>
+        </div>
     );
 };
-
 const EventUI: React.FC<{ game: Game; }> = ({ game }) => {
   const { t } = useTranslation();
   const [isResolving, setIsResolving] = useState(false);
   if (!game.currentEvent) return null;
-
   const handleAcknowledge = async () => {
     setIsResolving(true);
     const functions = getFunctions();
@@ -93,7 +91,6 @@ const EventUI: React.FC<{ game: Game; }> = ({ game }) => {
     catch (error) { console.error("Erreur de résolution de l'événement:", error); } 
     finally { setIsResolving(false); }
   };
-  
   return (
     <div className="minigame-container">
       <h3>{game.currentEvent.title}</h3>
@@ -104,11 +101,9 @@ const EventUI: React.FC<{ game: Game; }> = ({ game }) => {
     </div>
   );
 };
-
 const MiniGameUI: React.FC<{ game: Game; }> = ({ game }) => {
   const [submittingAnswer, setSubmittingAnswer] = useState<string | null>(null);
   if (!game.currentMiniGame) return null;
-
   const handleSubmit = async (answer: string) => {
     setSubmittingAnswer(answer);
     const functions = getFunctions();
@@ -117,7 +112,6 @@ const MiniGameUI: React.FC<{ game: Game; }> = ({ game }) => {
     catch (error) { console.error("Erreur de soumission:", error); } 
     finally { setSubmittingAnswer(null); }
   };
-
   return (
     <div className="minigame-container">
       <h4>{game.currentMiniGame.question}</h4>
@@ -134,74 +128,69 @@ const MiniGameUI: React.FC<{ game: Game; }> = ({ game }) => {
 
 const QuestTracker: React.FC<{ quest: Quest | null }> = ({ quest }) => {
   const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(true);
+
   if (!quest) return null;
 
   const allStepsCompleted = quest.currentStep >= quest.steps.length;
 
   return (
-    <div className={`quest-tracker ${allStepsCompleted ? 'completed' : ''}`}>
-      <h4>{quest.title}</h4>
-      {allStepsCompleted ? (
-        <p>{t('questCompleted', 'Quête terminée !')}</p>
-      ) : (
-        <ul className="quest-steps-list">
-          {quest.steps.map((step: QuestStep, index: number) => (
-            <li key={index} className={step.completed ? 'completed' : ''}>
-              {step.description}
-            </li>
-          ))}
-        </ul>
+    <div className={`quest-tracker overlay-ui-element ${allStepsCompleted ? 'completed' : ''}`}>
+      <h4 onClick={() => setIsExpanded(!isExpanded)} style={{ cursor: 'pointer' }}>
+        {quest.title} {isExpanded ? '▼' : '▶'}
+      </h4>
+      {isExpanded && (
+        <>
+          {allStepsCompleted ? (
+            <p>{t('questCompleted', 'Quête terminée !')}</p>
+          ) : (
+            <ul className="quest-steps-list">
+              {quest.steps.map((step: QuestStep, index: number) => (
+                <li key={index} className={step.completed ? 'completed' : ''}>
+                  {step.description}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );
 };
 
-const GameBoard: React.FC<{ game: Game }> = ({ game }) => {
-  const { t } = useTranslation();
-  const [isRolling, setIsRolling] = useState(false);
-  const currentUserId = auth.currentUser?.uid;
-  const isMyTurn = game.currentPlayerId === currentUserId;
-  const myActiveEvent = isMyTurn && game.currentEvent;
-  const myActiveMiniGame = isMyTurn && game.currentMiniGame;
-
-  const handleTakeTurn = async () => {
-    setIsRolling(true);
-    try {
-      const functions = getFunctions();
-      const takeTurn = httpsCallable(functions, 'takeTurn');
-      await takeTurn({ gameId: game.id });
-    } catch (error) {
-      console.error("Erreur lors du tour:", error);
-    } finally {
-      setIsRolling(false);
-    }
-  };
-
-  return (
-    <div className="game-board-layout">
-      <div className="game-status-bar">
-        <span>Tour de : <strong>{game.playerDetails[game.currentPlayerId]?.pseudo || '...'}</strong></span>
-        {game.lastDiceRoll && (
-          <span>Dernier lancer : {game.playerDetails[game.lastDiceRoll.playerId]?.pseudo} a fait un {game.lastDiceRoll.value} !</span>
+const GameControls: React.FC<{ game: Game }> = ({ game }) => {
+    const { t } = useTranslation();
+    const [isRolling, setIsRolling] = useState(false);
+    const currentUserId = auth.currentUser?.uid;
+    const isMyTurn = game.currentPlayerId === currentUserId;
+    const canTakeTurn = isMyTurn && !game.currentMiniGame && !game.currentEvent;
+  
+    const handleTakeTurn = async () => {
+      setIsRolling(true);
+      try {
+        const functions = getFunctions();
+        const takeTurn = httpsCallable(functions, 'takeTurn');
+        await takeTurn({ gameId: game.id });
+      } catch (error) {
+        console.error("Erreur lors du tour:", error);
+      } finally {
+        setIsRolling(false);
+      }
+    };
+  
+    return (
+      <>
+        {canTakeTurn && (
+          <div className="game-controls">
+            <button onClick={handleTakeTurn} disabled={isRolling}>
+              {isRolling ? t('rolling', 'Lancement...') : t('rollDice', 'Lancer le dé')}
+            </button>
+          </div>
         )}
-      </div>
-      
-      <div className="phaser-game-container">
-        {/* LA CORRECTION EST ICI : on passe bien game.id à PhaserGame */}
-        <PhaserGame gameId={game.id} />
-      </div>
-      
-      <div className="game-controls">
-        {isMyTurn && !myActiveMiniGame && !myActiveEvent && (
-          <button onClick={handleTakeTurn} disabled={isRolling}>
-            {isRolling ? t('rolling', 'Lancement...') : t('rollDice', 'Lancer le dé')}
-          </button>
-        )}
-        {myActiveMiniGame && <MiniGameUI game={game} />}
-        {myActiveEvent && <EventUI game={game} />}
-      </div>
-    </div>
-  );
+        {isMyTurn && game.currentMiniGame && <MiniGameUI game={game} />}
+        {isMyTurn && game.currentEvent && <EventUI game={game} />}
+      </>
+    );
 };
 
 
@@ -217,7 +206,6 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (!gameId) {
-      console.error("Aucun ID de partie trouvé dans l'URL, redirection vers le lobby.");
       navigate('/lobby');
       return;
     }
@@ -226,13 +214,9 @@ const GamePage: React.FC = () => {
       if (doc.exists()) {
         setGame({ id: doc.id, ...doc.data() } as Game);
       } else {
-        setError("Partie non trouvée. Elle a peut-être été supprimée.");
+        setError("Partie non trouvée.");
         navigate('/lobby');
       }
-      setLoading(false);
-    }, (err) => {
-      console.error("Erreur d'écoute de la partie:", err);
-      setError("Erreur de connexion à la partie.");
       setLoading(false);
     });
     return () => unsubscribe();
@@ -254,26 +238,42 @@ const GamePage: React.FC = () => {
     const functions = getFunctions();
     const startGame = httpsCallable(functions, 'startGame');
     try { await startGame({ gameId }); }
-    catch(err) { console.error("Erreur lors du démarrage de la partie:", err); }
+    catch(err) { console.error("Erreur lors du démarrage:", err); }
   };
   
   const activeQuest = game && currentUserId ? game.playerQuests?.[currentUserId] : null;
 
-  if (loading) return <p>Chargement de la partie...</p>;
+  if (loading) return <p>Chargement...</p>;
   if (error) return <p className="error-message">{error}</p>;
-  if (!game) return <p>Partie non trouvée. Redirection...</p>;
+  if (!game) return <p>Partie non trouvée.</p>;
 
   return (
-    <div className="game-page-layout">
-      <div className="left-panel">
-        <PlayerHUD profile={playerProfile} />
-        <QuestTracker quest={activeQuest} />
-      </div>
-      <div className="main-panel">
-        {game.status === 'waiting' && <WaitingRoom game={game} onStartGame={handleStartGame} />}
-        {game.status === 'in-progress' && <GameBoard game={game} />}
-        {game.status === 'finished' && <h2>Partie terminée !</h2>}
-      </div>
+    <div className="game-page-layout" style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {game.status === 'in-progress' && gameId && <PhaserGame gameId={game.id} />}
+      
+      {game.status === 'in-progress' && (
+        <>
+            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+                <PlayerHUD profile={playerProfile} />
+                <QuestTracker quest={activeQuest} />
+            </div>
+            
+            <div className="overlay-ui-element top-center">
+                <span>Tour de : <strong>{game.playerDetails[game.currentPlayerId]?.pseudo || '...'}</strong></span>
+                {game.lastDiceRoll && (
+                <span style={{ marginLeft: '20px' }}>Dernier lancer : {game.playerDetails[game.lastDiceRoll.playerId]?.pseudo} a fait un {game.lastDiceRoll.value} !</span>
+                )}
+            </div>
+
+            {/* --- MODIFICATION: Position des contrôles --- */}
+            <div style={{ position: 'absolute', top: '60%', right: '1rem' }}>
+                <GameControls game={game} />
+            </div>
+        </>
+      )}
+
+      {game.status === 'waiting' && <WaitingRoom game={game} onStartGame={handleStartGame} />}
+      {game.status === 'finished' && <div className="overlay-ui-element centered"><h2>Partie terminée !</h2></div>}
     </div>
   );
 };

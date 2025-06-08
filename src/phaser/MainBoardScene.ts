@@ -33,7 +33,7 @@ export class MainBoardScene extends Phaser.Scene {
 
   preload() {
     console.log('[Phaser] Preloading assets...');
-    this.load.image('board_background', '/assets/board_background.png'); // Utiliser la nouvelle image
+    this.load.image('board_background', '/assets/board_background.png');
     this.load.image('player_token', '/assets/player_token.png');
     this.load.image('tile_start', '/assets/tile_start_placeholder.png');
     this.load.image('tile_finish', '/assets/tile_finish_placeholder.png');
@@ -41,7 +41,7 @@ export class MainBoardScene extends Phaser.Scene {
     this.load.image('tile_bonus', '/assets/tile_bonus_placeholder.png');
     this.load.image('tile_malus', '/assets/tile_malus_placeholder.png');
     this.load.image('tile_event', '/assets/tile_event_placeholder.png');
-    this.load.image('tile_default', '/assets/tile.png');
+    // Note : la ligne pour 'tile_default' n'est plus nécessaire si on gère la fallback.
   }
 
   create() {
@@ -63,14 +63,13 @@ export class MainBoardScene extends Phaser.Scene {
       onSnapshot(gameRef, (doc) => {
         if (doc.exists()) {
           const gameData = doc.data();
-          console.log('[Phaser] Game data updated:', gameData);
           
           if (gameData.boardLayout && !this.boardIsDrawn) {
+            console.log('[Phaser] boardLayout received. Creating board...');
             this.createBoard(gameData.boardLayout);
             this.boardIsDrawn = true;
           }
 
-          // La donnée 'players' de Firestore est un tableau d'IDs
           if (Array.isArray(gameData.players) && gameData.playerPositions) {
             this.updatePlayerSprites(gameData.players, gameData.playerPositions);
           }
@@ -87,26 +86,26 @@ export class MainBoardScene extends Phaser.Scene {
     const { width, height } = this.scale;
     
     this.boardPath = [
-      { x: width * 0.65, y: height * 0.85 }, { x: width * 0.72, y: height * 0.82 },
-      { x: width * 0.78, y: height * 0.77 }, { x: width * 0.82, y: height * 0.70 },
-      { x: width * 0.85, y: height * 0.63 }, { x: width * 0.86, y: height * 0.55 },
-      { x: width * 0.85, y: height * 0.47 }, { x: width * 0.82, y: height * 0.39 },
-      { x: width * 0.78, y: height * 0.32 }, { x: width * 0.72, y: height * 0.27 },
-      { x: width * 0.65, y: height * 0.24 }, { x: width * 0.58, y: height * 0.23 },
-      { x: width * 0.50, y: height * 0.23 }, { x: width * 0.42, y: height * 0.23 },
-      { x: width * 0.35, y: height * 0.24 }, { x: width * 0.28, y: height * 0.27 },
-      { x: width * 0.22, y: height * 0.32 }, { x: width * 0.18, y: height * 0.39 },
-      { x: width * 0.15, y: height * 0.47 }, { x: width * 0.14, y: height * 0.55 },
-      { x: width * 0.15, y: height * 0.63 }, { x: width * 0.18, y: height * 0.70 },
-      { x: width * 0.22, y: height * 0.77 }, { x: width * 0.28, y: height * 0.82 },
-      { x: width * 0.35, y: height * 0.85 }, { x: width * 0.42, y: height * 0.87 },
-      { x: width * 0.50, y: height * 0.87 }, { x: width * 0.55, y: height * 0.86 },
-      { x: width * 0.60, y: height * 0.85 }, { x: width * 0.62, y: height * 0.85 },
+        { x: width * 0.68, y: height * 0.44 }, { x: width * 0.70, y: height * 0.24 },
+        { x: width * 0.70, y: height * 0.16 }, { x: width * 0.65, y: height * 0.14 },
+        { x: width * 0.60, y: height * 0.13 }, { x: width * 0.54, y: height * 0.17 },
+        { x: width * 0.50, y: height * 0.24 }, { x: width * 0.45, y: height * 0.23 },
+        { x: width * 0.40, y: height * 0.26 }, { x: width * 0.37, y: height * 0.32 },
+        { x: width * 0.32, y: height * 0.35 }, { x: width * 0.28, y: height * 0.42 },
+        { x: width * 0.26, y: height * 0.49 }, { x: width * 0.24, y: height * 0.55 },
+        { x: width * 0.18, y: height * 0.52 }, { x: width * 0.12, y: height * 0.55 },
+        { x: width * 0.09, y: height * 0.62 }, { x: width * 0.10, y: height * 0.72 },
+        { x: width * 0.14, y: height * 0.77 }, { x: width * 0.22, y: height * 0.76 },
+        { x: width * 0.28, y: height * 0.77 }, { x: width * 0.32, y: height * 0.76 },
+        { x: width * 0.36, y: height * 0.76 }, { x: width * 0.42, y: height * 0.75 },
+        { x: width * 0.47, y: height * 0.72 }, { x: width * 0.52, y: height * 0.69 },
+        { x: width * 0.52, y: height * 0.60 }, { x: width * 0.57, y: height * 0.56 },
+        { x: width * 0.61, y: height * 0.55 }, { x: width * 0.64, y: height * 0.49 },
     ];
   }
   
   createBoard(boardLayout: TileConfig[]) {
-    const TILE_SIZE = 64;
+    const TILE_SIZE = 55;
     
     this.tileObjects.forEach(tile => tile.destroy());
     this.tileObjects = [];
@@ -115,12 +114,21 @@ export class MainBoardScene extends Phaser.Scene {
       if (i < this.boardPath.length) {
         const { x, y } = this.boardPath[i];
         const textureKey = this.getTextureForTileType(tileConfig.type);
-        const tile = this.add.image(x, y, textureKey)
-          .setOrigin(0.5)
-          .setDisplaySize(TILE_SIZE, TILE_SIZE);
-
-        tile.setData('tileConfig', tileConfig);
-        this.tileObjects.push(tile);
+        
+        // --- MODIFICATION : Sécurité pour vérifier si la texture existe ---
+        if (!this.textures.exists(textureKey)) {
+            console.error(`[Phaser] Texture manquante : '${textureKey}'. Vérifiez que le fichier existe dans /public/assets et qu'il est bien chargé dans preload(). Utilisation d'une texture de secours.`);
+            const fallbackTextureKey = 'tile_quiz'; // On utilise une texture qui, on l'espère, existe
+            const tile = this.add.image(x, y, fallbackTextureKey).setOrigin(0.5).setDisplaySize(TILE_SIZE, TILE_SIZE).setTint(0xff0000); // En rouge pour la voir
+            this.tileObjects.push(tile);
+        } else {
+            const tile = this.add.image(x, y, textureKey)
+              .setOrigin(0.5)
+              .setDisplaySize(TILE_SIZE, TILE_SIZE);
+            tile.setData('tileConfig', tileConfig);
+            this.tileObjects.push(tile);
+        }
+        // --- FIN DE LA MODIFICATION ---
       }
     });
   }
@@ -134,15 +142,12 @@ export class MainBoardScene extends Phaser.Scene {
         'malus': 'tile_malus',
         'event': 'tile_event',
     };
-    return textureMap[type] || 'tile_default';
+    // On retourne la clé correspondante, sans fallback ici. La vérification se fera dans createBoard.
+    return textureMap[type] || type; // Retourne le type lui-même si non trouvé, pour un debug plus clair
   }
   
   updatePlayerSprites(players: string[], playerPositions: any) {
-    // --- CORRECTION ---
-    // On itère sur le tableau des joueurs (qui contient les vrais IDs)
-    // plutôt que sur les clés d'un objet.
     players.forEach(playerId => {
-      // Création du sprite s'il n'existe pas
       if (!this.playerSprites[playerId]) {
         console.log(`[Phaser] Creating sprite for player: ${playerId}`);
         const initialPosition = playerPositions[playerId] || 0;
@@ -153,11 +158,10 @@ export class MainBoardScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(40, 40)
           .setTint(this.getPlayerColor(playerId))
-          .setDepth(10); // S'assurer que le pion est au-dessus des cases
+          .setDepth(10); 
         this.playerPositions[playerId] = initialPosition;
       }
       
-      // Vérification et déclenchement du mouvement
       const serverPosition = playerPositions[playerId];
       const localPosition = this.playerPositions[playerId];
       
@@ -166,7 +170,6 @@ export class MainBoardScene extends Phaser.Scene {
         this.movePlayer(playerId, localPosition, serverPosition);
       }
     });
-    // --- FIN DE LA CORRECTION ---
   }
 
   movePlayer(playerId: string, startPosition: number, endPosition: number) {
@@ -177,6 +180,7 @@ export class MainBoardScene extends Phaser.Scene {
     
     const boardSize = this.boardPath.length;
     let currentPathIndex = startPosition % boardSize;
+    if(!this.boardPath[currentPathIndex]) return;
     path.moveTo(this.boardPath[currentPathIndex].x, this.boardPath[currentPathIndex].y);
 
     const steps = endPosition - startPosition;
@@ -190,7 +194,7 @@ export class MainBoardScene extends Phaser.Scene {
     this.tweens.add({
       targets: playerSprite,
       z: 1,
-      duration: path.getLength() * 5,
+      duration: path.getLength() * 10,
       t: 1,
       ease: 'Sine.easeInOut',
       onUpdate: (tween, target) => {
@@ -219,3 +223,4 @@ export class MainBoardScene extends Phaser.Scene {
     this.boardIsDrawn = false;
   }
 }
+
