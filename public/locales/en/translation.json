@@ -11,5 +11,13 @@
   "statusNotConnected": "Status: Not connected",
   "userAnonymous": "Anonymous",
   "userIdentified": "Identified",
-  "footerText": "© 2025 Korean Party"
+  "footerText": "© 2025 Korean Party",
+  "registerAction": "Create an account",
+  "logout": "Logout",
+  "profilePageTitle": "Profile Page",
+  "editPseudo": "Edit Pseudo",
+  "newPseudo": "New Pseudo",
+  "save": "Save",
+  "cancel": "Cancel",
+  "goToLobby": "Go to Lobby"
 }

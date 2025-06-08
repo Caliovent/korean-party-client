@@ -7,12 +7,15 @@ const HomePage: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div>
+    <div style={{textAlign: 'center'}}>
       <h1>{t('welcomeMessage')}</h1>
       <p>{t('homePageDescription')}</p>
-      <nav>
-        <Link to="/login">{t('goToLoginPage')}</Link>
-      </nav>
+      
+      <div style={{marginTop: '2rem'}}>
+        <Link to="/lobby">
+          <button>{t('goToLobby', 'Aller au Salon')}</button>
+        </Link>
+      </div>
     </div>
   );
 };
