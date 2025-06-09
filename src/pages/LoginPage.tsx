@@ -1,83 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/pages/LoginPage.tsx
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  type User
-} from 'firebase/auth';
+import { useTranslation } from 'react-i18next';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  // Redirige l'utilisateur s'il est déjà connecté
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-      if (user && !user.isAnonymous) {
-        navigate('/');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      navigate('/lobby');
     } catch (err: any) {
-      setError("Email ou mot de passe incorrect.");
+      setError(err.message);
+      console.error(err);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignInAnonymously = async () => {
     setError(null);
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
-      return;
-    }
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      await signInAnonymously(auth);
+      navigate('/lobby');
     } catch (err: any) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError("Cette adresse email est déjà utilisée.");
-      } else {
-        setError("Une erreur est survenue lors de l'inscription.");
-      }
+      setError(err.message);
+      console.error(err);
     }
   };
 
   return (
-    <div className="login-container">
-      <h1>{t('loginPageTitle')}</h1>
-      <form className="login-form" onSubmit={handleLogin}>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" required />
+    <div>
+      <form onSubmit={handleSignIn}>
+        <h2>{t('login.email_signin_button')}</h2>
+        <div>
+          <label>{t('login.email_label')}</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-        <div className="form-group">
-          <label htmlFor="password">Mot de passe</label>
-          <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="********" required />
+        <div>
+          <label>{t('login.password_label')}</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </div>
-        {error && <p className="error-message">{error}</p>}
-        <div className="form-actions">
-          <button type="submit">{t('loginAction', 'Se connecter')}</button>
-          <button onClick={handleRegister} type="button" className="secondary">{t('registerAction', 'Créer un compte')}</button>
-        </div>
+        <button type="submit">{t('login.email_signin_button')}</button>
       </form>
-      <nav style={{ marginTop: '2rem' }}>
-        <Link to="/">{t('goToHomePage')}</Link>
-      </nav>
+      
+      <hr />
+      
+      <button type="button" onClick={handleSignInAnonymously}>
+        {t('login.anon_signin_button')}
+      </button>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };

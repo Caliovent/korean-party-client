@@ -39,8 +39,8 @@ function App() {
       return (
         <div className="user-info">
           <p>{user.email}</p>
-          <Link to="/profile" className="profile-link">{t('profilePageTitle', 'Mon Profil')}</Link>
-          <button onClick={handleLogout} className="logout-button">{t('logout', 'Déconnexion')}</button>
+          <Link to="/profile" className="profile-link">{t('nav.profile')}</Link>
+          <button onClick={handleLogout} className="logout-button">{t('nav.logout')}</button>
         </div>
       );
     }
@@ -60,7 +60,7 @@ function App() {
           <button onClick={() => changeLanguage('fr')}>FR</button>
           <button onClick={() => changeLanguage('en')}>EN</button>
         </div>
-        <Link to="/" style={{textDecoration: 'none'}}><h2>{t('appTitle')}</h2></Link>
+        <Link to="/" style={{textDecoration: 'none'}}><h2>{t('nav.home')}</h2></Link>
         <div className="firebase-status">
           {renderAuthStatus()}
         </div>

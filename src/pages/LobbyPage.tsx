@@ -1,149 +1,95 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+// src/pages/LobbyPage.tsx
+
+import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, addDoc, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { db, auth } from '../firebaseConfig';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
 
 interface Game {
   id: string;
+  name: string;
   hostId: string;
   hostPseudo: string;
   players: string[];
-  status: string;
+  status: 'waiting' | 'in-progress' | 'finished';
 }
 
 const LobbyPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [actionInProgress, setActionInProgress] = useState<{ type: string, id: string | null }>({ type: '', id: null });
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
-  const currentUserId = auth.currentUser?.uid;
+  const [newGameName, setNewGameName] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setLoading(true);
-    const gamesQuery = query(collection(db, "games"), where("status", "==", "waiting"));
-    const unsubscribe = onSnapshot(gamesQuery, (querySnapshot) => {
-      const availableGames = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
-      setGames(availableGames);
-      setLoading(false);
-    }, (err) => {
-      console.error("Erreur d'écoute des parties:", err);
-      setError(t('fetchGamesError', 'Impossible de charger les parties.'));
-      setLoading(false);
+    const q = collection(db, 'games');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
+      setGames(gamesData);
     });
     return () => unsubscribe();
-  }, [t]);
-
-  const userIsAlreadyHost = useMemo(() => {
-    return games.some(game => game.hostId === currentUserId);
-  }, [games, currentUserId]);
+  }, []);
 
   const handleCreateGame = async () => {
-    setActionInProgress({ type: 'create', id: null });
-    setError(null);
-    try {
-      const functions = getFunctions();
-      const createGame = httpsCallable(functions, 'createGame');
-      const result = await createGame();
-      const gameId = (result.data as { gameId: string }).gameId;
-      navigate(`/game/${gameId}`);
-    } catch (err: any) {
-      setError(err.message || t('createGameError', 'Impossible de créer la partie.'));
-    } finally {
-      setActionInProgress({ type: '', id: null });
+    if (newGameName.trim() === '' || !user) return;
+
+    // Vérifier si l'utilisateur est déjà l'hôte d'une partie
+    const existingGamesQuery = query(collection(db, 'games'), where('hostId', '==', user.uid));
+    const existingGamesSnapshot = await getDocs(existingGamesQuery);
+    if (!existingGamesSnapshot.empty) {
+      alert("You are already hosting a game. Please close it before creating a new one.");
+      return;
     }
+    
+    const newGame = {
+      name: newGameName,
+      hostId: user.uid,
+      hostPseudo: user.displayName || 'Anonymous Mage',
+      players: [user.uid],
+      status: 'waiting',
+      createdAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(db, 'games'), newGame);
+    setNewGameName('');
+    navigate(`/game/${docRef.id}`);
   };
 
-  const handleJoinGame = async (gameId: string) => {
-    setActionInProgress({ type: 'join', id: gameId });
-    setError(null);
-    try {
-      const functions = getFunctions();
-      const joinGame = httpsCallable(functions, 'joinGame');
-      await joinGame({ gameId: gameId });
-      navigate(`/game/${gameId}`);
-    } catch (err: any) {
-      setError(err.message || t('joinGameError', 'Impossible de rejoindre la partie.'));
-    } finally {
-      setActionInProgress({ type: '', id: null });
-    }
-  };
-
-  const handleDeleteGame = async (gameId: string) => {
-    setActionInProgress({ type: 'delete', id: gameId });
-    setError(null);
-    try {
-      const functions = getFunctions();
-      const deleteGame = httpsCallable(functions, 'deleteGame');
-      await deleteGame({ gameId });
-    } catch (err: any) {
-      setError(err.message || t('deleteGameError', 'Impossible de supprimer la partie.'));
-    } finally {
-      setActionInProgress({ type: '', id: null });
-    }
-  };
-
-  const handleReturnToGame = (gameId: string) => {
+  const handleJoinGame = (gameId: string) => {
+    // La logique pour rejoindre une partie sera gérée par une Cloud Function
+    // Pour l'instant, on navigue simplement vers la salle de jeu
     navigate(`/game/${gameId}`);
   };
 
+  const handleDeleteGame = async (gameId: string) => {
+    await deleteDoc(doc(db, "games", gameId));
+  };
+
+
   return (
-    <div className="lobby-container">
-      <h2>{t('lobbyTitle', 'Salon des Parties')}</h2>
-      <div className="lobby-actions">
-        <button 
-          onClick={handleCreateGame} 
-          disabled={loading || userIsAlreadyHost || !!actionInProgress.type}
-          title={userIsAlreadyHost ? t('alreadyHostingError', 'Vous avez déjà une partie en attente.') : ''}
-        >
-          {actionInProgress.type === 'create' ? t('creatingGame', 'Création...') : t('createGame', 'Créer une nouvelle partie')}
-        </button>
+    <div>
+      <h2>{t('lobby.title')}</h2>
+      <div>
+        <input
+          type="text"
+          value={newGameName}
+          onChange={(e) => setNewGameName(e.target.value)}
+          placeholder={t('lobby.game_name_label')}
+        />
+        <button onClick={handleCreateGame}>{t('lobby.create_game_button')}</button>
       </div>
-      {error && <p className="error-message">{error}</p>}
-      
-      <div className="game-list">
-        <h3>{t('availableGames', 'Parties disponibles')}</h3>
-        {loading && <p>{t('loading', 'Chargement...')}</p>}
-        {!loading && games.length === 0 && <p>{t('noGamesAvailable', 'Aucune partie disponible pour le moment.')}</p>}
-        <ul>
-          {games.map(game => {
-            const isHost = game.hostId === currentUserId;
-            const isPlayer = game.players.includes(currentUserId || '');
-            const isFull = game.players.length >= 4;
-            const isActingOnThisGame = actionInProgress.id === game.id;
-            
-            return (
-              <li key={game.id} className="game-item">
-                <span>{t('gameHostedBy', `Partie de ${game.hostPseudo}`)}</span>
-                <span>{game.players.length} / 4 joueurs</span>
-                <div className="game-item-actions">
-                  {isHost ? (
-                    <>
-                      <button onClick={() => handleReturnToGame(game.id)} disabled={!!actionInProgress.type}>
-                        {t('goToGame', 'Accéder')}
-                      </button>
-                      <button onClick={() => handleDeleteGame(game.id)} className="delete-button" disabled={!!actionInProgress.type}>
-                        {isActingOnThisGame && actionInProgress.type === 'delete' ? t('deleting', 'Suppression...') : t('deleteGame', 'Supprimer')}
-                      </button>
-                    </>
-                  ) : isPlayer ? (
-                    <button onClick={() => handleReturnToGame(game.id)} disabled={!!actionInProgress.type}>
-                      {t('returnToGame', 'Retourner')}
-                    </button>
-                  ) : (
-                    <button onClick={() => handleJoinGame(game.id)} disabled={isFull || !!actionInProgress.type}>
-                      {isActingOnThisGame && actionInProgress.type === 'join' ? t('joining', 'Rejoignant...') : t('joinGame', 'Rejoindre')}
-                    </button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <ul>
+        {games.length > 0 ? games.map((game) => (
+          <li key={game.id}>
+            {game.name} (Hôte: {game.hostPseudo}) - {game.players.length} joueur(s)
+            <button onClick={() => handleJoinGame(game.id)}>{t('lobby.join_button')}</button>
+            {user && game.hostId === user.uid && (
+              <button onClick={() => handleDeleteGame(game.id)}>Supprimer</button>
+            )}
+          </li>
+        )) : <p>{t('lobby.no_games')}</p>}
+      </ul>
     </div>
   );
 };

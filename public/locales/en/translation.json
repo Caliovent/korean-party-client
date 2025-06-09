@@ -1,25 +1,26 @@
 {
-  "welcomeMessage": "Welcome to Korean Party!",
-  "homePageDescription": "This is the home page.",
-  "goToLoginPage": "Go to login page",
-  "loginPageTitle": "Login Page",
-  "loginPageDescription": "Here, users will be able to log in.",
-  "goToHomePage": "Back to home",
-  "appTitle": "K-Mage Academy",
-  "loading": "Loading...",
-  "statusConnected": "Status: Connected",
-  "statusNotConnected": "Status: Not connected",
-  "userAnonymous": "Anonymous",
-  "userIdentified": "Identified",
-  "footerText": "© 2025 Korean Party",
-  "registerAction": "Create an account",
-  "logout": "Logout",
-  "profilePageTitle": "Profile Page",
-  "editPseudo": "Edit Pseudo",
-  "newPseudo": "New Pseudo",
-  "save": "Save",
-  "cancel": "Cancel",
-  "goToLobby": "Go to Lobby",
+  "nav": {
+    "home": "Home",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "login": {
+    "email_signin_button": "Sign In with Email",
+    "anon_signin_button": "Sign In Anonymously",
+    "email_label": "Email",
+    "password_label": "Password"
+  },
+  "lobby": {
+    "title": "Game Lobbies",
+    "create_game_button": "Create Game",
+    "game_name_label": "Game Name",
+    "join_button": "Join",
+    "no_games": "No games available. Create one!"
+  },
+  "spellbook": {
+    "title": "Spellbook",
+    "cast_button": "Cast"
+  },
   "spells": {
     "push_back": {
       "name": "Push Back",
@@ -30,5 +31,4 @@
       "description": "Steals 10 Mana points from another player."
     }
   }
-
 }

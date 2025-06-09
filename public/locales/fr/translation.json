@@ -1,26 +1,27 @@
 {
-  "welcomeMessage": "Bienvenue sur Korean Party !",
-  "homePageDescription": "Ceci est la page d'accueil.",
-  "goToLoginPage": "Aller à la page de connexion",
-  "loginPageTitle": "Page de Connexion",
-  "loginPageDescription": "Ici, les utilisateurs pourront se connecter.",
-  "goToHomePage": "Retour à l'accueil",
-  "appTitle": "Académie K-Mage",
-  "loading": "Chargement...",
-  "statusConnected": "Status: Connecté",
-  "statusNotConnected": "Status: Non connecté",
-  "userAnonymous": "Anonyme",
-  "userIdentified": "Identifié",
-  "footerText": "© 2025 Korean Party",
-  "registerAction": "Créer un compte",
-  "logout": "Déconnexion",
-  "profilePageTitle": "Page de Profil",
-  "editPseudo": "Modifier le Pseudo",
-  "newPseudo": "Nouveau Pseudo",
-  "save": "Enregistrer",
-  "cancel": "Annuler",
-  "goToLobby": "Aller au Lobby",
-    "spells": {
+  "nav": {
+    "home": "Accueil",
+    "profile": "Profil",
+    "logout": "Déconnexion"
+  },
+  "login": {
+    "email_signin_button": "Connexion avec Email",
+    "anon_signin_button": "Connexion Anonyme",
+    "email_label": "Email",
+    "password_label": "Mot de passe"
+  },
+  "lobby": {
+    "title": "Salles de Jeu",
+    "create_game_button": "Créer une Partie",
+    "game_name_label": "Nom de la partie",
+    "join_button": "Rejoindre",
+    "no_games": "Aucune partie disponible. Créez-en une !"
+  },
+  "spellbook": {
+    "title": "Grimoire de Sorts",
+    "cast_button": "Lancer"
+  },
+  "spells": {
     "push_back": {
       "name": "Repousser",
       "description": "Fait reculer un adversaire de 3 cases."
