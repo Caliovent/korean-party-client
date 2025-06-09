@@ -1,4 +1,5 @@
-// src/main.tsx
+// src/main.tsx (corrigé pour fonctionner avec le routeur)
+
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -8,10 +9,12 @@ import LoginPage from './pages/LoginPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import LobbyPage from './pages/LobbyPage.tsx';
 import GamePage from './pages/GamePage.tsx';
-import ProtectedRoute from './components/ProtectedRoute.tsx'; // Importer le composant
+import ProtectedRoute from './components/ProtectedRoute.tsx';
 import './index.css';
 import './i18n';
+import AuthProvider from './hooks/useAuth.tsx'; // L'importation est correcte
 
+// La définition de votre routeur reste inchangée
 const router = createBrowserRouter([
   {
     path: '/',
@@ -23,18 +26,21 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />, // Les routes à l'intérieur seront protégées
         children: [
           { path: 'profile', element: <ProfilePage /> },
-          { path: 'lobby', element: <LobbyPage /> }, // Exemple de page protégée
-          { path: 'game/:gameId', element: <GamePage /> }, // Page de jeu protégée
+          { path: 'lobby', element: <LobbyPage /> },
+          { path: 'game/:gameId', element: <GamePage /> },
         ],
       },
     ],
   },
 ]);
 
+// La correction est ici : on enveloppe le RouterProvider
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Suspense fallback="loading...">
-      <RouterProvider router={router} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </Suspense>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
