@@ -1,47 +1,45 @@
-import { useEffect, useRef } from 'react';
+// src/components/PhaserGame.tsx (corrigé)
+
+import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import { MainBoardScene } from '../phaser/MainBoardScene';
+import MainBoardScene from '../phaser/MainBoardScene';
+import type { Game } from '../types/game';
 
 interface PhaserGameProps {
-  gameId: string;
+  // gameId: string; // SUPPRIMÉ
+  game: Game | null;
 }
 
-const PhaserGame = ({ gameId }: PhaserGameProps) => {
+const PhaserGame: React.FC<PhaserGameProps> = ({ game }) => { // gameId SUPPRIMÉ
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
-    if (gameRef.current) {
-        return;
-    }
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      width: 1280,
+      height: 720,
+      parent: 'phaser-container',
+      scene: [MainBoardScene],
+      backgroundColor: '#2d2d2d',
+    };
 
-    if (gameId) {
-      const config: Phaser.Types.Core.GameConfig = {
-        type: Phaser.AUTO,
-        parent: 'phaser-container',
-        backgroundColor: 'transparent',
-        scale: {
-          mode: Phaser.Scale.FIT,
-          autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: 1920,
-          height: 1080,
-        },
-        zoom: 0.9,
-        scene: [MainBoardScene],
-      };
-
-      gameRef.current = new Phaser.Game(config);
-      gameRef.current.scene.start('MainBoardScene', { gameId: gameId });
-    }
+    gameRef.current = new Phaser.Game(config);
 
     return () => {
-        if (gameRef.current) {
-            gameRef.current.destroy(true);
-            gameRef.current = null;
-        }
+      gameRef.current?.destroy(true);
     };
-  }, [gameId]);
+  }, []);
 
-  return <div id="phaser-container" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: -1 }} />;
+  useEffect(() => {
+    if (game && gameRef.current) {
+      const scene = gameRef.current.scene.getScene('MainBoardScene') as MainBoardScene;
+      if (scene && scene.scene.isActive()) {
+        scene.updateGameState(game);
+      }
+    }
+  }, [game]);
+
+  return <div id="phaser-container" />;
 };
 
 export default PhaserGame;

@@ -1,17 +1,18 @@
-// src/pages/GamePage.tsx (corrigé)
+// src/pages/GamePage.tsx (modifié)
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth } from '../hooks/useAuth'; // Assurez-vous que le hook est importé correctement
+import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
-import type { Game, Player } from '../types/game'; // Utiliser "import type"
+import GameControls from '../components/GameControls'; // Importer GameControls
+import type { Game, Player } from '../types/game';
 
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
-  const { user } = useAuth(); // Ceci va maintenant fonctionner
+  const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
@@ -37,22 +38,16 @@ const GamePage: React.FC = () => {
     return () => unsubscribe();
   }, [gameId, user]);
 
-  if (!game || !gameId) { // Ajout de !gameId pour la robustesse
+  if (!game || !gameId) {
     return <div>Loading Game...</div>;
   }
 
-  // TODO: Implémenter l'écran de victoire
-  // if (game.status === 'finished') {
-  //   return <div>Game Over! Winner is {game.winnerId}</div>;
-  // }
-
   return (
     <div>
-      <h1>{game.name}</h1>
-      <p>Turn: {game.currentTurn}</p>
       <PlayerHUD player={currentPlayer} />
-      {/* Passer le gameId requis au composant PhaserGame */}
-      <PhaserGame gameId={gameId} />
+      {/* MODIFICATION : On ne passe plus gameId */}
+      <PhaserGame game={game} />
+      <GameControls game={game} />
     </div>
   );
 };

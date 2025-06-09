@@ -130,7 +130,8 @@ export default class MainBoardScene extends Phaser.Scene {
       t: 1,
       duration: path.getLength() * 10, // Vitesse de déplacement
       ease: 'Sine.easeInOut',
-      onUpdate: (_tween, target) => {
+      onUpdate: (tween, target) => {
+        // Correction : On utilise target.t (la progression du tween) pour obtenir le point sur le chemin
         const position = path.getPoint(target.t);
         target.setPosition(position.x, position.y);
       },

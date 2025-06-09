@@ -18,6 +18,7 @@ export interface Player {
 export type GameStatus = "waiting" | "playing" | "finished";
 export type TurnState = "AWAITING_ROLL" | "MOVING" | "RESOLVING_TILE";
 
+
 export interface Game {
   id: string;
   name: string;
@@ -34,5 +35,7 @@ export interface Game {
     targetId: string;
   } | null;
   winnerId: string | null;
-  createdAt: Timestamp; // Remplacer any par Timestamp
+  createdAt: Timestamp;
+  // AJOUT : Le schéma du plateau est une partie essentielle de l'état du jeu
+  boardLayout: { type: string }[];
 }
