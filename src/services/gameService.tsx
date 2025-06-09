@@ -1,9 +1,40 @@
 // src/services/gameService.ts (modifié)
 
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFunctions, httpsCallable, type HttpsCallableResult } from 'firebase/functions';
 import type { SpellId } from '../data/spells'; // Importer le type
 import { app } from '../firebaseConfig';
 const functions = getFunctions(app, 'europe-west1');
+
+// --- Game Lifecycle Functions ---
+
+export const createGame = async (gameName: string): Promise<HttpsCallableResult | null> => {
+  try {
+    const createGameFunction = httpsCallable(functions, 'createGame');
+    const result = await createGameFunction({ gameName });
+    return result;
+  } catch (error) {
+    console.error("Error calling createGame function:", error);
+    return null;
+  }
+};
+
+export const joinGame = async (gameId: string): Promise<void> => {
+  try {
+    const joinGameFunction = httpsCallable(functions, 'joinGame');
+    await joinGameFunction({ gameId });
+  } catch (error) {
+    console.error("Error calling joinGame function:", error);
+  }
+};
+
+export const leaveGame = async (gameId: string): Promise<void> => {
+  try {
+    const leaveGameFunction = httpsCallable(functions, 'leaveGame');
+    await leaveGameFunction({ gameId });
+  } catch (error) {
+    console.error("Error calling leaveGame function:", error);
+  }
+};
 
 /**
  * Appelle la Cloud Function pour lancer le dé pour le joueur actuel.
