@@ -10,12 +10,17 @@ import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
 import type { Game, Player } from '../types/game';
 import Spellbook from '../components/spellBook';
+import type { SpellId } from '../data/spells'; // Importer le type SpellId
+
 
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+    // AJOUT : Nouvel état pour gérer le sort sélectionné
+  const [selectedSpellId, setSelectedSpellId] = useState<SpellId | null>(null);
+
 
   useEffect(() => {
     if (!gameId) return;
@@ -39,6 +44,11 @@ const GamePage: React.FC = () => {
     return () => unsubscribe();
   }, [gameId, user]);
 
+  // AJOUT : Fonction pour gérer la sélection et la déselection d'un sort
+  const handleSelectSpell = (spellId: SpellId) => {
+    // Si on clique sur le sort déjà sélectionné, on le déselectionne. Sinon, on le sélectionne.
+    setSelectedSpellId(prevSelected => prevSelected === spellId ? null : spellId);
+  };
   if (!game || !gameId) {
     return <div>Loading Game...</div>;
   }
@@ -49,9 +59,12 @@ const GamePage: React.FC = () => {
     <div>
       <PlayerHUD player={currentPlayer} />
       
-      {/* Afficher le Spellbook uniquement si c'est notre tour et qu'on attend de lancer le dé */}
       {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer &&
-        <Spellbook player={currentPlayer} />
+        <Spellbook
+          player={currentPlayer}
+          selectedSpellId={selectedSpellId}
+          onSelectSpell={handleSelectSpell}
+        />
       }
 
       <PhaserGame game={game} />

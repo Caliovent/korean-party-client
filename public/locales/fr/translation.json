@@ -30,5 +30,6 @@
       "name": "Absorption de Mana",
       "description": "Vole 10 points de Mana à un autre joueur."
     }
-  }
+  },
+  "cancel_button": "Annuler"
 }

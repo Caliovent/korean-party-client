@@ -30,5 +30,6 @@
       "name": "Mana Drain",
       "description": "Steals 10 Mana points from another player."
     }
-  }
+  },
+  "cancel_button": "Cancel"
 }

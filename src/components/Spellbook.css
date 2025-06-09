@@ -78,3 +78,13 @@
   color: #aaa;
   cursor: not-allowed;
 }
+
+.spell-item.selected {
+  outline: 2px solid #ffc107;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+.spell-item.selected button {
+  background-color: #dc3545; /* Rouge pour "Annuler" */
+  color: white;
+}
