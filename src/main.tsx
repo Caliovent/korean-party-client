@@ -1,5 +1,6 @@
 // src/main.tsx (corrigé pour fonctionner avec le routeur)
 
+
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -8,13 +9,13 @@ import HomePage from './pages/HomePage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import LobbyPage from './pages/LobbyPage.tsx';
+import WaitingRoomPage from './pages/WaitingRoomPage.tsx'; // Importer la nouvelle page
 import GamePage from './pages/GamePage.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import './index.css';
 import './i18n';
-import AuthProvider from './hooks/useAuth.tsx'; // L'importation est correcte
+import AuthProvider from './hooks/useAuth.tsx';
 
-// La définition de votre routeur reste inchangée
 const router = createBrowserRouter([
   {
     path: '/',
@@ -23,10 +24,12 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'login', element: <LoginPage /> },
       {
-        element: <ProtectedRoute />, // Les routes à l'intérieur seront protégées
+        element: <ProtectedRoute />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
           { path: 'lobby', element: <LobbyPage /> },
+          // AJOUT : La nouvelle route pour la salle d'attente
+          { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },
           { path: 'game/:gameId', element: <GamePage /> },
         ],
       },

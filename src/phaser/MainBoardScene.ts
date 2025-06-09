@@ -31,11 +31,14 @@ export default class MainBoardScene extends Phaser.Scene {
   preload() {
     console.log('[Phaser] Preloading assets...');
     this.load.image('board_background', '/assets/korean-game-board.png');
-    this.load.image('tile_start', '/assets/tiles/start.png');
-    this.load.image('tile_quiz', '/assets/tiles/quiz.png');
-    this.load.image('tile_bonus', '/assets/tiles/bonus.png');
-    this.load.image('tile_malus', '/assets/tiles/malus.png');
-    this.load.image('tile_event', '/assets/tiles/event.png');
+    this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');
+
+    // MODIFICATION : On charge les images avec les noms correspondants aux types du backend
+    this.load.image('tile_SAFE_ZONE', '/assets/tiles/tile_SAFE_ZONE.png');
+    this.load.image('tile_MANA_GAIN', '/assets/tiles/tile_MANA_GAIN.png');
+    this.load.image('tile_MINI_GAME_QUIZ', '/assets/tiles/tile_MINI_GAME_QUIZ.png');
+ 
     this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
     // AJOUT : Charger l'asset pour l'animation du sort
     this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');

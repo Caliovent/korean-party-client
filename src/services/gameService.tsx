@@ -28,6 +28,17 @@ export const joinGame = async (gameId: string): Promise<void> => {
   }
 };
 
+export const startGame = async (gameId: string): Promise<void> => {
+  try {
+    console.log(`[CLIENT] Calling 'startGame' function for game: ${gameId}`);
+    const startGameFunction = httpsCallable(functions, 'startGame');
+    await startGameFunction({ gameId });
+  } catch (error) {
+    console.error("Error calling startGame function:", error);
+  }
+};
+
+
 export const leaveGame = async (gameId: string): Promise<void> => {
   try {
     const leaveGameFunction = httpsCallable(functions, 'leaveGame');

@@ -43,24 +43,15 @@ const LobbyPage: React.FC = () => {
     if (!newGameName.trim() || !user || isLoading) return;
     setIsLoading(true);
 
-    console.log('Appel de la Cloud Function "createGame"...');
-    const result = await createGame(newGameName);
-
-    // On vérifie que l'appel a réussi
-    if (result) {
-      // On indique à TypeScript la forme des données reçues
-      const resultData = result.data as CreateGameResult;
-      const newGameId = resultData.gameId;
-
-      if (newGameId) {
-        console.log(`Partie créée avec succès. ID: ${newGameId}. Navigation...`);
-        setNewGameName('');
-        navigate(`/game/${newGameId}`);
-      } else {
-        alert("Erreur: L'ID de la partie n'a pas été retourné par le serveur.");
-      }
+    const result: any = await createGame(newGameName);
+    
+    if (result && result.data.gameId) {
+      const newGameId = result.data.gameId;
+      setNewGameName('');
+      // MODIFICATION : Rediriger vers la salle d'attente
+      navigate(`/waiting-room/${newGameId}`);
     } else {
-      alert("Erreur: Impossible de créer la partie. Voir la console pour les détails.");
+      alert("Erreur: Impossible de créer la partie.");
     }
     setIsLoading(false);
   };
@@ -69,9 +60,11 @@ const LobbyPage: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
     await joinGame(gameId);
-    navigate(`/game/${gameId}`);
+    // MODIFICATION : Rediriger vers la salle d'attente
+    navigate(`/waiting-room/${gameId}`);
   };
 
+  
   const handleDeleteGame = async (gameId: string) => {
     if (isLoading) return;
     setIsLoading(true);
