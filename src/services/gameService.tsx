@@ -9,6 +9,7 @@ const functions = getFunctions(app, 'europe-west1');
 
 export const createGame = async (gameName: string): Promise<HttpsCallableResult | null> => {
   try {
+    console.log(`[CLIENT] Calling 'createGame' function with name: ${gameName}`);
     const createGameFunction = httpsCallable(functions, 'createGame');
     const result = await createGameFunction({ gameName });
     return result;

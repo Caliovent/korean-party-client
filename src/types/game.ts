@@ -30,7 +30,7 @@ export interface Game {
   currentPlayerId: string;
   currentTurn: number;
   turnState: TurnState;
-  boardLayout: { type: string }[];
+  board: { type: string }[];
   lastDiceRoll: number | null;
   lastSpellCast: {
     casterId: string;

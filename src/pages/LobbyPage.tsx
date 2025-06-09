@@ -1,4 +1,4 @@
-// src/pages/LobbyPage.tsx (entièrement refactorisé)
+// src/pages/LobbyPage.tsx (corrigé)
 
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
@@ -6,15 +6,19 @@ import { db } from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-// MODIFICATION : On importe nos fonctions de service
 import { createGame, joinGame, leaveGame } from '../services/gameService';
+
+// Définir la structure de données attendue en retour de la fonction
+interface CreateGameResult {
+  gameId: string;
+}
 
 interface Game {
   id: string;
   name: string;
   hostId: string;
   hostPseudo: string;
-  players: unknown[]; // La structure exacte des joueurs est gérée par le serveur
+  players: unknown[];
   status: 'waiting' | 'in-progress' | 'finished';
 }
 
@@ -40,16 +44,23 @@ const LobbyPage: React.FC = () => {
     setIsLoading(true);
 
     console.log('Appel de la Cloud Function "createGame"...');
-    const result: any = await createGame(newGameName);
-    
-    if (result && result.data.gameId) {
-      const newGameId = result.data.gameId;
-      console.log(`Partie créée avec succès. ID: ${newGameId}. Navigation...`);
-      setNewGameName('');
-      navigate(`/game/${newGameId}`);
+    const result = await createGame(newGameName);
+
+    // On vérifie que l'appel a réussi
+    if (result) {
+      // On indique à TypeScript la forme des données reçues
+      const resultData = result.data as CreateGameResult;
+      const newGameId = resultData.gameId;
+
+      if (newGameId) {
+        console.log(`Partie créée avec succès. ID: ${newGameId}. Navigation...`);
+        setNewGameName('');
+        navigate(`/game/${newGameId}`);
+      } else {
+        alert("Erreur: L'ID de la partie n'a pas été retourné par le serveur.");
+      }
     } else {
-      // Gérer le cas où la fonction échoue (erreur loggée dans le service)
-      alert("Erreur: Impossible de créer la partie.");
+      alert("Erreur: Impossible de créer la partie. Voir la console pour les détails.");
     }
     setIsLoading(false);
   };
@@ -59,13 +70,11 @@ const LobbyPage: React.FC = () => {
     setIsLoading(true);
     await joinGame(gameId);
     navigate(`/game/${gameId}`);
-    // setIsLoading(false); // La navigation change la page, donc pas forcément nécessaire
   };
 
   const handleDeleteGame = async (gameId: string) => {
     if (isLoading) return;
     setIsLoading(true);
-    // On quitte la partie, la logique serveur la supprimera si l'hôte part
     await leaveGame(gameId);
     setIsLoading(false);
   };
