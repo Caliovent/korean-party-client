@@ -4,13 +4,14 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import MainBoardScene from '../phaser/MainBoardScene';
 import type { Game } from '../types/game';
+import type { SpellId } from '../data/spells'; // Importer le type
 
 interface PhaserGameProps {
-  // gameId: string; // SUPPRIMÉ
   game: Game | null;
+  selectedSpellId: SpellId | null; // Accepter la nouvelle prop
 }
 
-const PhaserGame: React.FC<PhaserGameProps> = ({ game }) => { // gameId SUPPRIMÉ
+const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId }) => {
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,19 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game }) => { // gameId SUPPRIM�
       }
     }
   }, [game]);
+
+
+  // AJOUT : useEffect pour gérer le mode de ciblage
+  useEffect(() => {
+    const scene = gameRef.current?.scene.getScene('MainBoardScene') as MainBoardScene;
+    if (scene?.scene.isActive()) {
+      if (selectedSpellId) {
+        scene.enterTargetingMode(selectedSpellId);
+      } else {
+        scene.exitTargetingMode();
+      }
+    }
+  }, [selectedSpellId]); // Se déclenche quand le sort sélectionné change
 
   return <div id="phaser-container" />;
 };

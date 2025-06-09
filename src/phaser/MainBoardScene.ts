@@ -2,6 +2,7 @@
 
 import Phaser from 'phaser';
 import type { Game, Player } from '../types/game';
+import type { SpellId } from '../data/spells';
 
 // L'interface pour le layout du plateau passé par le serveur
 interface BoardLayout {
@@ -11,9 +12,11 @@ interface BoardLayout {
 export default class MainBoardScene extends Phaser.Scene {
   private playerSprites: { [key:string]: Phaser.GameObjects.Sprite } = {};
   private boardPath: { x: number; y: number }[] = [];
-  
   private gameState: Game | null = null;
   private boardIsDrawn = false;
+  // AJOUT : Propriétés pour le mode de ciblage
+  private isTargeting = false;
+  private targetingTweens: Phaser.Tweens.Tween[] = [];
 
   constructor() {
     super('MainBoardScene');
@@ -33,6 +36,55 @@ export default class MainBoardScene extends Phaser.Scene {
   create() {
     this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'board_background').setScale(0.8);
     this.defineBoardPath();
+  }
+
+
+  public enterTargetingMode(spellId: SpellId) {
+    console.log(`[Phaser] Entering targeting mode for spell: ${spellId}`);
+    this.isTargeting = true;
+    this.input.setDefaultCursor('crosshair');
+
+    // Mettre en surbrillance les cibles valides (tous les autres joueurs)
+    if (!this.gameState) return;
+
+    this.gameState.players.forEach(player => {
+      if (player.id !== this.gameState?.currentPlayerId) {
+        const sprite = this.playerSprites[player.id];
+        if (sprite) {
+          // Créer un tween de pulsation pour la surbrillance
+          const tween = this.tweens.add({
+            targets: sprite,
+            scale: 1.8,
+            duration: 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+          this.targetingTweens.push(tween);
+        }
+      }
+    });
+  }
+
+  public exitTargetingMode() {
+    if (!this.isTargeting) return; // Ne rien faire si on n'est pas en mode ciblage
+
+    console.log('[Phaser] Exiting targeting mode.');
+    this.isTargeting = false;
+    this.input.setDefaultCursor('default');
+
+    // Arrêter et supprimer tous les tweens de ciblage
+    this.targetingTweens.forEach(tween => tween.stop());
+    this.targetingTweens = [];
+
+    // Réinitialiser l'échelle de tous les sprites
+    if (!this.gameState) return;
+    this.gameState.players.forEach(player => {
+       const sprite = this.playerSprites[player.id];
+        if (sprite) {
+          sprite.setScale(1.5);
+        }
+    });
   }
 
   public updateGameState(newState: Game) {

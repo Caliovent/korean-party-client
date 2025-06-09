@@ -55,6 +55,7 @@ const GamePage: React.FC = () => {
 
   const isMyTurn = user ? game.currentPlayerId === user.uid : false;
 
+
   return (
     <div>
       <PlayerHUD player={currentPlayer} />
@@ -67,7 +68,8 @@ const GamePage: React.FC = () => {
         />
       }
 
-      <PhaserGame game={game} />
+      {/* MODIFICATION : On passe l'ID du sort sélectionné à Phaser */}
+      <PhaserGame game={game} selectedSpellId={selectedSpellId} />
       <GameControls game={game} />
     </div>
   );
