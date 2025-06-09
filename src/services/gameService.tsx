@@ -1,8 +1,8 @@
 // src/services/gameService.ts (modifié)
 
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import type { SpellId } from '../data/spells'; // Importer le type
 import { app } from '../firebaseConfig';
-
 const functions = getFunctions(app, 'europe-west1');
 
 /**
@@ -30,5 +30,22 @@ export const resolveTileAction = async (gameId: string): Promise<void> => {
     console.log(`Cloud Function 'resolveTileAction' called for game ${gameId}`);
   } catch (error) {
     console.error("Error calling resolveTileAction function:", error);
+  }
+};
+
+
+/**
+ * Appelle la Cloud Function pour lancer un sort sur un autre joueur.
+ * @param gameId L'ID de la partie.
+ * @param spellId L'ID du sort à lancer.
+ * @param targetId L'ID du joueur ciblé.
+ */
+export const castSpell = async (gameId: string, spellId: SpellId, targetId: string): Promise<void> => {
+  try {
+    const castSpellFunction = httpsCallable(functions, 'castSpell');
+    await castSpellFunction({ gameId, spellId, targetId });
+    console.log(`Cloud Function 'castSpell' (${spellId}) called on target ${targetId}`);
+  } catch (error) {
+    console.error("Error calling castSpell function:", error);
   }
 };

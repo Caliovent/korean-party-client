@@ -7,8 +7,9 @@ import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
-import GameControls from '../components/GameControls'; // Importer GameControls
+import GameControls from '../components/GameControls';
 import type { Game, Player } from '../types/game';
+import Spellbook from '../components/spellBook';
 
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -42,10 +43,17 @@ const GamePage: React.FC = () => {
     return <div>Loading Game...</div>;
   }
 
+  const isMyTurn = user ? game.currentPlayerId === user.uid : false;
+
   return (
     <div>
       <PlayerHUD player={currentPlayer} />
-      {/* MODIFICATION : On ne passe plus gameId */}
+      
+      {/* Afficher le Spellbook uniquement si c'est notre tour et qu'on attend de lancer le dé */}
+      {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer &&
+        <Spellbook player={currentPlayer} />
+      }
+
       <PhaserGame game={game} />
       <GameControls game={game} />
     </div>

@@ -1,0 +1,80 @@
+/* src/components/Spellbook.css */
+
+.spellbook-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 300px;
+  background-color: rgba(20, 10, 30, 0.85);
+  border: 2px solid #a445ed;
+  border-radius: 10px;
+  color: white;
+  padding: 15px;
+  z-index: 101;
+  font-family: 'Arial', sans-serif;
+  backdrop-filter: blur(5px);
+}
+
+.spellbook-container h4 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #ffc107;
+  font-size: 1.2em;
+}
+
+.spell-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.spell-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.spell-item.disabled {
+  color: #888;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.spell-item.disabled .spell-header .spell-cost {
+  color: #a23f3f;
+}
+
+.spell-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.spell-cost {
+  color: #4dd0e1;
+}
+
+.spell-description {
+  font-size: 0.9em;
+  margin: 5px 0 10px;
+}
+
+.spell-item button {
+  width: 100%;
+  padding: 8px;
+  background-color: #ffc107;
+  border: none;
+  border-radius: 4px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.spell-item button:disabled {
+  background-color: #555;
+  color: #aaa;
+  cursor: not-allowed;
+}
