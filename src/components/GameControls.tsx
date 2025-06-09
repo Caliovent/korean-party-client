@@ -1,9 +1,9 @@
 // src/components/GameControls.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Game } from '../types/game';
 import { useAuth } from '../hooks/useAuth';
-import { rollDice } from '../services/gameService';
+import { rollDice, resolveTileAction } from '../services/gameService';
 import './GameControls.css';
 
 interface GameControlsProps {
@@ -11,34 +11,63 @@ interface GameControlsProps {
 }
 
 const GameControls: React.FC<GameControlsProps> = ({ game }) => {
+  // =================================================================
+  // ÉTAPE 1 : TOUS LES HOOKS DOIVENT ÊTRE DÉCLARÉS ICI, EN PREMIER.
+  // =================================================================
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!user) return null;
+  useEffect(() => {
+    // Cet effet se déclenche à chaque changement de tour,
+    // ce qui réinitialise le bouton de chargement.
+    setIsLoading(false);
+  }, [game.turnState]);
 
-  const isMyTurn = game.currentPlayerId === user.uid;
-  const canRoll = isMyTurn && game.turnState === 'AWAITING_ROLL';
 
-  const handleRollDice = async () => {
-    if (!canRoll || isLoading) return;
-    setIsLoading(true);
-    await rollDice(game.id);
-    // Le listener onSnapshot mettra automatiquement à jour l'état,
-    // donc nous n'avons pas besoin de gérer la fin du chargement ici.
-    // setIsLoading(false) sera géré par le changement de turnState.
-  };
-
-  // N'affiche les contrôles que si c'est le tour du joueur
-  if (!isMyTurn) {
-    return <div className="game-controls"><p>C'est au tour de {game.players.find(p => p.id === game.currentPlayerId)?.name}...</p></div>;
+  // =================================================================
+  // ÉTAPE 2 : LES CONDITIONS DE SORTIE ANTICIPÉE (GUARDS) SONT PLACÉES APRÈS LES HOOKS.
+  // =================================================================
+  if (!user) {
+    return null;
   }
 
+  const isMyTurn = game.currentPlayerId === user.uid;
+
+  const handleRollDice = async () => {
+    if (isLoading || game.turnState !== 'AWAITING_ROLL') return;
+    setIsLoading(true);
+    await rollDice(game.id);
+  };
+
+  const handleResolveTile = async () => {
+    if (isLoading || game.turnState !== 'RESOLVING_TILE') return;
+    setIsLoading(true);
+    await resolveTileAction(game.id);
+  };
+
+  if (!isMyTurn) {
+    return (
+      <div className="game-controls">
+        <p>C'est au tour de {game.players.find(p => p.id === game.currentPlayerId)?.name}...</p>
+      </div>
+    );
+  }
+
+  // =================================================================
+  // ÉTAPE 3 : LE JSX PRINCIPAL EST RETOURNÉ EN DERNIER.
+  // =================================================================
   return (
     <div className="game-controls">
-      <button onClick={handleRollDice} disabled={!canRoll || isLoading}>
-        {isLoading ? 'Lancement...' : 'Lancer le dé'}
-      </button>
-      {/* Le bouton "Terminer le tour" sera ajouté ici plus tard */}
+      {game.turnState === 'AWAITING_ROLL' && (
+        <button onClick={handleRollDice} disabled={isLoading}>
+          {isLoading ? 'Lancement...' : 'Lancer le dé'}
+        </button>
+      )}
+      {game.turnState === 'RESOLVING_TILE' && (
+        <button onClick={handleResolveTile} disabled={isLoading}>
+          {isLoading ? 'Résolution...' : 'Terminer le tour'}
+        </button>
+      )}
     </div>
   );
 };
