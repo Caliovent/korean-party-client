@@ -19,5 +19,16 @@
   "newPseudo": "New Pseudo",
   "save": "Save",
   "cancel": "Cancel",
-  "goToLobby": "Go to Lobby"
+  "goToLobby": "Go to Lobby",
+  "spells": {
+    "push_back": {
+      "name": "Push Back",
+      "description": "Pushes an opponent back 3 tiles."
+    },
+    "mana_drain": {
+      "name": "Mana Drain",
+      "description": "Steals 10 Mana points from another player."
+    }
+  }
+
 }

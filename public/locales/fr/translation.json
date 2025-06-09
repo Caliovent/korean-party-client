@@ -19,5 +19,15 @@
   "newPseudo": "Nouveau Pseudo",
   "save": "Enregistrer",
   "cancel": "Annuler",
-  "goToLobby": "Aller au Lobby"
+  "goToLobby": "Aller au Lobby",
+    "spells": {
+    "push_back": {
+      "name": "Repousser",
+      "description": "Fait reculer un adversaire de 3 cases."
+    },
+    "mana_drain": {
+      "name": "Absorption de Mana",
+      "description": "Vole 10 points de Mana à un autre joueur."
+    }
+  }
 }

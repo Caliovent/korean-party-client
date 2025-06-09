@@ -1,11 +1,11 @@
-// src/data/spells.ts
+// src/data/spells.ts (modifié)
 
 export type SpellId = "PUSH_BACK" | "MANA_DRAIN";
 
 export interface Spell {
   id: SpellId;
-  name: string;
-  description: string;
+  nameKey: string; // CHANGEMENT: 'name' devient 'nameKey'
+  descriptionKey: string; // CHANGEMENT: 'description' devient 'descriptionKey'
   manaCost: number;
   requiresTarget: boolean;
 }
@@ -13,17 +13,16 @@ export interface Spell {
 export const SPELL_DEFINITIONS: Spell[] = [
   {
     id: "PUSH_BACK",
-    name: "Repousser",
-    description: "Fait reculer un adversaire de 3 cases.",
+    nameKey: "spells.push_back.name",
+    descriptionKey: "spells.push_back.description",
     manaCost: 15,
     requiresTarget: true,
   },
   {
     id: "MANA_DRAIN",
-    name: "Absorption de Mana",
-    description: "Vole 10 points de Mana à un autre joueur.",
+    nameKey: "spells.mana_drain.name",
+    descriptionKey: "spells.mana_drain.description",
     manaCost: 5,
     requiresTarget: true,
   },
-  // Nous pourrons ajouter d'autres sorts ici
 ];
