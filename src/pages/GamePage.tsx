@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
+import { castSpell } from '../services/gameService'; // Importer castSpell
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
@@ -18,8 +19,9 @@ const GamePage: React.FC = () => {
   const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-    // AJOUT : Nouvel état pour gérer le sort sélectionné
   const [selectedSpellId, setSelectedSpellId] = useState<SpellId | null>(null);
+  // AJOUT : Nouvel état pour la cible
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -44,11 +46,32 @@ const GamePage: React.FC = () => {
     return () => unsubscribe();
   }, [gameId, user]);
 
-  // AJOUT : Fonction pour gérer la sélection et la déselection d'un sort
   const handleSelectSpell = (spellId: SpellId) => {
-    // Si on clique sur le sort déjà sélectionné, on le déselectionne. Sinon, on le sélectionne.
-    setSelectedSpellId(prevSelected => prevSelected === spellId ? null : spellId);
+    setSelectedSpellId(prev => (prev === spellId ? null : spellId));
+    setSelectedTargetId(null); // Réinitialiser la cible si on change de sort
   };
+
+  // AJOUT : Handler appelé par Phaser quand une cible est cliquée
+  const handleTargetSelected = (targetId: string) => {
+    console.log(`[React] Target selected from Phaser: ${targetId}`);
+    setSelectedTargetId(targetId);
+  };
+
+    // AJOUT : useEffect qui déclenche le lancement du sort
+  useEffect(() => {
+    // Si nous avons toutes les infos nécessaires...
+    if (game && selectedSpellId && selectedTargetId) {
+      console.log(`[React] Casting spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
+      // On lance le sort !
+      castSpell(game.id, selectedSpellId, selectedTargetId);
+      
+      // On réinitialise l'état pour terminer l'action
+      setSelectedSpellId(null);
+      setSelectedTargetId(null);
+    }
+  }, [selectedTargetId, selectedSpellId, game]); // Déclenché quand la cible est choisie
+
+
   if (!game || !gameId) {
     return <div>Loading Game...</div>;
   }
@@ -59,17 +82,18 @@ const GamePage: React.FC = () => {
   return (
     <div>
       <PlayerHUD player={currentPlayer} />
-      
-      {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer &&
+      {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
         <Spellbook
           player={currentPlayer}
           selectedSpellId={selectedSpellId}
           onSelectSpell={handleSelectSpell}
         />
-      }
-
-      {/* MODIFICATION : On passe l'ID du sort sélectionné à Phaser */}
-      <PhaserGame game={game} selectedSpellId={selectedSpellId} />
+      )}
+      <PhaserGame
+        game={game}
+        selectedSpellId={selectedSpellId}
+        onTargetSelected={handleTargetSelected} // On passe la fonction de rappel
+      />
       <GameControls game={game} />
     </div>
   );

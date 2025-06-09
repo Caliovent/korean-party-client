@@ -8,10 +8,11 @@ import type { SpellId } from '../data/spells'; // Importer le type
 
 interface PhaserGameProps {
   game: Game | null;
-  selectedSpellId: SpellId | null; // Accepter la nouvelle prop
+  selectedSpellId: SpellId | null;
+  onTargetSelected: (targetId: string) => void; // Accepter la nouvelle prop
 }
 
-const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId }) => {
+const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTargetSelected }) => {
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
@@ -26,10 +27,13 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId }) => {
 
     gameRef.current = new Phaser.Game(config);
 
+    // Passer la fonction de rappel à la scène une fois qu'elle est prête
+    gameRef.current.scene.start('MainBoardScene', { onTargetSelected });
+
     return () => {
       gameRef.current?.destroy(true);
     };
-  }, []);
+  }, [onTargetSelected]); // Ajouter la dépendance
 
   useEffect(() => {
     if (game && gameRef.current) {

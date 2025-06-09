@@ -14,12 +14,18 @@ export default class MainBoardScene extends Phaser.Scene {
   private boardPath: { x: number; y: number }[] = [];
   private gameState: Game | null = null;
   private boardIsDrawn = false;
-  // AJOUT : Propriétés pour le mode de ciblage
   private isTargeting = false;
   private targetingTweens: Phaser.Tweens.Tween[] = [];
+  // AJOUT : Propriété pour stocker la fonction de rappel
+  private onTargetSelected: (targetId: string) => void = () => {};
 
   constructor() {
     super('MainBoardScene');
+  }
+
+  // MODIFICATION : init reçoit maintenant la fonction de rappel
+  init(data: { onTargetSelected: (targetId: string) => void }) {
+    this.onTargetSelected = data.onTargetSelected;
   }
 
   preload() {
@@ -159,6 +165,24 @@ export default class MainBoardScene extends Phaser.Scene {
         playerSprite.setTint(this.getPlayerColor(player.id));
         playerSprite.setScale(1.5);
         this.playerSprites[player.id] = playerSprite;
+
+                // AJOUT : Rendre le sprite interactif
+        playerSprite.setInteractive();
+        // Stocker l'ID du joueur sur l'objet sprite pour un accès facile
+        playerSprite.setData('playerId', player.id);
+
+        // AJOUT : Gérer le clic sur le sprite
+        playerSprite.on('pointerdown', () => {
+            if (this.isTargeting) {
+                const targetId = playerSprite.getData('playerId');
+                // On ne peut pas se cibler soi-même
+                if (targetId !== this.gameState?.currentPlayerId) {
+                    console.log(`[Phaser] Clicked on target: ${targetId}. Calling React callback.`);
+                    // On appelle la fonction de rappel pour remonter l'info à React
+                    this.onTargetSelected(targetId);
+                }
+            }
+        });
     });
   }
 
