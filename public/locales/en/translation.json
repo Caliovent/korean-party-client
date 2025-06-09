@@ -31,5 +31,11 @@
       "description": "Steals 10 Mana points from another player."
     }
   },
-  "cancel_button": "Cancel"
+  "cancel_button": "Cancel",
+  "victory": {
+    "title": "Victory!",
+    "announcement": "Congratulations to",
+    "end_announcement": "who has collected all the Grimoires!",
+    "return_to_lobby": "Return to Lobby"
+  }
 }

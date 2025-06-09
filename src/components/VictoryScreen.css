@@ -1,0 +1,61 @@
+/* src/components/VictoryScreen.css */
+
+.victory-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  backdrop-filter: blur(8px);
+}
+
+.victory-box {
+  background: radial-gradient(circle, rgba(63,33,96,1) 0%, rgba(30,15,45,1) 100%);
+  padding: 40px 60px;
+  border-radius: 20px;
+  text-align: center;
+  color: white;
+  border: 3px solid #ffc107;
+  box-shadow: 0 0 30px rgba(255, 193, 7, 0.6);
+}
+
+.victory-box h1 {
+  font-size: 3em;
+  color: #ffc107;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px #ffc107;
+}
+
+.winner-announcement {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+}
+
+.winner-name {
+  display: block;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #a445ed;
+  margin: 10px 0;
+}
+
+.lobby-button {
+  background-color: #ffc107;
+  color: black;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.lobby-button:hover {
+  transform: scale(1.05);
+}

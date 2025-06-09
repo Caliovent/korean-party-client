@@ -31,5 +31,11 @@
       "description": "Vole 10 points de Mana à un autre joueur."
     }
   },
-  "cancel_button": "Annuler"
+  "cancel_button": "Annuler",
+  "victory": {
+    "title": "Victoire !",
+    "announcement": "Félicitations à",
+    "end_announcement": "qui a assemblé tous les Grimoires !",
+    "return_to_lobby": "Retourner au Lobby"
+  }
 }

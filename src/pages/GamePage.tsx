@@ -12,6 +12,7 @@ import GameControls from '../components/GameControls';
 import type { Game, Player } from '../types/game';
 import Spellbook from '../components/spellBook';
 import type { SpellId } from '../data/spells'; // Importer le type SpellId
+import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
 
 
 const GamePage: React.FC = () => {
@@ -76,9 +77,18 @@ const GamePage: React.FC = () => {
     return <div>Loading Game...</div>;
   }
 
+  // AJOUT : Vérifier si la partie est terminée
+  if (game.status === 'finished') {
+    const winner = game.players.find(p => p.id === game.winnerId);
+    const winnerName = winner ? winner.name : 'Un sorcier mystérieux';
+    
+    return <VictoryScreen winnerName={winnerName} />;
+  }
+
   const isMyTurn = user ? game.currentPlayerId === user.uid : false;
 
 
+  // Le rendu normal du jeu si la partie n'est pas terminée
   return (
     <div>
       <PlayerHUD player={currentPlayer} />
@@ -92,7 +102,7 @@ const GamePage: React.FC = () => {
       <PhaserGame
         game={game}
         selectedSpellId={selectedSpellId}
-        onTargetSelected={handleTargetSelected} // On passe la fonction de rappel
+        onTargetSelected={handleTargetSelected}
       />
       <GameControls game={game} />
     </div>
