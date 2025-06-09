@@ -14,6 +14,8 @@ interface PhaserGameProps {
 
 const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTargetSelected }) => {
   const gameRef = useRef<Phaser.Game | null>(null);
+  // AJOUT : Réf pour mémoriser le dernier sort animé et éviter les répétitions
+  const lastAnimatedSpellRef = useRef<object | null>(null);
 
   useEffect(() => {
     const config: Phaser.Types.Core.GameConfig = {
@@ -44,8 +46,6 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
     }
   }, [game]);
 
-
-  // AJOUT : useEffect pour gérer le mode de ciblage
   useEffect(() => {
     const scene = gameRef.current?.scene.getScene('MainBoardScene') as MainBoardScene;
     if (scene?.scene.isActive()) {
@@ -56,6 +56,21 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
       }
     }
   }, [selectedSpellId]); // Se déclenche quand le sort sélectionné change
+
+  // AJOUT : useEffect pour déclencher les animations de sorts
+  useEffect(() => {
+    if (game?.lastSpellCast && gameRef.current) {
+      // On vérifie que le sort n'a pas déjà été animé
+      if (lastAnimatedSpellRef.current !== game.lastSpellCast) {
+        lastAnimatedSpellRef.current = game.lastSpellCast; // On mémorise le sort actuel
+
+        const scene = gameRef.current.scene.getScene('MainBoardScene') as MainBoardScene;
+        if (scene?.scene.isActive()) {
+          scene.playSpellAnimation(game.lastSpellCast);
+        }
+      }
+    }
+  }, [game?.lastSpellCast]); // Se déclenche quand le dernier sort lancé change
 
   return <div id="phaser-container" />;
 };

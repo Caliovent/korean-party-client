@@ -37,6 +37,8 @@ export default class MainBoardScene extends Phaser.Scene {
     this.load.image('tile_malus', '/assets/tiles/malus.png');
     this.load.image('tile_event', '/assets/tiles/event.png');
     this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
+    // AJOUT : Charger l'asset pour l'animation du sort
+    this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');
   }
 
   create() {
@@ -90,6 +92,54 @@ export default class MainBoardScene extends Phaser.Scene {
         if (sprite) {
           sprite.setScale(1.5);
         }
+    });
+  }
+
+
+  // ===================================================================
+  // NOUVELLE MÉTHODE POUR L'ANIMATION DES SORTS
+  // ===================================================================
+
+  public playSpellAnimation(spellData: { casterId: string, targetId: string, spellId: SpellId }) {
+    const { casterId, targetId, spellId } = spellData;
+
+    const casterSprite = this.playerSprites[casterId];
+    const targetSprite = this.playerSprites[targetId];
+
+    if (!casterSprite || !targetSprite) {
+      console.warn("Could not find sprites for spell animation.");
+      return;
+    }
+
+    console.log(`[Phaser] Playing animation for spell ${spellId}`);
+
+    // Créer la particule à la position du lanceur
+    const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
+    bolt.setScale(0.5);
+    bolt.setAlpha(0.7);
+
+    // Animer la particule vers la cible
+    this.tweens.add({
+      targets: bolt,
+      x: targetSprite.x,
+      y: targetSprite.y,
+      duration: 800, // Durée du trajet en ms
+      ease: 'Power2',
+      onComplete: () => {
+        // Optionnel : Créer un petit flash d'impact sur la cible
+        const impactFlash = this.add.circle(targetSprite.x, targetSprite.y, 20, 0xffffff, 0.8);
+        this.tweens.add({
+          targets: impactFlash,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            impactFlash.destroy();
+          }
+        });
+
+        // Détruire la particule à la fin de son trajet
+        bolt.destroy();
+      }
     });
   }
 

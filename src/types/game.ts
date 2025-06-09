@@ -1,4 +1,7 @@
-import { Timestamp } from "firebase/firestore"; // Importer Timestamp
+// src/types/game.ts (modifié)
+
+import { Timestamp } from "firebase/firestore";
+import type { SpellId } from "../data/spells"; // Importer notre type spécifique
 
 export interface Grimoire {
   id: string;
@@ -8,7 +11,7 @@ export interface Grimoire {
 }
 
 export interface Player {
-  id: string;
+  id:string;
   name: string;
   position: number;
   mana: number;
@@ -17,7 +20,6 @@ export interface Player {
 
 export type GameStatus = "waiting" | "playing" | "finished";
 export type TurnState = "AWAITING_ROLL" | "MOVING" | "RESOLVING_TILE";
-
 
 export interface Game {
   id: string;
@@ -28,14 +30,14 @@ export interface Game {
   currentPlayerId: string;
   currentTurn: number;
   turnState: TurnState;
+  boardLayout: { type: string }[];
   lastDiceRoll: number | null;
   lastSpellCast: {
-    spellId: string;
     casterId: string;
     targetId: string;
+    // MODIFICATION : On utilise le type SpellId au lieu de string
+    spellId: SpellId; 
   } | null;
   winnerId: string | null;
   createdAt: Timestamp;
-  // AJOUT : Le schéma du plateau est une partie essentielle de l'état du jeu
-  boardLayout: { type: string }[];
 }
