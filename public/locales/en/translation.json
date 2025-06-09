@@ -37,5 +37,8 @@
     "announcement": "Congratulations to",
     "end_announcement": "who has collected all the Grimoires!",
     "return_to_lobby": "Return to Lobby"
-  }
+  },
+  "welcomeMessage": "Welcome to the Korean Party Game!",
+  "homePageDescription": "This is a fun and interactive game where players can cast spells, collect grimoires, and compete against each other in a vibrant game world.",
+  "footerText": "This game is developed by a passionate team. Follow us on social media for the latest updates and events!"	
 }

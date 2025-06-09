@@ -37,5 +37,8 @@
     "announcement": "Félicitations à",
     "end_announcement": "qui a assemblé tous les Grimoires !",
     "return_to_lobby": "Retourner au Lobby"
-  }
+  },
+  "welcomeMessage": "Bienvenue dans le jeu de fête coréen !",
+  "homePageDescription": "C'est un jeu amusant et interactif où les joueurs peuvent lancer des sorts, collecter des grimoires et rivaliser les uns contre les autres dans un monde de jeu vibrant.",
+  "footerText": "Ce jeu est développé par une équipe passionnée. Suivez-nous sur les réseaux sociaux pour les dernières mises à jour et événements !"
 }
