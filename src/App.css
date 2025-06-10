@@ -441,3 +441,181 @@ button.secondary:hover, .logout-button:hover {
   padding-top: 1rem;
   min-height: 80px; /* Espace pour les boutons/mini-jeux */
 }
+
+/* ==========================================================================
+   Responsive Styles
+   ========================================================================== */
+
+/* Medium screens (tablets, large phones) */
+@media (max-width: 768px) {
+    .app-header {
+        padding: 0.8rem 1rem; /* Reduced padding */
+    }
+    .app-header h2 {
+        font-size: 1.3rem; /* Slightly smaller title */
+    }
+    .app-content {
+        padding: 1rem; /* Reduced padding */
+    }
+    .login-container, .profile-container, .lobby-container {
+        padding: 1.5rem; /* Reduced padding */
+        margin-left: 1rem; /* Add some margin for screen edges */
+        margin-right: 1rem;
+    }
+    button {
+        padding: 10px 20px; /* Slightly smaller buttons */
+        font-size: 0.9rem;
+    }
+    .form-group input {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    .game-item {
+        padding: 0.8rem 1rem;
+    }
+
+    /* Adjust game page layout for tablets */
+    .game-page-layout {
+        flex-direction: column;
+        align-items: stretch; /* Ensure panels take full width */
+        gap: 1rem;
+    }
+    .left-panel {
+        max-width: 100%; /* Allow left panel to take full width */
+        width: 100%; /* Explicit width */
+        position: static; /* Remove sticky positioning on smaller screens */
+        order: 2; /* Optionally move left panel below main panel */
+    }
+    .main-panel {
+        width: 100%; /* Explicit width */
+        order: 1; /* Optionally move main panel above left panel */
+    }
+    .game-board-layout {
+        height: auto; /* Adjust height constraints */
+        max-height: 60vh; /* Example: use viewport height percentage */
+        min-height: 400px; /* Ensure a minimum playable area */
+    }
+}
+
+/* Small screens (most phones) */
+@media (max-width: 480px) {
+    :root {
+        /* Optionally adjust base font size or other root variables if needed */
+        /* font-size: 14px; */ /* Example: Be cautious with global font size changes */
+    }
+    .app-header {
+        padding: 0.5rem;
+        flex-direction: column; /* Stack header items if they are too wide */
+        align-items: center; /* Center items when stacked */
+    }
+    .app-header h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem; /* Add space if stacked */
+    }
+    .user-info { /* Assuming .user-info is inside .app-header */
+        gap: 10px;
+        font-size: 0.8rem; /* Reduce font size for user info text */
+    }
+    .user-info .logout-button { /* Make logout button smaller in user-info */
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+
+    .app-content {
+        padding: 0.5rem;
+    }
+    .app-footer {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .login-container, .profile-container, .lobby-container {
+        padding: 1rem;
+        max-width: calc(100% - 1rem); /* Ensure it doesn't touch screen edges */
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+
+    button {
+        padding: 10px 15px; /* Further refined button padding */
+        font-size: 0.85rem;
+    }
+    .form-group label {
+        font-size: 0.9rem; /* Adjust label size if needed */
+    }
+    .form-group input {
+        padding: 10px; /* Keep padding tappable */
+        font-size: 0.85rem;
+    }
+
+    .game-item {
+        padding: 0.6rem 0.8rem;
+        flex-direction: column; /* Stack game item content */
+        align-items: flex-start;
+    }
+    .game-item-actions {
+        margin-top: 0.5rem; /* Space before action buttons */
+        width: 100%; /* Make buttons take full width or align as needed */
+        justify-content: flex-end; /* Align to the end, or space-around */
+    }
+    .game-item-actions button {
+        flex-grow: 1; /* Example: make buttons in game item actions take equal space */
+        margin-left: 5px; /* Add some space between buttons */
+        margin-right: 5px;
+    }
+    .game-item-actions button:first-child {
+        margin-left: 0;
+    }
+    .game-item-actions button:last-child {
+        margin-right: 0;
+    }
+
+    /* Player HUD adjustments - if global styles apply */
+    .player-hud {
+        padding: 0.5rem;
+        flex-direction: column; /* Example: Stack HUD items */
+        align-items: stretch; /* Stretch items to full width */
+        gap: 0.5rem;
+    }
+    .hud-item {
+        margin-bottom: 0; /* Handled by gap in flex container */
+    }
+    .mana-bar-container, .fragments-container {
+        align-items: center; /* Center align items in stacked HUD */
+    }
+    .mana-bar {
+        width: 100%; /* Make mana bar full width */
+        max-width: 200px; /* Max width for aesthetics */
+    }
+    .fragments {
+        justify-content: space-around; /* Distribute fragments */
+        width: 100%;
+        max-width: 250px;
+    }
+    .fragments span {
+        font-size: 1rem; /* Slightly smaller fragment text */
+    }
+
+    /* Game Page Layout for small screens */
+    .game-page-layout {
+        gap: 0.5rem; /* Further reduce gap for very small screens */
+    }
+    .left-panel {
+        order: 2; /* Ensures HUD and Quest Tracker are below game on small screens */
+        /* width: 100% is inherited from 768px breakpoint */
+    }
+    .main-panel {
+        order: 1;
+        /* width: 100% is inherited from 768px breakpoint */
+    }
+    .game-board-layout {
+        min-height: 300px; /* Adjusted min-height for mobile */
+        max-height: 55vh; /* Adjusted max-height for mobile */
+        /* height: auto; is inherited */
+    }
+    .phaser-game-container {
+        min-height: 250px; /* Ensure a minimum game canvas area, this is good */
+        /* flex-grow: 1; is inherited and will fill the game-board-layout */
+    }
+}

@@ -4,21 +4,27 @@
   position: absolute;
   bottom: 20px;
   left: 20px;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.7); /* Original background */
   color: white;
   padding: 15px;
   border-radius: 10px;
-  border: 2px solid #a445ed;
-  font-family: 'Arial', sans-serif;
+  border: 2px solid var(--accent-color); /* Using CSS variable for consistency */
+  font-family: 'Poppins', 'Arial', sans-serif; /* Using Poppins from App.css as primary */
   z-index: 100;
   min-width: 250px;
+  /* display: flex; /* Already set in App.css, but good to be aware for local context */
+  /* justify-content: space-around; /* From App.css */
+  /* align-items: center; /* From App.css */
+  /* These flex properties from App.css will apply and control the layout of .hud-mana and .hud-grimoires */
 }
 
 .player-hud h3 {
   margin-top: 0;
-  color: #ffc107;
-  border-bottom: 1px solid #ffc107;
+  margin-bottom: 0.5rem; /* Added for spacing */
+  color: var(--accent-hover); /* Using CSS variable */
+  border-bottom: 1px solid var(--accent-hover); /* Using CSS variable */
   padding-bottom: 5px;
+  font-size: 1.1em; /* Base font size */
 }
 
 .player-hud ul {
@@ -29,12 +35,91 @@
 
 .player-hud li {
   margin-bottom: 5px;
+  font-size: 0.9em; /* Base font size */
+}
+
+.hud-mana, .hud-grimoires { /* Common styling for HUD sections */
+  text-align: center;
+  padding: 0.5rem;
+  /* App.css applies flex properties to .player-hud. These children will be flex items. */
 }
 
 .hud-mana p {
     font-size: 1.5em;
     font-weight: bold;
-    color: #4dd0e1;
+    color: #4dd0e1; /* Keeping specific color, can be changed to a variable if desired */
     text-align: center;
     margin: 5px 0;
+}
+
+/* ==========================================================================
+   Responsive Styles for PlayerHUD
+   ========================================================================== */
+
+/* Medium screens (tablets, large phones) */
+@media (max-width: 768px) {
+  .player-hud {
+    padding: 10px; /* Reduced padding */
+    min-width: 200px; /* Slightly smaller min-width */
+    bottom: 15px;
+    left: 15px;
+    /* .player-hud itself will still be flex row by default from App.css if not overridden */
+  }
+  .player-hud h3 {
+    font-size: 1em; /* Slightly smaller headings */
+  }
+  .hud-mana p {
+    font-size: 1.3em; /* Slightly smaller mana text */
+  }
+  .player-hud li {
+    font-size: 0.85em; /* Smaller list item text */
+  }
+}
+
+/* Small screens (most phones) */
+@media (max-width: 480px) {
+  /* App.css already applies:
+    .player-hud {
+      padding: 0.5rem; (this is ~8px)
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem; (this will handle spacing between .hud-mana and .hud-grimoires if they are direct children)
+    }
+    The `gap` property in App.css for .player-hud should handle spacing between items when flex-direction is column.
+    If .hud-item class was used on .hud-mana & .hud-grimoires, App.css would apply margin-bottom.
+    Since it's not, the `gap` on the parent .player-hud is preferred.
+    If `gap` is not supported or not working as expected, uncomment margin approach below.
+  */
+  .player-hud {
+    padding: 8px; /* Consistent with App.css 0.5rem or override if needed */
+    bottom: 10px;
+    left: 10px;
+    right: 10px; /* Allow it to span more horizontally */
+    width: auto; /* Override min-width to fill available space minus padding/margins */
+    min-width: 0;
+    /* background-color: rgba(30, 30, 30, 0.85); */ /* Example for different/more transparency, current rgba(0,0,0,0.7) is fine */
+  }
+
+  .hud-mana, .hud-grimoires {
+    padding: 0.3rem; /* Reduced internal padding */
+    width: 100%; /* Ensured by align-items: stretch on parent */
+    box-sizing: border-box;
+    text-align: center;
+    /* If `gap` on .player-hud in App.css is not effective, use this: */
+    /* margin-bottom: 0.5rem; */
+  }
+  /* .hud-mana:last-child, .hud-grimoires:last-child { */
+    /* margin-bottom: 0; */ /* Remove margin for the last item if using margin approach */
+  /* } */
+
+  .player-hud h3 {
+    font-size: 0.95em; /* Further reduced headings */
+  }
+  .hud-mana p {
+    font-size: 1.2em;
+  }
+  .player-hud li {
+    font-size: 0.8em; /* Smaller list item text */
+    word-break: break-word; /* Ensure long grimoire names wrap */
+  }
 }

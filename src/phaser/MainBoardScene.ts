@@ -87,7 +87,20 @@ export default class MainBoardScene extends Phaser.Scene {
     } else if (spellType === SpellType.TARGET_TILE) {
       this.input.setDefaultCursor('pointer');
       this.tileSprites.forEach(tileSprite => {
-        tileSprite.setInteractive(); // Make sure tiles are interactive
+        // tileSprite.setInteractive(); // Make sure tiles are interactive - This will be handled by the custom hit area below
+
+        // Set custom hit area for easier tapping
+        const hitAreaSize = 64; // Make tap target 64x64
+        tileSprite.setInteractive(
+            new Phaser.Geom.Rectangle(
+                -hitAreaSize / 2, // x relative to origin (center)
+                -hitAreaSize / 2, // y relative to origin (center)
+                hitAreaSize,    // width of hit area
+                hitAreaSize     // height of hit area
+            ),
+            Phaser.Geom.Rectangle.Contains
+        );
+
         // Add visual feedback for targetable tiles, e.g., highlight or pulse
         const tween = this.tweens.add({
           targets: tileSprite,
@@ -124,7 +137,7 @@ export default class MainBoardScene extends Phaser.Scene {
     if (this.currentTargetingType === SpellType.TARGET_TILE) {
       this.tileSprites.forEach(tileSprite => {
         tileSprite.setAlpha(1.0); // Reset alpha
-        // tileSprite.disableInteractive(); // Optionally disable if only interactive for targeting
+        tileSprite.disableInteractive(); // Disable interaction when not in targeting mode
       });
     }
     this.currentTargetingType = null;

@@ -5,81 +5,217 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6); /* Slightly darker overlay */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Ensure it's above other content */
+  z-index: 1000;
+  padding: 1rem; /* Add padding for very small screens so modal doesn't touch edges */
 }
 
 .modal-content {
-  background-color: white;
+  background-color: var(--card-bg); /* Use CSS variable from App.css */
+  color: var(--primary-text); /* Use CSS variable */
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 12px; /* Match App.css container style */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Enhanced shadow */
   width: 80%;
-  max-width: 500px;
-  max-height: 80vh;
+  max-width: 600px; /* Increased max-width slightly */
+  max-height: 85vh; /* Increased max-height slightly */
   overflow-y: auto;
-  position: relative; /* For close button positioning */
+  position: relative;
+  border-top: 3px solid var(--accent-color); /* Match App.css container style */
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color); /* Use CSS variable */
   padding-bottom: 10px;
   margin-bottom: 15px;
 }
 
 .modal-title {
   margin: 0;
-  font-size: 1.5em;
+  font-size: 1.6em; /* Slightly larger base title */
+  color: var(--accent-color); /* Use CSS variable */
 }
 
 .modal-close-button {
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: 2em; /* Larger close button */
   cursor: pointer;
+  color: var(--secondary-text); /* Use CSS variable */
+  padding: 0; /* Remove default padding */
+  line-height: 1; /* Ensure proper vertical alignment */
+}
+.modal-close-button:hover {
+  color: var(--primary-text);
 }
 
 .modal-body input[type="text"] {
-  width: calc(100% - 22px); /* Account for padding/border */
-  padding: 10px;
+  width: calc(100% - 22px);
+  padding: 12px; /* Match App.css input style */
   margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid var(--border-color); /* Use CSS variable */
+  border-radius: 8px; /* Match App.css input style */
+  background-color: var(--secondary-bg); /* Use CSS variable */
+  color: var(--primary-text); /* Use CSS variable */
+  font-size: 1rem; /* Match App.css input style */
 }
+.modal-body input[type="text"]:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.3); /* Match App.css focus */
+}
+
+/* Specific container for create game elements */
+.create-game-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+.create-game-section input[type="text"] {
+  flex-grow: 1;
+  margin-bottom: 0; /* Remove margin as gap is used */
+}
+.create-game-section button {
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
 
 .modal-body button {
-  padding: 10px 15px;
-  margin-right: 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #007bff;
-  color: white;
+  /* General button styling is inherited from App.css */
+  /* Specific overrides can be done here if needed */
+  margin-right: 0; /* Remove specific margin from original */
+  margin-left: 5px; /* Add consistent left margin */
+}
+.modal-body button:first-of-type { /* First button in a group */
+    margin-left: 0;
 }
 
-.modal-body button:hover {
-  background-color: #0056b3;
-}
 
 .modal-body ul {
   list-style-type: none;
   padding: 0;
+  max-height: 50vh; /* Give a max-height for the list itself */
+  overflow-y: auto; /* Make the list scrollable if it exceeds max-height */
 }
 
 .modal-body li {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  padding: 12px 0; /* Increased padding slightly */
+  border-bottom: 1px solid var(--border-color); /* Use CSS variable */
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px; /* Add gap for spacing */
 }
+.modal-body li span {
+    flex-grow: 1; /* Allow text to take available space */
+    word-break: break-word; /* Break long game names or host names */
+}
+.modal-body li div { /* Container for action buttons within a list item */
+    display: flex;
+    flex-shrink: 0; /* Prevent button container from shrinking */
+    gap: 8px; /* Space between buttons in a list item */
+}
+
 
 .modal-body li:last-child {
   border-bottom: none;
+}
+
+.modal-body .no-games-text { /* Class for "No games available" text */
+  color: var(--secondary-text);
+  text-align: center;
+  padding: 1rem 0;
+}
+
+
+/* ==========================================================================
+   Responsive Styles for GameLobbyModal
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 85vw;
+    max-width: 550px; /* Adjust max-width for tablets */
+    padding: 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.4rem;
+  }
+
+  .modal-body li {
+    padding: 10px 0;
+  }
+  /* Button sizes are generally handled by App.css media queries, verify if they need specific tweaks here */
+  .modal-body li button {
+    padding: 8px 10px; /* Slightly smaller buttons in list items if needed */
+    font-size: 0.8rem;
+  }
+  .create-game-section input[type="text"],
+  .create-game-section button {
+    font-size: 0.9rem; /* Adjust create game section font size */
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.5rem; /* Reduce padding for modal overlay on very small screens */
+  }
+  .modal-content {
+    width: 95vw; /* Modal takes more width */
+    padding: 1rem;
+    max-height: 90vh; /* Allow modal to be taller */
+  }
+
+  .modal-title {
+    font-size: 1.2rem;
+  }
+  .modal-close-button {
+    font-size: 1.8em; /* Ensure close button is still tappable */
+  }
+
+  .create-game-section {
+    flex-direction: column; /* Stack create game input and button */
+    align-items: stretch; /* Make input and button full width */
+  }
+  .create-game-section input[type="text"] {
+    margin-bottom: 10px; /* Add margin when stacked */
+    width: 100%; /* Ensure full width when stacked */
+  }
+  .create-game-section button {
+    width: 100%; /* Full width button */
+    margin-left: 0; /* Remove margin when stacked */
+  }
+
+
+  .modal-body ul {
+    max-height: 65vh; /* Adjust list max height */
+  }
+
+  .modal-body li {
+    flex-direction: column; /* Stack content within a list item */
+    align-items: stretch; /* Stretch items to full width */
+    padding: 0.8rem 0; /* Adjust padding */
+  }
+  .modal-body li span {
+    margin-bottom: 0.8rem; /* Space between text and buttons when stacked */
+    text-align: center; /* Center text when stacked */
+  }
+  .modal-body li div { /* Button container in list item */
+    flex-direction: column; /* Stack buttons within list item */
+    width: 100%; /* Make button container full width */
+    gap: 0.5rem; /* Gap between stacked buttons */
+  }
+  .modal-body li div button { /* Buttons within list items */
+    width: 100%; /* Make buttons full width */
+    padding: 10px 15px; /* Ensure they are chunky enough */
+    font-size: 0.9rem;
+    margin-left: 0; /* Remove margin when stacked */
+  }
 }

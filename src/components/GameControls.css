@@ -1,37 +1,85 @@
 /* src/components/GameControls.css */
 
 .game-controls {
-  position: absolute;
+  position: absolute; /* Consider changing if it conflicts with other bottom-aligned elements on mobile */
   bottom: 20px;
   right: 20px;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: var(--secondary-bg); /* Use CSS var */
   padding: 15px;
-  border-radius: 10px;
-  border: 2px solid #a445ed;
+  border-radius: 12px; /* Match App.css */
+  border: 1px solid var(--border-color); /* Use CSS var */
   z-index: 100;
-  color: white;
-  min-width: 200px;
+  color: var(--primary-text); /* Use CSS var */
+  min-width: 220px; /* Adjusted min-width */
   text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2); /* Consistent shadow */
+  font-family: 'Poppins', 'Arial', sans-serif; /* Use Poppins */
+}
+
+.game-controls p { /* Styling for the "wait turn" message */
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--secondary-text);
 }
 
 .game-controls button {
-  background-color: #ffc107;
-  color: black;
-  border: none;
-  padding: 10px 20px;
-  font-size: 1em;
-  font-weight: bold;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  /* Global button styles from App.css will apply. */
+  /* Specific overrides here if needed, e.g., for width or margin if multiple buttons. */
+  width: 100%; /* Make button full width of the container */
 }
 
-.game-controls button:hover:not(:disabled) {
-  background-color: #ffda73;
+/* .game-controls button:hover:not(:disabled) {
+  background-color: #ffda73; // App.css handles hover
 }
 
 .game-controls button:disabled {
-  background-color: #555;
+  background-color: #555; // App.css handles disabled
   color: #aaa;
   cursor: not-allowed;
+} */
+
+/* ==========================================================================
+   Responsive Styles for GameControls
+   ========================================================================== */
+
+@media (max-width: 768px) { /* Tablet */
+  .game-controls {
+    min-width: 200px;
+    padding: 12px;
+    bottom: 15px;
+    right: 15px;
+  }
+  .game-controls p {
+    font-size: 0.85em;
+  }
+  /* Button font size and padding will be handled by App.css responsive styles */
+}
+
+@media (max-width: 480px) { /* Mobile */
+  .game-controls {
+    /* For mobile, consider making it full width at the bottom or part of a bottom bar */
+    position: fixed; /* Fixed to viewport bottom */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    border-radius: 0; /* Edge-to-edge */
+    border-left: none;
+    border-right: none;
+    /* border-bottom: none; */ /* Can keep top border if desired */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2); /* Shadow on top when at bottom */
+    z-index: 1000; /* Ensure it's above other game elements but potentially below modals */
+  }
+
+  .game-controls p {
+    font-size: 0.8em;
+    padding: 5px 0; /* Add some padding to text when it's full width */
+  }
+
+  .game-controls button {
+    padding: 12px 15px; /* Ensure good tap size, might override App.css if needed */
+    font-size: 0.95rem; /* Ensure text is readable */
+  }
 }

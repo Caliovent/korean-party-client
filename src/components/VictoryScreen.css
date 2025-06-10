@@ -6,56 +6,122 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.85); /* Darker overlay for more focus */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 200;
+  z-index: 2000; /* Highest z-index */
   backdrop-filter: blur(8px);
+  padding: 1rem; /* Add padding for screen edges */
+  box-sizing: border-box;
 }
 
 .victory-box {
-  background: radial-gradient(circle, rgba(63,33,96,1) 0%, rgba(30,15,45,1) 100%);
-  padding: 40px 60px;
+  background: radial-gradient(circle, var(--accent-color) 0%, #1e0f2f 100%); /* Use CSS var */
+  padding: 30px 40px; /* Adjusted padding */
   border-radius: 20px;
   text-align: center;
-  color: white;
-  border: 3px solid #ffc107;
-  box-shadow: 0 0 30px rgba(255, 193, 7, 0.6);
+  color: var(--primary-text); /* Use CSS var */
+  border: 3px solid var(--accent-hover); /* Use CSS var */
+  box-shadow: 0 0 40px rgba(155, 89, 182, 0.7); /* Direct RGB for accent color's shadow */
+  width: 90%; /* Relative width */
+  max-width: 600px; /* Max width for the box */
+  box-sizing: border-box;
 }
 
 .victory-box h1 {
-  font-size: 3em;
-  color: #ffc107;
+  font-size: 2.8em; /* Adjusted font size */
+  color: var(--accent-hover); /* Use CSS var */
   margin-bottom: 20px;
-  text-shadow: 0 0 10px #ffc107;
+  text-shadow: 0 0 10px var(--accent-hover); /* Use CSS var */
 }
 
 .winner-announcement {
-  font-size: 1.2em;
-  margin-bottom: 30px;
+  font-size: 1.1em; /* Adjusted font size */
+  margin-bottom: 25px; /* Adjusted margin */
+  line-height: 1.5; /* Improve readability */
 }
 
 .winner-name {
   display: block;
-  font-size: 1.8em;
+  font-size: 1.7em; /* Adjusted font size */
   font-weight: bold;
-  color: #a445ed;
+  color: var(--primary-text); /* Brighter color for winner name */
   margin: 10px 0;
+  padding: 5px;
+  background-color: rgba(255,255,255,0.1); /* Slight highlight */
+  border-radius: 5px;
 }
 
 .lobby-button {
-  background-color: #ffc107;
-  color: black;
-  border: none;
-  padding: 15px 30px;
-  font-size: 1.1em;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s;
+  /* Will inherit from App.css global button styles */
+  /* background-color: #ffc107; */
+  /* color: black; */
+  /* border: none; */
+  /* padding: 15px 30px; */ /* App.css has 12px 24px */
+  /* font-size: 1.1em; */ /* App.css has 1rem */
+  /* font-weight: bold; */ /* App.css has 600 */
+  /* border-radius: 8px; */
+  /* cursor: pointer; */
+  /* transition: transform 0.2s; */ /* App.css has transitions */
+  /* Override specific properties if App.css defaults are not desired */
+  padding: 15px 30px; /* Keep larger padding for this prominent button */
+  font-size: 1.1rem; /* Keep slightly larger font size */
 }
 
-.lobby-button:hover {
-  transform: scale(1.05);
+/* .lobby-button:hover {
+  transform: scale(1.05); // App.css has translateY
+} */
+
+
+/* ==========================================================================
+   Responsive Styles for VictoryScreen
+   ========================================================================== */
+
+@media (max-width: 768px) { /* Tablet */
+  .victory-box {
+    padding: 25px 30px;
+    width: 85vw;
+    max-width: 500px;
+  }
+  .victory-box h1 {
+    font-size: 2.5em;
+  }
+  .winner-announcement {
+    font-size: 1em;
+  }
+  .winner-name {
+    font-size: 1.5em;
+  }
+  .lobby-button {
+    padding: 12px 25px; /* Adjust padding */
+    font-size: 1rem; /* Adjust font size */
+  }
+}
+
+@media (max-width: 480px) { /* Mobile */
+  .victory-container {
+    padding: 0.5rem; /* Reduce padding on smallest screens */
+  }
+  .victory-box {
+    padding: 20px 15px; /* Further reduce padding */
+    width: 95vw; /* Take more width */
+    border-radius: 15px;
+  }
+  .victory-box h1 {
+    font-size: 2em;
+    margin-bottom: 15px;
+  }
+  .winner-announcement {
+    font-size: 0.9em;
+    margin-bottom: 20px;
+  }
+  .winner-name {
+    font-size: 1.3em;
+  }
+  .lobby-button {
+    width: 100%; /* Make button full width */
+    padding: 12px 20px; /* Adjust padding */
+    font-size: 1rem; /* Ensure still readable */
+  }
 }

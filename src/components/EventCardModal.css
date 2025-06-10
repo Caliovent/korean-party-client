@@ -1,51 +1,111 @@
+/* src/components/EventCardModal.css */
 .event-card-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.75); /* Slightly darker overlay */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Ensure it's above other content */
+  z-index: 1050; /* Ensure it's above other modals if any, and game UI */
+  padding: 1rem; /* Add padding for small screens */
 }
 
 .event-card-modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
+  background-color: var(--card-bg); /* Use CSS variable */
+  color: var(--primary-text); /* Use CSS variable */
+  padding: 25px; /* Increased padding */
+  border-radius: 12px; /* Match App.css container style */
   text-align: center;
   position: relative;
-  max-width: 400px; /* Adjust as needed */
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  width: 90%; /* Relative width */
+  max-width: 450px; /* Adjusted max-width */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3); /* Enhanced shadow */
+  border-top: 3px solid var(--accent-color); /* Match App.css container style */
+  max-height: 90vh; /* Max height for viewport */
+  overflow-y: auto; /* Scroll if content overflows */
 }
 
 .event-card-modal-close {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 15px;
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2em; /* Larger close button */
   cursor: pointer;
+  color: var(--secondary-text); /* Use CSS variable */
+  padding: 5px;
+  line-height: 1;
+}
+.event-card-modal-close:hover {
+  color: var(--primary-text);
 }
 
 .event-card-modal-image {
   max-width: 100%;
   height: auto;
-  max-height: 200px; /* Adjust as needed */
-  margin-bottom: 15px;
-  border-radius: 4px;
+  max-height: 250px; /* Adjusted max-height for image */
+  margin-bottom: 20px; /* Increased margin */
+  border-radius: 8px; /* Rounded corners for image */
+  border: 1px solid var(--border-color); /* Optional border for image */
 }
 
 .event-card-modal-title {
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1.5em;
+  margin-bottom: 15px; /* Increased margin */
+  font-size: 1.7em; /* Larger title */
+  color: var(--accent-color); /* Use CSS variable */
 }
 
 .event-card-modal-description {
   font-size: 1em;
-  color: #333;
+  color: var(--primary-text); /* Ensure good contrast */
+  line-height: 1.6; /* Improve readability */
+  margin-bottom: 10px; /* Add margin if there were buttons below */
+}
+
+/* ==========================================================================
+   Responsive Styles for EventCardModal
+   ========================================================================== */
+
+@media (max-width: 768px) { /* Tablet */
+  .event-card-modal-content {
+    max-width: 400px; /* Adjust max-width for tablets */
+    padding: 20px;
+  }
+  .event-card-modal-title {
+    font-size: 1.5em;
+  }
+  .event-card-modal-description {
+    font-size: 0.95em;
+  }
+  .event-card-modal-image {
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 480px) { /* Mobile */
+  .event-card-modal-content {
+    width: 95%; /* More width on small mobiles */
+    padding: 15px;
+    max-height: 85vh;
+  }
+  .event-card-modal-title {
+    font-size: 1.3em;
+  }
+  .event-card-modal-description {
+    font-size: 0.9em;
+  }
+  .event-card-modal-image {
+    max-height: 180px; /* Smaller image on mobile */
+    margin-bottom: 15px;
+  }
+  .event-card-modal-close {
+    font-size: 1.8em; /* Ensure still tappable */
+    top: 5px;
+    right: 10px;
+  }
 }

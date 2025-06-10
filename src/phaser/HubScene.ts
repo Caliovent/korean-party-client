@@ -1,5 +1,6 @@
 // src/phaser/HubScene.ts
 import Phaser from 'phaser';
+import nipplejs from 'nipplejs';
 import { db, auth } from '../firebaseConfig'; // Firebase setup
 import { doc, setDoc, onSnapshot, collection, query, where, deleteDoc, Unsubscribe, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
@@ -22,6 +23,8 @@ export class HubScene extends Phaser.Scene {
   // Map to store target positions for other players for interpolation
   private remotePlayerTargets: Map<string, Phaser.Math.Vector2> = new Map();
   private firestoreListenerUnsubscribe?: Unsubscribe;
+  private joystick?: nipplejs.JoystickManager;
+  private joystickContainer?: HTMLElement;
 
   constructor() {
     super({ key: 'HubScene' });
@@ -77,13 +80,82 @@ export class HubScene extends Phaser.Scene {
         }
     }
 
+    // Joystick and Click-to-move input
+    if (this.sys.game.device.input.touch) {
+        const gameContainer = this.sys.game.canvas.parentElement;
+        if (gameContainer) {
+            this.joystickContainer = document.createElement('div');
+            this.joystickContainer.id = 'joystick-zone';
+            this.joystickContainer.style.position = 'absolute';
+            this.joystickContainer.style.left = '0px'; // Covers left half
+            this.joystickContainer.style.top = '50%'; // Covers bottom-left quadrant
+            this.joystickContainer.style.width = '50%';
+            this.joystickContainer.style.height = '50%';
+            this.joystickContainer.style.pointerEvents = 'auto'; // Crucial for touch
+            // this.joystickContainer.style.backgroundColor = 'rgba(255,0,0,0.1)'; // For debugging zone visibility
+            gameContainer.appendChild(this.joystickContainer);
 
-    // Click-to-move input
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.player || !this.player.body) return;
-      this.targetPosition = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
-      this.physics.moveTo(this.player, this.targetPosition.x, this.targetPosition.y, this.moveSpeed);
-    });
+            const joystickOptions: nipplejs.JoystickManagerOptions = {
+                zone: this.joystickContainer,
+                mode: 'static',
+                position: { left: '30%', top: '50%' }, // Position within the zone (left: 15% of 50% screen = 7.5% of screen, top: 80% of 50% screen = 40% of screen from top of zone) - this means bottom left of the zone
+                color: 'grey',
+                size: 100
+            };
+
+            this.joystick = nipplejs.create(joystickOptions);
+
+            this.joystick.on('move', (_evt, data) => {
+                if (!this.player || !this.player.body) return;
+
+                const angle = data.angle.radian;
+                const force = data.force;
+                const speed = this.moveSpeed * force;
+
+                const velocityX = Math.cos(angle) * speed;
+                const velocityY = Math.sin(angle) * speed;
+
+                this.player.body.setVelocity(velocityX, velocityY);
+
+                this.targetPosition = undefined;
+                this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+            });
+
+            this.joystick.on('end', () => {
+                if (!this.player || !this.player.body) return;
+                this.player.body.setVelocity(0, 0);
+                this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+            });
+        }
+
+        // Conditional click-to-move for touch devices (e.g., only if joystick not active or on right side of screen)
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Only allow click-to-move if the click is NOT in the joystick's zone
+            // This assumes joystick is in the left half. A more robust check might involve pointer.x relative to joystickContainer bounds.
+            if (pointer.x < this.cameras.main.width / 2) {
+                 // If joystick is potentially active (e.g., finger is on it), NippleJS might stop propagation.
+                 // However, to be safe, we can check if a Nipple is active if the API supports it.
+                 // For now, simply don't do click-to-move if the click is in the joystick's general area.
+                const activeNipple = this.joystick?.get(0); // Attempt to get the first nipple
+                if (activeNipple && activeNipple.frontPosition) { // frontPosition exists if finger is on joystick
+                    return;
+                }
+            }
+
+            // If outside joystick area or joystick not active, allow click to move
+            if (!this.player || !this.player.body) return;
+            this.targetPosition = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+            this.physics.moveTo(this.player, this.targetPosition.x, this.targetPosition.y, this.moveSpeed);
+        });
+
+    } else {
+        // Original click-to-move for non-touch devices
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            if (!this.player || !this.player.body) return;
+            this.targetPosition = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+            this.physics.moveTo(this.player, this.targetPosition.x, this.targetPosition.y, this.moveSpeed);
+        });
+    }
 
     // Listen for other players
     this.listenForOtherPlayers();
@@ -217,6 +289,16 @@ export class HubScene extends Phaser.Scene {
     if (this.firestoreListenerUnsubscribe) {
       this.firestoreListenerUnsubscribe();
     }
+    if (this.joystick) {
+        this.joystick.destroy();
+        this.joystick = undefined;
+    }
+    if (this.joystickContainer && this.joystickContainer.parentElement) {
+        this.joystickContainer.parentElement.removeChild(this.joystickContainer);
+        this.joystickContainer = undefined;
+    }
     this.events.off('shutdown', this.shutdown, this);
+    // Ensure pointerdown is also turned off to prevent potential leaks if scene restarts
+    this.input.off('pointerdown');
   }
 }
