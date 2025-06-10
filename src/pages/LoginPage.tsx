@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/lobby');
+      navigate('/hub');
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
     setError(null);
     try {
       await signInAnonymously(auth);
-      navigate('/lobby');
+      navigate('/hub');
     } catch (err: any) {
       setError(err.message);
       console.error(err);
