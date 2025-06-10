@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import LobbyPage from './pages/LobbyPage.tsx';
 import GamePage from './pages/GamePage.tsx';
+import HubPage from './pages/HubPage.tsx'; // + Import HubPage
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import './index.css';
 import './i18n';
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
         children: [
           { path: 'profile', element: <ProfilePage /> },
           { path: 'lobby', element: <LobbyPage /> },
+          { path: 'hub', element: <HubPage /> }, // + Add HubPage route
           { path: 'game/:gameId', element: <GamePage /> },
         ],
       },
