@@ -16,6 +16,7 @@ export interface Player {
   position: number;
   mana: number;
   grimoires: Grimoire[];
+  effects?: { type: 'SHIELDED', duration?: number }[];
 }
 
 export type GameStatus = "waiting" | "playing" | "finished";
@@ -30,8 +31,9 @@ export interface Game {
   currentPlayerId: string;
   currentTurn: number;
   turnState: TurnState;
-  board: { type: string }[];
+  board: { type: string; trap?: 'RUNE_TRAP' | string; }[];
   lastDiceRoll: number | null;
+  lastEventCard: { titleKey: string, descriptionKey: string, GfxUrl: string } | null;
   lastSpellCast: {
     casterId: string;
     targetId: string;
