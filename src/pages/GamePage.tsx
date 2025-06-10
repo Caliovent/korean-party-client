@@ -1,7 +1,7 @@
 // src/pages/GamePage.tsx (modifié)
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react'; // +useRef
+import { useParams, useNavigate } from 'react-router-dom'; // +useNavigate
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
@@ -18,11 +18,13 @@ import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate(); // +useNavigate
   const [game, setGame] = useState<Game | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [selectedSpellId, setSelectedSpellId] = useState<SpellId | null>(null);
   // AJOUT : Nouvel état pour la cible
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  const gameNotFoundTimerRef = useRef<NodeJS.Timeout | null>(null); // For delayed redirect
 
 
   useEffect(() => {
@@ -41,11 +43,20 @@ const GamePage: React.FC = () => {
       } else {
         console.error("Game not found!");
         setGame(null);
+        // If game is not found, redirect to hub after a small delay
+        // This prevents redirecting if game is just loading or if user quickly navigates away
+        if (gameNotFoundTimerRef.current) clearTimeout(gameNotFoundTimerRef.current);
+        gameNotFoundTimerRef.current = setTimeout(() => {
+          navigate('/hub', { replace: true });
+        }, 3000); // 3 second delay
       }
     });
 
-    return () => unsubscribe();
-  }, [gameId, user]);
+    return () => {
+      unsubscribe();
+      if (gameNotFoundTimerRef.current) clearTimeout(gameNotFoundTimerRef.current); // Clear timer on unmount
+    };
+  }, [gameId, user, navigate]); // +navigate
 
   const handleSelectSpell = (spellId: SpellId) => {
     setSelectedSpellId(prev => (prev === spellId ? null : spellId));

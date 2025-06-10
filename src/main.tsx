@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage.tsx';
 import LobbyPage from './pages/LobbyPage.tsx';
 import WaitingRoomPage from './pages/WaitingRoomPage.tsx'; // Importer la nouvelle page
 import GamePage from './pages/GamePage.tsx';
+import HubPage from './pages/HubPage.tsx'; // + Import HubPage
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import './index.css';
 import './i18n';
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
         children: [
           { path: 'profile', element: <ProfilePage /> },
           { path: 'lobby', element: <LobbyPage /> },
+          { path: 'hub', element: <HubPage /> }, // + Add HubPage route
           // AJOUT : La nouvelle route pour la salle d'attente
           { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },
           { path: 'game/:gameId', element: <GamePage /> },

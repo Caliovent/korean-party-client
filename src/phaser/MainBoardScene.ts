@@ -150,7 +150,7 @@ export default class MainBoardScene extends Phaser.Scene {
     const oldState = this.gameState;
     this.gameState = newState;
 
-    if (!this.boardIsDrawn && this.gameState.players.length > 0 && this.gameState.board) {
+    if (!this.boardIsDrawn && this.gameState.players && this.gameState.players.length > 0 && this.gameState.board) {
       console.log('[Phaser] Drawing board for the first time.');
       // MODIFICATION : On passe 'board' à la fonction
       this.drawBoard(this.gameState.board);

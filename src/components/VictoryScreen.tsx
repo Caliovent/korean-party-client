@@ -14,7 +14,7 @@ const VictoryScreen: React.FC<VictoryScreenProps> = ({ winnerName }) => {
   const { t } = useTranslation();
 
   const handleReturnToLobby = () => {
-    navigate('/lobby');
+    navigate('/hub'); // Navigate to Hub
   };
 
   return (
