@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { auth, db } from '../firebaseConfig';
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { useAuth } from '../hooks/useAuth'; // Import useAuth
+import { getGuildById } from '../services/gameService'; // Import getGuildById
 
 // --- SOUS-COMPOSANT POUR LA SESSION DE RÉVISION (SRS) ---
 const ReviewSession: React.FC<{ items: any[], onFinish: () => void }> = ({ items, onFinish }) => {
@@ -63,33 +65,74 @@ const ReviewSession: React.FC<{ items: any[], onFinish: () => void }> = ({ items
 // --- COMPOSANT PRINCIPAL DE LA PAGE DE PROFIL ---
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
+  const { user: authUser, loading: authLoading } = useAuth(); // Use useAuth hook
+
   const [profile, setProfile] = useState<DocumentData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true); // Separate loading for profile doc
   const [isEditing, setIsEditing] = useState(false);
   const [newPseudo, setNewPseudo] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // General errors for profile page
   const [reviewItems, setReviewItems] = useState<any[] | null>(null);
   const [isLoadingReview, setIsLoadingReview] = useState(false);
 
+  // State for guild information
+  const [guildName, setGuildName] = useState<string | null>(null);
+  const [isLoadingGuildName, setIsLoadingGuildName] = useState<boolean>(false);
+  const [guildNameError, setGuildNameError] = useState<string | null>(null);
+
   // Effet pour charger les données du profil de l'utilisateur en temps réel
   useEffect(() => {
-    if (!auth.currentUser) {
-        setLoading(false);
-        setError("Utilisateur non connecté.");
+    // Note: auth.currentUser might be initially null, use authUser from hook instead for reliability
+    if (!authUser) {
+        setLoadingProfile(false);
+        // Error can be set if needed, or rely on auth hook to redirect/handle
         return;
     };
-    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    const userDocRef = doc(db, "users", authUser.uid);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
             setProfile(doc.data());
-            setNewPseudo(doc.data().pseudo);
+            setNewPseudo(doc.data().pseudo || ''); // Ensure pseudo is not undefined
         } else {
-            setError("Profil non trouvé.");
+            setError("Profil non trouvé."); // This error is for the Firestore profile document
         }
-        setLoading(false);
+        setLoadingProfile(false);
+    }, (err) => {
+        console.error("Error fetching profile snapshot:", err);
+        setError("Erreur de chargement du profil.");
+        setLoadingProfile(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [authUser]); // Depend on authUser from useAuth
+
+  // Effect to fetch guild name when user's guildId changes
+  useEffect(() => {
+    if (authUser && authUser.guildId) {
+      setIsLoadingGuildName(true);
+      setGuildName(null); // Reset previous guild name
+      setGuildNameError(null);
+      getGuildById(authUser.guildId)
+        .then(guildDetails => {
+          if (guildDetails) {
+            setGuildName(guildDetails.name);
+          } else {
+            setGuildNameError("Maison non trouvée ou détails indisponibles.");
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching guild details for profile:", err);
+          setGuildNameError("Erreur lors de la récupération des détails de la maison.");
+        })
+        .finally(() => {
+          setIsLoadingGuildName(false);
+        });
+    } else if (authUser && !authUser.guildId) {
+      // User is loaded but has no guild
+      setGuildName(null);
+      setIsLoadingGuildName(false);
+      setGuildNameError(null);
+    }
+  }, [authUser, authUser?.guildId]); // Depend on authUser and specifically guildId
 
   // Fonction pour gérer la mise à jour du pseudo
   const handleUpdatePseudo = async (e: React.FormEvent) => {
@@ -133,9 +176,11 @@ const ProfilePage: React.FC = () => {
     setReviewItems(null);
   };
 
-  if (loading) return <div>{t('loading', 'Chargement...')}</div>;
-  if (error && !profile) return <div className="error-message">{error}</div>;
-  if (!profile) return <div>{t('profileNotFound', "Profil non trouvé.")}</div>;
+  if (authLoading || loadingProfile) return <div>{t('loading', 'Chargement...')}</div>;
+  // Error from auth hook (e.g. not logged in) might be handled by a redirect in App.tsx or useAuth itself
+  if (!authUser) return <div>{t('notLoggedIn', 'Veuillez vous connecter pour voir votre profil.')}</div>;
+  if (error && !profile) return <div className="error-message">{error}</div>; // Error fetching profile document
+  if (!profile) return <div>{t('profileNotFound', "Profil de l'utilisateur non trouvé.")}</div>;
 
   return (
     <div className="profile-container">
@@ -146,6 +191,22 @@ const ProfilePage: React.FC = () => {
         <p><strong>Pseudo:</strong> {profile.pseudo}</p>
         <p><strong>Niveau:</strong> {profile.level}</p>
         <p><strong>XP:</strong> {profile.xp}</p>
+        {/* Guild Information Display */}
+        {authUser.guildId && (
+          isLoadingGuildName ? (
+            <p>{t('loadingGuildName', 'Chargement du nom de la maison...')}</p>
+          ) : guildNameError ? (
+            <p style={{ color: 'red' }}>{guildNameError}</p>
+          ) : guildName ? (
+            <p><strong>{t('guildMembership', 'Membre de la Maison')}:</strong> {guildName}</p>
+          ) : (
+            // This case might occur if guildId exists but fetch returned null and no error
+            <p>{t('guildDetailsUnavailable', 'Détails de la maison non disponibles.')}</p>
+          )
+        )}
+        {!authUser.guildId && !isLoadingGuildName && ( // Ensure not to show this while guildId might still be loading via authUser
+          <p>{t('noGuildAffiliation', "N'appartient à aucune maison.")}</p>
+        )}
       </div>
 
       <button onClick={() => setIsEditing(!isEditing)}>
