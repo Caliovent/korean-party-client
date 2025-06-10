@@ -1,54 +1,15 @@
-# React + TypeScript + Vite
+# Korean Party - L'Académie K-Mage
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bienvenue dans le projet "Korean Party", un jeu en ligne multijoueur conçu pour rendre l'apprentissage du coréen immersif, social et amusant.
 
-Currently, two official plugins are available:
+**Statut Actuel du Projet :** En phase Bêta de développement.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Ce document est le point d'entrée principal de la documentation du projet. Pour comprendre la vision, l'architecture et les mécaniques du jeu, veuillez consulter les documents détaillés dans le dossier `/docs`.
 
-## Expanding the ESLint configuration
+## Table des Matières de la Documentation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+1.  **[Vision et Concept du Jeu](./docs/01_Vision_et_Concept.md)** : Découvrez la vision globale, le public cible et les piliers de conception qui guident le projet.
+2.  **[Architecture Technique](./docs/02_Architecture_Technique.md)** : Comprenez les choix technologiques, la structure du backend et le modèle de données.
+3.  **[Mécaniques de Gameplay](./docs/03_Gameplay_Mecaniques.md)** : Plongez dans le détail du fonctionnement du jeu, du Hub persistant au plateau de jeu et aux mini-jeux.
+4.  **[Feuille de Route & Kanban](./docs/04_Feuille_de_Route_Kanban.md)** : Suivez l'état d'avancement du projet, les tâches terminées et les prochaines étapes.
+5.  **[Guide du Développeur](./docs/05_Guide_Developpeur.md)** : Retrouvez les instructions de setup, les conventions de code et les principes de développement à respecter.
