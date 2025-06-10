@@ -11,7 +11,7 @@ import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
 import type { Game, Player } from '../types/game';
-import Spellbook from '../components/spellBook';
+import Spellbook from "../components/Spellbook";
 // import type { SpellId } from '../data/spells'; // Importer le type SpellId - Already imported above
 import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
 import EventCardModal from '../components/EventCardModal'; // Import the modal
