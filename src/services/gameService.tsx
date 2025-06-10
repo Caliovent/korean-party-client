@@ -3,7 +3,10 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { SpellId } from '../data/spells'; // Importer le type
 import { app } from '../firebaseConfig';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import type { Guild } from '../types/guild'; // Importer le type Guild
 const functions = getFunctions(app, 'europe-west1');
+const db = getFirestore(app);
 
 /**
  * Appelle la Cloud Function pour lancer le dé pour le joueur actuel.
@@ -47,5 +50,22 @@ export const castSpell = async (gameId: string, spellId: SpellId, targetId: stri
     console.log(`Cloud Function 'castSpell' (${spellId}) called on target ${targetId}`);
   } catch (error) {
     console.error("Error calling castSpell function:", error);
+  }
+};
+
+/**
+ * Fetches all guilds from Firestore.
+ * @returns A promise that resolves to an array of Guild objects.
+ */
+export const getGuilds = async (): Promise<Guild[]> => {
+  try {
+    const guildsCollection = collection(db, 'guilds');
+    const guildSnapshot = await getDocs(guildsCollection);
+    const guildList = guildSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guild));
+    console.log('Fetched guilds:', guildList);
+    return guildList;
+  } catch (error) {
+    console.error("Error fetching guilds:", error);
+    return [];
   }
 };

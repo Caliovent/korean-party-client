@@ -41,6 +41,7 @@ export class HubScene extends Phaser.Scene {
     this.load.image('player_avatar', 'assets/player.png');
     this.load.image('other_player_avatar', 'assets/player.png'); // Can be a different asset or tinted
     this.load.image('game_portal', 'http://labs.phaser.io/assets/sprites/orb-red.png'); // Placeholder for portal/NPC
+    this.load.image('guild_panel', 'http://labs.phaser.io/assets/sprites/orb-green.png'); // Placeholder for guild panel
   }
 
   create() {
@@ -98,6 +99,15 @@ export class HubScene extends Phaser.Scene {
 
     // Handle scene shutdown to remove player from Firestore
     this.events.on('shutdown', this.shutdown, this);
+
+    // Add Guild Panel
+    const guildPanelX = 100; // Example position
+    const guildPanelY = this.cameras.main.height / 2;
+    const guildPanelSprite = this.add.sprite(guildPanelX, guildPanelY, 'guild_panel').setInteractive();
+    guildPanelSprite.on('pointerdown', () => {
+      console.log('Guild panel clicked');
+      this.game.events.emit('openGuildManagementModal');
+    });
   }
 
   updatePlayerPositionInFirestore(x: number, y: number) {
