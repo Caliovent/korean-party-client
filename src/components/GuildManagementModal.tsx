@@ -202,20 +202,19 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     if (user && user.guildId) {
       // User is in a guild - Show guild details or management options
       if (isLoadingGuildDetails) {
-        return <p>Loading your guild details...</p>;
+        return <p>Loading your guild details...</p>; // TODO: Style with a loading indicator class
       }
       if (guildDetailsError) {
-        return <p style={{ color: 'red' }}>Error: {guildDetailsError}</p>;
+        return <p className="error-message">Error: {guildDetailsError}</p>;
       }
       if (currentGuildDetails) {
         return (
-          <div style={{ textAlign: 'left' }}>
+          <div className="guild-details-container"> {/* Use a class for styling this section */}
             <h3>{currentGuildDetails.name} [{currentGuildDetails.tag}]</h3>
             <h4>Membres ({currentGuildDetails.members.length}):</h4>
             {currentGuildDetails.members && currentGuildDetails.members.length > 0 ? (
-              <ul style={{ listStyleType: 'none', paddingLeft: '10px' }}>
+              <ul className="guild-member-list"> {/* Class for member list */}
                 {currentGuildDetails.members.map((member, index) => (
-                  // Assuming member is a string (user ID or name). If it's an object, adjust accordingly.
                   <li key={index}>{typeof member === 'string' ? member : JSON.stringify(member)}</li>
                 ))}
               </ul>
@@ -225,27 +224,23 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
             <button
               onClick={handleLeaveGuild}
               disabled={isLeavingGuild}
-              style={{ marginTop: '15px', backgroundColor: 'red', color: 'white' }}
+              className="button-base delete-button" // Using base and error/delete button styles
+              style={{ marginTop: 'calc(var(--spacing-unit) * 3)' }}
             >
               {isLeavingGuild ? 'Départ en cours...' : 'Quitter la Maison'}
             </button>
-            {leaveGuildError && <p style={{ color: 'red', marginTop: '10px' }}>{leaveGuildError}</p>}
-            {/* leaveGuildSuccessMessage is handled by the view changing */}
+            {leaveGuildError && <p className="error-message" style={{ marginTop: 'calc(var(--spacing-unit) * 2)' }}>{leaveGuildError}</p>}
           </div>
         );
       }
-      // If joinSuccessMessage is present, it means we just joined, and details might still be loading.
       if (joinSuccessMessage && !isLoadingGuildDetails && !guildDetailsError) {
-         // This case might occur if guild details fetch was too fast and returned null right after joining.
-         // Or if the user joined a guild that was immediately disbanded.
          return (
             <div>
-                <p style={{ color: 'green' }}>{joinSuccessMessage}</p>
+                <p className="success-message">{joinSuccessMessage}</p> {/* Use success class */}
                 <p>Les détails de votre maison sont en cours de chargement ou un problème est survenu.</p>
             </div>
          );
       }
-      // Fallback if currentGuildDetails is null for other reasons after loading and no error.
       return <p>Vous êtes membre d'une maison, mais ses détails n'ont pu être chargés. Elle a peut-être été dissoute.</p>;
     }
 
@@ -262,7 +257,8 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
                setJoinError(null);
                setJoinSuccessMessage(null);
              }}
-             style={{ marginBottom: '15px' }}
+             className="button-base" // Use base button style
+             style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}
            >
              Créer une Maison
            </button>
@@ -270,9 +266,10 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
 
         {/* Guild Creation Form */}
         {showCreateForm && (
-          <form onSubmit={handleCreateGuild} style={{ marginBottom: '20px', padding: '15px', border: '1px solid #eee', borderRadius: '5px' }}>
+          // Apply form-container styling if available, or style inline with variables
+          <form onSubmit={handleCreateGuild} className="guild-create-form" style={{ marginBottom: 'calc(var(--spacing-unit) * 4)', padding: 'calc(var(--spacing-unit) * 3)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
             <h3>Créer une nouvelle Maison</h3>
-            <div>
+            <div className="form-group">
               <label htmlFor="guildName">Nom de la Maison:</label>
               <input
                 id="guildName"
@@ -280,10 +277,10 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
                 value={guildName}
                 onChange={(e) => setGuildName(e.target.value)}
                 disabled={creatingGuild}
-                style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' }}
+                // Inputs will inherit styles from .form-group input in App.css or global input styles
               />
             </div>
-            <div>
+            <div className="form-group">
               <label htmlFor="guildTag">Tag de la Maison (3-5 chars):</label>
               <input
                 id="guildTag"
@@ -293,49 +290,49 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
                 disabled={creatingGuild}
                 minLength={3}
                 maxLength={5}
-                style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' }}
               />
             </div>
-            <button type="submit" disabled={creatingGuild} style={{ marginRight: '10px' }}>
-              {creatingGuild ? 'Création en cours...' : 'Soumettre la création'}
-            </button>
-            <button type="button" onClick={() => setShowCreateForm(false)} disabled={creatingGuild}>
-              Annuler
-            </button>
-            {createError && <p style={{ color: 'red', marginTop: '10px' }}>{createError}</p>}
+            <div className="form-actions"> {/* Wrapper for buttons */}
+              <button type="submit" disabled={creatingGuild} className="button-base">
+                {creatingGuild ? 'Création en cours...' : 'Soumettre la création'}
+              </button>
+              <button type="button" onClick={() => setShowCreateForm(false)} disabled={creatingGuild} className="button-base button-secondary">
+                Annuler
+              </button>
+            </div>
+            {createError && <p className="error-message" style={{ marginTop: 'calc(var(--spacing-unit) * 2)' }}>{createError}</p>}
           </form>
         )}
-        {createSuccessMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{createSuccessMessage}</p>}
-        {joinError && <p style={{ color: 'red', marginBottom: '15px' }}>{joinError}</p>}
-        {leaveGuildSuccessMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{leaveGuildSuccessMessage}</p>}
-        {/* Join success message is handled inside renderContent when user has a guildId */}
+        {createSuccessMessage && <p className="success-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{createSuccessMessage}</p>}
+        {joinError && <p className="error-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{joinError}</p>}
+        {leaveGuildSuccessMessage && <p className="success-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{leaveGuildSuccessMessage}</p>}
 
-        {/* Guild List Section - only if not showing create form and no guild */}
         {!showCreateForm && (
-          <>
+          <div className="guild-list-container"> {/* Class for styling this section */}
             <h3>Liste des Maisons</h3>
             {loadingGuilds && <p>Loading guilds...</p>}
-            {guildsError && <p style={{ color: 'red' }}>{guildsError}</p>}
+            {guildsError && <p className="error-message">{guildsError}</p>}
             {!loadingGuilds && !guildsError && guilds.length > 0 && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="styled-table" style={{ width: '100%'}}>
                 <thead>
                   <tr>
-                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Name</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Tag</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Members</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
+                    <th>Name</th>
+                    <th>Tag</th>
+                    <th>Members</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {guilds.map((guild) => (
                     <tr key={guild.id}>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{guild.name}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{guild.tag}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{guild.members.length}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      <td>{guild.name}</td>
+                      <td>{guild.tag}</td>
+                      <td>{guild.members.length}</td>
+                      <td>
                         <button
                           onClick={() => handleJoinGuild(guild.id, guild.name)}
                           disabled={joiningGuildId === guild.id || !!(user && user.guildId)}
+                          className="button-base" // Use base button style
                         >
                           {joiningGuildId === guild.id ? 'Joining...' : 'Rejoindre'}
                         </button>
@@ -348,18 +345,19 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
             {!loadingGuilds && !guildsError && guilds.length === 0 && (
               <p>Aucune maison n'est actuellement disponible pour rejoindre.</p>
             )}
-          </>
+          </div>
         )}
       </>
     );
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+    // Use .modal-overlay and .modal-content classes similar to GameLobbyModal.css
+    <div className="modal-overlay">
+      <div className="modal-content" style={{width: '600px'}}> {/* Added width here, can be a specific class if needed */}
         <h2>Guild Management</h2>
         {renderContent()}
-        <button onClick={onClose} style={{ marginTop: '20px' }}>Close</button>
+        <button onClick={onClose} className="button-base button-secondary" style={{ marginTop: 'calc(var(--spacing-unit) * 4)' }}>Close</button>
       </div>
     </div>
   );

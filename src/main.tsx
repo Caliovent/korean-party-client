@@ -39,12 +39,16 @@ const router = createBrowserRouter([
   },
 ]);
 
+import { ToastProvider } from './contexts/ToastContext'; // Import ToastProvider
+
 // La correction est ici : on enveloppe le RouterProvider
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Suspense fallback={<div>Loading...</div>}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider> {/* Wrap with ToastProvider */}
+          <RouterProvider router={router} />
+        </ToastProvider>
       </AuthProvider>
     </Suspense>
   </React.StrictMode>,

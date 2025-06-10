@@ -1,8 +1,69 @@
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+/* src/index.css */
+:root {
+  /* Colors */
+  --primary-color: #007bff; /* Example: Blue */
+  --secondary-color: #6c757d; /* Example: Gray */
+  --accent-color: #ffc107; /* Example: Yellow */
+  --success-color: #28a745; /* Example: Green */
+  --error-color: #dc3545; /* Example: Red */
+  --light-bg-color: #f8f9fa;
+  --dark-bg-color: #343a40;
+  --text-color: #212529;
+  --text-color-light: #f8f9fa; /* For dark backgrounds */
+  --disabled-opacity: 0.65;
+  --border-color: #dee2e6;
+
+  /* Game Specific Colors - to be reviewed if they should override App.css vars */
+  --game-primary-bg: #121212;
+  --game-secondary-bg: #1e1e1e;
+  --game-card-bg: #2a2a2a;
+  --game-primary-text: #e0e0e0;
+  --game-secondary-text: #a0a0a0;
+  --game-accent-color: #9b59b6; /* Violet */
+  --game-accent-hover: #8e44ad;
+  --game-border-color: #333;
+
+
+  /* Fonts */
+  --font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-size-base: 1rem; /* 16px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-lg: 1.25rem; /* 20px */
+  --line-height-base: 1.5;
+
+  /* Borders & Spacing */
+  --border-radius: 0.25rem; /* 4px */
+  --border-radius-lg: 0.5rem; /* 8px */
+  --spacing-unit: 0.5rem; /* 8px */
+  --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
+body {
+  margin: 0;
+  /* display: flex; place-items: center; min-width: 320px; */ /* These might be too restrictive for a general body */
+  min-height: 100vh;
+  font-family: var(--font-family-sans-serif);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-color); /* Default text color */
+  background-color: var(--light-bg-color); /* Default background */
+}
+
+/* General styling for links */
+a {
+  color: var(--primary-color);
+  text-decoration: none; /* Common practice, but can be overridden */
+}
+
+a:hover {
+  color: color-mix(in srgb, var(--primary-color) 80%, black);
+  text-decoration: underline;
+}
+
+/* Basic button styling - can be extended by .button-base or specific component styles */
+button {
+  font-family: inherit; /* Ensure buttons inherit font */
+  font-size: inherit;
+  cursor: pointer;
+}

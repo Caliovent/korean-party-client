@@ -2,7 +2,8 @@
 
 import Phaser from 'phaser';
 import type { Game, Player } from '../types/game'; // Ensure this matches the updated structure
-import { SpellType, type SpellId } from '../data/spells'; // Import SpellType
+import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Import SpellType and SPELL_DEFINITIONS
+import soundService from '../../services/soundService'; // Import SoundService
 
 // Updated TileConfig to match src/types/game.ts
 interface TileConfig {
@@ -143,9 +144,20 @@ export default class MainBoardScene extends Phaser.Scene {
       if (tile.trap && !this.trapSprites[index]) {
         // Add trap icon
         const trapIcon = this.add.sprite(position.x, position.y + 10, 'rune_trap_icon'); // Offset slightly
-        trapIcon.setScale(0.3); // Adjust scale as needed
-        trapIcon.setAlpha(0.8);
+        // Initial state for animation
+        trapIcon.setScale(0.1);
+        trapIcon.setAlpha(0.5);
         this.trapSprites[index] = trapIcon;
+
+        // Brief appearance animation
+        this.tweens.add({
+          targets: trapIcon,
+          scale: { from: 0.1, to: 0.3 }, // Target scale is 0.3
+          alpha: { from: 0.5, to: 0.8 }, // Target alpha is 0.8
+          duration: 300,
+          ease: 'Power2'
+        });
+        soundService.playSound('action_trap_set'); // Play trap set sound
       } else if (!tile.trap && this.trapSprites[index]) {
         // Remove trap icon
         this.trapSprites[index].destroy();
@@ -166,11 +178,21 @@ export default class MainBoardScene extends Phaser.Scene {
       if (isShielded && !this.shieldEffects[player.id]) {
         // Add shield effect
         const shieldSprite = this.add.sprite(playerSprite.x, playerSprite.y, 'shield_effect');
-        shieldSprite.setScale(0.7); // Adjust as needed
-        shieldSprite.setAlpha(0.6);
-        // Ensure shield is behind player sprite but above tiles/traps
+        // Initial state for animation
+        shieldSprite.setScale(0.9); // Start slightly larger, target is 0.7
+        shieldSprite.setAlpha(0.8); // Start more opaque, target is 0.6
         shieldSprite.setDepth(playerSprite.depth - 1);
         this.shieldEffects[player.id] = shieldSprite;
+
+        // Brief appearance animation
+        this.tweens.add({
+          targets: shieldSprite,
+          scale: { from: 0.9, to: 0.7 }, // Animate to target scale
+          alpha: { from: 0.8, to: 0.6 }, // Animate to target alpha
+          duration: 400,
+          ease: 'Quint.easeOut'
+        });
+        soundService.playSound('action_shield_gain'); // Play shield gain sound
       } else if (!isShielded && this.shieldEffects[player.id]) {
         // Remove shield effect
         this.shieldEffects[player.id].destroy();
@@ -186,49 +208,76 @@ export default class MainBoardScene extends Phaser.Scene {
   // MÉTHODE POUR L'ANIMATION DES SORTS (peut rester similaire ou être adaptée)
   // ===================================================================
 
-  public playSpellAnimation(spellData: { casterId: string, targetId: string, spellId: SpellId }) {
-    // This method might need adjustment if some spells don't have a targetId (e.g. SELF spells if they have animations)
-    // For now, assuming it's for targeted spells.
+  public playSpellAnimation(spellData: { casterId: string, targetId?: string, spellId: SpellId }) {
     const { casterId, targetId, spellId } = spellData;
 
     const casterSprite = this.playerSprites[casterId];
-    const targetSprite = this.playerSprites[targetId];
+    // targetSprite might be undefined for SELF spells or if targetId is not a player
+    const targetSprite = targetId ? this.playerSprites[targetId] : null;
 
-    if (!casterSprite || !targetSprite) {
-      console.warn("Could not find sprites for spell animation.");
+    if (!casterSprite) {
+      console.warn("[Phaser] Caster sprite not found for spell animation.");
       return;
     }
 
-    console.log(`[Phaser] Playing animation for spell ${spellId}`);
+    console.log(`[Phaser] Playing animation for spell ${spellId} by ${casterId}`);
 
-    // Créer la particule à la position du lanceur
-    const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
-    bolt.setScale(0.5);
-    bolt.setAlpha(0.7);
+    // --- Muzzle Flash Effect ---
+    const muzzleFlash = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt'); // Reuse mana_bolt or use a specific muzzle flash asset
+    muzzleFlash.setScale(0.3); // Start smaller
+    muzzleFlash.setAlpha(0.9);
+    muzzleFlash.setDepth(casterSprite.depth + 1); // Ensure it's on top of the caster
 
-    // Animer la particule vers la cible
     this.tweens.add({
-      targets: bolt,
-      x: targetSprite.x,
-      y: targetSprite.y,
-      duration: 800, // Durée du trajet en ms
-      ease: 'Power2',
+      targets: muzzleFlash,
+      scale: { from: 0.3, to: 0.8 }, // Grow effect
+      alpha: { from: 0.9, to: 0 },   // Fade out
+      duration: 250, // Short duration for a flash
+      ease: 'Cubic.easeOut',
       onComplete: () => {
-        // Optionnel : Créer un petit flash d'impact sur la cible
-        const impactFlash = this.add.circle(targetSprite.x, targetSprite.y, 20, 0xffffff, 0.8);
-        this.tweens.add({
-          targets: impactFlash,
-          alpha: 0,
-          duration: 300,
-          onComplete: () => {
-            impactFlash.destroy();
-          }
-        });
-
-        // Détruire la particule à la fin de son trajet
-        bolt.destroy();
+        muzzleFlash.destroy();
       }
     });
+    // --- End Muzzle Flash Effect ---
+
+    const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spellId);
+
+    if (targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+      const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
+      bolt.setScale(0.5);
+      bolt.setAlpha(0.7);
+      bolt.setDepth(casterSprite.depth); // Projectile can be at same depth or slightly below muzzle flash initially
+
+      this.tweens.add({
+        targets: bolt,
+        x: targetSprite.x,
+        y: targetSprite.y,
+        duration: 800,
+        ease: 'Power2',
+        onComplete: () => {
+          soundService.playSound('action_spell_impact_generic'); // Play spell impact sound
+          const impactFlash = this.add.circle(targetSprite.x, targetSprite.y, 20, 0xffffff, 0.8);
+          impactFlash.setDepth(targetSprite.depth + 1);
+          this.tweens.add({
+            targets: impactFlash,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => {
+              impactFlash.destroy();
+            }
+          });
+          bolt.destroy();
+        }
+      });
+    } else if (spellDefinition && spellDefinition.type === SpellType.SELF) {
+      // For SELF spells, the muzzle flash might be the primary effect.
+      console.log(`[Phaser] SELF spell ${spellId} cast by ${casterId}. Muzzle flash shown.`);
+    } else if (!targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+      // This handles cases like tile-targeted spells where targetId might be a tile index, not a player ID.
+      // Projectile logic for tiles would need to resolve targetId to tile coordinates.
+      // For now, only muzzle flash is guaranteed.
+      console.warn(`[Phaser] Spell ${spellId} to target ${targetId} (non-player?) shown. Muzzle flash only for now.`);
+    }
   }
 
   public updateGameState(newState: Game) {
@@ -360,6 +409,8 @@ export default class MainBoardScene extends Phaser.Scene {
   private movePlayerSprite(playerId: string, startPosition: number, endPosition: number) {
     const playerSprite = this.playerSprites[playerId];
     if (!playerSprite) return;
+
+    soundService.playSound('action_pawn_move'); // Play pawn move sound
 
     const endCoords = this.boardPath[endPosition % this.boardPath.length];
     if (!endCoords) {

@@ -38,37 +38,44 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="login-container"> {/* Added class for card styling */}
       <form onSubmit={handleSignIn}>
         <h2>{t('login.email_signin_button')}</h2>
-        <div>
-          <label>{t('login.email_label')}</label>
+        <div className="form-group"> {/* Added class for form styling */}
+          <label htmlFor="email">{t('login.email_label')}</label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
-        <div>
-          <label>{t('login.password_label')}</label>
+        <div className="form-group"> {/* Added class for form styling */}
+          <label htmlFor="password">{t('login.password_label')}</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        <button type="submit">{t('login.email_signin_button')}</button>
+        {/* Buttons will pick up global styles from App.css which are now variable-based */}
+        <div className="form-actions"> {/* Optional: wrap button for layout if needed, or style directly */}
+          <button type="submit">{t('login.email_signin_button')}</button>
+        </div>
       </form>
       
-      <hr />
+      <hr style={{ margin: 'var(--spacing-unit) * 4 0' }} /> {/* Added margin to hr */}
       
-      <button type="button" onClick={handleSignInAnonymously}>
-        {t('login.anon_signin_button')}
-      </button>
+      <div className="form-actions"> {/* Optional: wrap button for layout */}
+        <button type="button" onClick={handleSignInAnonymously} className="button-secondary"> {/* Example: make it secondary */}
+          {t('login.anon_signin_button')}
+        </button>
+      </div>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="error-message">{error}</p>} {/* Used class for error message */}
     </div>
   );
 };

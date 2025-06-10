@@ -1,0 +1,102 @@
+/* src/components/ToastNotification.css */
+
+.toast-container {
+  position: fixed;
+  top: calc(var(--spacing-unit) * 4); /* 32px */
+  right: calc(var(--spacing-unit) * 4); /* 32px */
+  z-index: 1050; /* High z-index to appear on top of other UI elements */
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-unit) * 2); /* 16px spacing between toasts */
+  max-width: 350px; /* Max width for the container */
+}
+
+.toast {
+  padding: calc(var(--spacing-unit) * 2) calc(var(--spacing-unit) * 3); /* 16px 24px */
+  border-radius: var(--border-radius);
+  color: var(--text-color-light); /* Default: light text on dark backgrounds */
+  box-shadow: var(--box-shadow-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0.95; /* Slight transparency */
+  animation: fadeIn 0.3s ease-out forwards; /* Forwards to keep state at end of animation */
+  min-width: 250px; /* Minimum width for individual toasts */
+  position: relative; /* For potential absolute positioning of elements inside if needed */
+  pointer-events: all; /* Ensure toasts are interactive */
+}
+
+/* Animation for toast appearing */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%); /* Start off-screen to the right */
+  }
+  to {
+    opacity: 0.95;
+    transform: translateX(0);
+  }
+}
+
+/* Optional: Animation for toast disappearing (add a class like .toast-fade-out) */
+@keyframes fadeOut {
+  from {
+    opacity: 0.95;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%); /* Slide out to the right */
+    height: 0; /* Optional: collapse height */
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0; /* Optional: remove margin */
+  }
+}
+
+.toast-message {
+  flex-grow: 1;
+  padding-right: calc(var(--spacing-unit) * 2); /* Space before close button */
+  word-break: break-word; /* Prevent long messages from breaking layout */
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: inherit; /* Inherit color from parent toast for better contrast */
+  font-size: 1.5em; /* Large X for easy clicking */
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0; /* Reset padding */
+  margin-left: calc(var(--spacing-unit) * 2); /* Space to the left of X */
+  opacity: 0.7;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.toast-close-btn:hover {
+  opacity: 1;
+}
+
+/* Type-specific styles */
+.toast-info {
+  background-color: var(--primary-color); /* Blue */
+}
+
+.toast-success {
+  background-color: var(--success-color); /* Green */
+}
+
+.toast-error {
+  background-color: var(--error-color); /* Red */
+}
+
+.toast-warning {
+  background-color: var(--accent-color); /* Yellow (used as general accent) */
+  color: var(--text-color); /* Warnings often use dark text on yellow for better readability */
+}
+
+/* Ensure the close button on warning toast is also dark if text is dark */
+.toast-warning .toast-close-btn {
+    color: var(--text-color);
+}
