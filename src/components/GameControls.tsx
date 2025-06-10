@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import type { Game } from '../types/game';
 import { useAuth } from '../hooks/useAuth';
 import { rollDice, resolveTileAction } from '../services/gameService';
+import soundService from '../services/soundService'; // Import soundService
 import './GameControls.css';
 
 interface GameControlsProps {
@@ -35,14 +36,28 @@ const GameControls: React.FC<GameControlsProps> = ({ game }) => {
 
   const handleRollDice = async () => {
     if (isLoading || game.turnState !== 'AWAITING_ROLL') return;
+    soundService.playSound('action_dice_roll'); // Play dice roll sound
     setIsLoading(true);
-    await rollDice(game.id);
+    try {
+      await rollDice(game.id);
+    } catch (error) {
+      console.error("Error rolling dice:", error);
+      // Optionally play a fail sound or show a toast via useToasts hook
+    }
+    // setIsLoading(false); // This is handled by useEffect on game.turnState change
   };
 
   const handleResolveTile = async () => {
     if (isLoading || game.turnState !== 'RESOLVING_TILE') return;
+    soundService.playSound('ui_click'); // Play generic click sound
     setIsLoading(true);
-    await resolveTileAction(game.id);
+    try {
+      await resolveTileAction(game.id);
+    } catch (error) {
+      console.error("Error resolving tile action:", error);
+      // Optionally play a fail sound or show a toast
+    }
+    // setIsLoading(false); // Handled by useEffect
   };
 
   if (!isMyTurn) {

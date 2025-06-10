@@ -6,6 +6,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import { castSpell } from '../services/gameService'; // Importer castSpell
+import soundService from '../services/soundService'; // Import soundService
 import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Importer le type SpellId
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
@@ -31,6 +32,18 @@ const GamePage: React.FC = () => {
   const [currentEvent, setCurrentEvent] = useState<Game['lastEventCard'] | null>(null);
   const eventTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Effect for game background music
+  useEffect(() => {
+    soundService.stopSound('music_hub'); // Stop hub music if it was playing
+    soundService.playSound('music_game');
+    // console.log("GamePage mounted, playing music_game.");
+
+    return () => {
+      soundService.stopSound('music_game');
+      // console.log("GamePage unmounted, stopping music_game.");
+      // Consider stopping other looping game-specific sounds here if any are added later
+    };
+  }, []); // Empty dependency array for mount/unmount logic
 
   useEffect(() => {
     if (!gameId) return;
@@ -64,8 +77,9 @@ const GamePage: React.FC = () => {
   }, [gameId, user, navigate]); // +navigate
 
   useEffect(() => {
-    if (game?.lastEventCard) {
+    if (game?.lastEventCard && game.lastEventCard !== currentEvent) { // Play sound only when a new event card appears
       setCurrentEvent(game.lastEventCard);
+      soundService.playSound('action_event_card'); // Sound for new event card
       // Clear any existing timer
       if (eventTimerRef.current) {
         clearTimeout(eventTimerRef.current);
@@ -91,41 +105,38 @@ const GamePage: React.FC = () => {
   }, [game?.lastEventCard]); // Effect runs when game.lastEventCard changes
 
   const handleCloseEventModal = () => {
+    soundService.playSound('ui_modal_close');
     setCurrentEvent(null);
     if (eventTimerRef.current) {
       clearTimeout(eventTimerRef.current); // Also clear timer if manually closed
     }
-    // Optional: If we need to signal the backend or modify local game state further, do it here.
-    // For now, just hiding it locally is fine as per requirements.
   };
 
   const handleSelectSpell = (spellId: SpellId) => {
+    soundService.playSound('ui_click'); // Play click sound for spell selection
     const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spellId);
     if (!spellDefinition) {
       console.error(`Spell definition for ${spellId} not found!`);
       return;
     }
 
-    // If clicking the currently selected spell, deselect it.
     if (selectedSpellId === spellId) {
       setSelectedSpellId(null);
       setSelectedTargetId(null);
-      // Potentially tell Phaser to exit targeting mode here if it was active
-      // This will be handled by PhaserGame's reaction to selectedSpellId becoming null
       return;
     }
 
     // Handle self-cast spells immediately
     if (spellDefinition.type === SpellType.SELF) {
-      if (game && user && !isCastingSpell) { // Ensure game and user context is available and not already casting
+      if (game && user && !isCastingSpell) {
         console.log(`[React] Casting self-spell ${spellId} for game ${game.id}`);
+        soundService.playSound('action_spell_cast_generic'); // Sound for casting
         setIsCastingSpell(true);
-        castSpell(game.id, spellId, user.uid) // Use user.uid as targetId for self-cast
+        castSpell(game.id, spellId, user.uid)
           .catch((error) => console.error(`Error casting self-spell ${spellId}:`, error))
           .finally(() => {
             setIsCastingSpell(false);
-            setSelectedSpellId(null); // Reset selected spell
-            // No need to reset selectedTargetId here as it's a self-cast
+            setSelectedSpellId(null);
           });
       } else if (isCastingSpell) {
         console.log("Already casting a spell.");
@@ -133,10 +144,9 @@ const GamePage: React.FC = () => {
         console.error("Game or user not available for self-cast spell.");
       }
     } else {
-      // For spells requiring a target (player or tile)
+      // For spells requiring a target, just select it. Sound will play when target is confirmed.
       setSelectedSpellId(spellId);
-      setSelectedTargetId(null); // Reset target when a new spell is selected
-      // PhaserGame component will observe selectedSpellId and trigger targeting mode in Phaser scene
+      setSelectedTargetId(null);
     }
   };
 
@@ -151,9 +161,10 @@ const GamePage: React.FC = () => {
     // Si nous avons toutes les infos nécessaires...
     if (game && selectedSpellId && selectedTargetId && user) {
       const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
-      // Ensure it's not a SELF spell trying to cast via target selection, though this path shouldn't be hit for SELF.
+      // Ensure it's not a SELF spell trying to cast via target selection.
       if (spellDefinition && spellDefinition.type !== SpellType.SELF && !isCastingSpell) {
-        console.log(`[React] Casting spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
+        console.log(`[React] Casting targeted spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
+        soundService.playSound('action_spell_cast_generic'); // Sound for casting
         setIsCastingSpell(true);
         castSpell(game.id, selectedSpellId, selectedTargetId)
           .catch((error) => console.error(`Error casting spell ${selectedSpellId} on ${selectedTargetId}:`, error))

@@ -10,6 +10,7 @@ import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import './App.css';
 import ToastContainer from './components/ToastNotification'; // Import ToastContainer
 import { useToasts } from './contexts/ToastContext'; // Import useToasts
+import soundService, { SOUND_DEFINITIONS } from './services/soundService'; // Adjust path if needed
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -29,6 +30,7 @@ function App() {
 
     const handleOpenGuildModal = () => {
       console.log('App.tsx: openGuildManagementModal event received');
+      soundService.playSound('ui_modal_open');
       setIsGuildModalOpen(true);
     };
 
@@ -59,12 +61,40 @@ function App() {
     };
   }, [navigate, location.pathname]);
 
+  useEffect(() => {
+    // Preload all sounds
+    soundService.loadSounds(SOUND_DEFINITIONS)
+      .then(() => {
+        console.log("All sounds preloaded via App.tsx");
+      })
+      .catch(error => console.error("Error preloading sounds:", error));
+
+    // Unlock audio context on first user interaction
+    const unlockAudio = () => {
+      soundService.unlockAudio();
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      console.log("Audio context unlocked by user interaction.");
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      // Optional: soundService.stopAllSounds(); // if sounds should stop when App unmounts
+    };
+  }, []); // Empty dependency array ensures this runs once on mount
+
   const handleLogout = () => {
+    soundService.playSound('ui_click');
     signOut(auth).catch(error => console.error("Erreur de déconnexion", error));
   };
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
+    soundService.playSound('ui_click');
   };
 
   // Fonction pour afficher le statut de connexion de manière propre
@@ -101,6 +131,7 @@ function App() {
           <button onClick={() => changeLanguage('fr')}>FR</button>
           <button onClick={() => changeLanguage('en')}>EN</button>
         </div>
+        {/* Link itself is not a button, but if it were styled as one and had an action other than navigation, it would need sound */}
         <Link to="/" style={{textDecoration: 'none'}}><h2>{t('nav.home')}</h2></Link>
         <div className="firebase-status">
           {renderAuthStatus()}
@@ -122,7 +153,10 @@ function App() {
       {isGuildModalOpen && (
         <GuildManagementModal
           isOpen={isGuildModalOpen}
-          onClose={() => setIsGuildModalOpen(false)}
+          onClose={() => {
+            soundService.playSound('ui_modal_close');
+            setIsGuildModalOpen(false);
+          }}
         />
       )}
 
