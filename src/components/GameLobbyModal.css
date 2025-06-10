@@ -1,80 +1,138 @@
 /* src/components/GameLobbyModal.css */
-.modal-overlay {
+/* Uses global :root variables from src/index.css */
+
+.modal-overlay { /* Consider making this a global class .modal-overlay if not already */
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: color-mix(in srgb, var(--dark-bg-color, #000000) 50%, transparent);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Ensure it's above other content */
+  z-index: 1000;
 }
 
 .modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 80%;
-  max-width: 500px;
-  max-height: 80vh;
+  background-color: var(--light-bg-color);
+  color: var(--text-color);
+  padding: calc(var(--spacing-unit) * 4); /* 20px -> 32px */
+  border-radius: var(--border-radius-lg); /* 8px */
+  box-shadow: var(--box-shadow-lg);
+  width: 80%; /* Keep relative width */
+  max-width: 500px; /* Keep max-width */
+  max-height: 80vh; /* Keep max-height */
   overflow-y: auto;
-  position: relative; /* For close button positioning */
+  position: relative;
+  border: 1px solid var(--border-color);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-color); /* #eee -> var(--border-color) */
+  padding-bottom: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
+  margin-bottom: calc(var(--spacing-unit) * 3); /* 15px -> 24px */
 }
 
 .modal-title {
   margin: 0;
-  font-size: 1.5em;
+  font-size: var(--font-size-xl, 1.5em); /* Use XL if defined, fallback to 1.5em */
+  color: var(--text-color);
 }
 
 .modal-close-button {
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: var(--font-size-lg); /* 1.5em -> 1.25rem */
+  color: var(--text-color);
   cursor: pointer;
+  padding: var(--spacing-unit);
+  line-height: 1;
 }
 
-.modal-body input[type="text"] {
-  width: calc(100% - 22px); /* Account for padding/border */
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.modal-close-button:hover {
+  color: var(--primary-color);
 }
 
+.modal-body .form-group { /* Assuming inputs might be wrapped in form-group */
+  margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.modal-body input[type="text"],
+.modal-body input[type="password"], /* Add other input types if used */
+.modal-body textarea {
+  width: 100%;
+  padding: calc(var(--spacing-unit) * 1.5); /* 10px -> 12px */
+  margin-bottom: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
+  border: 1px solid var(--border-color); /* #ccc -> var(--border-color) */
+  border-radius: var(--border-radius); /* 4px */
+  background-color: var(--light-bg-color); /* Ensure inputs match modal bg or specific input bg */
+  color: var(--text-color);
+  box-sizing: border-box; /* Important for width: 100% */
+  font-size: var(--font-size-base);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.modal-body input[type="text"]:focus,
+.modal-body input[type="password"]:focus,
+.modal-body textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 calc(var(--spacing-unit) * 0.5) color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+/* Apply .button-base styles to modal buttons */
 .modal-body button {
-  padding: 10px 15px;
-  margin-right: 10px;
-  border: none;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3); /* ~10px 15px -> 12px 24px */
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  line-height: var(--line-height-base);
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
   cursor: pointer;
-  background-color: #007bff;
-  color: white;
+  user-select: none;
+  background-color: var(--primary-color); /* #007bff */
+  color: var(--text-color-light); /* white */
+  border: 1px solid transparent;
+  border-radius: var(--border-radius); /* 4px */
+  box-shadow: var(--box-shadow);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  margin-right: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
 }
 
-.modal-body button:hover {
-  background-color: #0056b3;
+.modal-body button:last-child {
+  margin-right: 0;
 }
+
+.modal-body button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--primary-color) 85%, black); /* #0056b3 */
+  box-shadow: var(--box-shadow-lg);
+}
+
+.modal-body button:disabled {
+  background-color: var(--secondary-color);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 
 .modal-body ul {
   list-style-type: none;
   padding: 0;
+  margin-top: calc(var(--spacing-unit) * 3); /* Add some margin if list follows inputs/buttons */
 }
 
 .modal-body li {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  padding: calc(var(--spacing-unit) * 2) 0; /* 10px 0 -> 16px 0 */
+  border-bottom: 1px solid var(--border-color); /* #eee -> var(--border-color) */
   display: flex;
   justify-content: space-between;
   align-items: center;

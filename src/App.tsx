@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'; // + useNavigate
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
 import Phaser from 'phaser';
 import GuildManagementModal from './components/GuildManagementModal'; // Import the modal
@@ -7,9 +8,12 @@ import { game } from './phaser/game'; // Assuming 'game' is your Phaser game ins
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import './App.css';
+import ToastContainer from './components/ToastNotification'; // Import ToastContainer
+import { useToasts } from './contexts/ToastContext'; // Import useToasts
 
 function App() {
   const { t, i18n } = useTranslation();
+  const { toasts, dismissToast } = useToasts(); // Get toasts and dismiss function
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGuildModalOpen, setIsGuildModalOpen] = useState(false); // State for modal visibility
@@ -91,6 +95,7 @@ function App() {
 
   return (
     <div className="App">
+      <ToastContainer toasts={toasts} dismissToast={dismissToast} /> {/* Render ToastContainer */}
       <header className="app-header">
         <div>
           <button onClick={() => changeLanguage('fr')}>FR</button>
@@ -102,9 +107,17 @@ function App() {
         </div>
       </header>
 
-      <main className="app-content">
-        <Outlet />
-      </main>
+      <TransitionGroup>
+        <CSSTransition
+          key={location.key}
+          classNames="fade"
+          timeout={300}
+        >
+          <main className="app-content">
+            <Outlet />
+          </main>
+        </CSSTransition>
+      </TransitionGroup>
 
       {isGuildModalOpen && (
         <GuildManagementModal

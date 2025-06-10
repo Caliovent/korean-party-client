@@ -1,29 +1,17 @@
 /* Import Google Font */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
-/* Variables de couleurs pour un thème sombre et vibrant */
-:root {
-  --primary-bg: #121212; /* Un noir plus profond */
-  --secondary-bg: #1e1e1e; /* Un gris très foncé */
-  --card-bg: #2a2a2a; /* Pour les conteneurs */
-  --primary-text: #e0e0e0;
-  --secondary-text: #a0a0a0;
-  --accent-color: #9b59b6; /* Un violet vibrant */
-  --accent-hover: #8e44ad;
-  --error-color: #e74c3c;
-  --success-color: #2ecc71;
-  --border-color: #333;
-}
+/* App.css now uses variables defined in src/index.css */
 
 body {
   margin: 0;
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  /* Use game-specific font if defined, otherwise fallback to --font-family-sans-serif */
+  font-family: 'Poppins', var(--font-family-sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--primary-bg);
-  color: var(--primary-text);
+  /* These variables are for the game's dark theme, defined in index.css */
+  background-color: var(--game-primary-bg);
+  color: var(--game-primary-text);
 }
 
 /* Structure principale de l'application */
@@ -35,149 +23,186 @@ body {
 }
 
 .app-header {
-  background-color: var(--secondary-bg);
-  padding: 1rem 2rem;
+  background-color: var(--game-secondary-bg);
+  padding: calc(var(--spacing-unit) * 2) calc(var(--spacing-unit) * 4); /* 1rem 2rem -> 16px 32px */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--game-border-color);
+  box-shadow: var(--box-shadow-lg); /* Use defined box shadow */
   z-index: 10;
 }
 
 .app-header h2 {
   margin: 0;
-  color: var(--accent-color);
-  font-weight: 700;
-  letter-spacing: 1px;
+  color: var(--game-accent-color);
+  font-weight: 700; /* Consider var(--font-weight-bold) if defined */
+  letter-spacing: 1px; /* Keep for style */
 }
 
 .app-content {
   flex-grow: 1;
-  padding: 2rem;
+  padding: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative; /* Added for transition group */
 }
 
 .app-footer {
-  padding: 1rem;
-  font-size: 0.8rem;
-  color: var(--secondary-text);
-  border-top: 1px solid var(--border-color);
+  padding: calc(var(--spacing-unit) * 2); /* 1rem -> 16px */
+  font-size: var(--font-size-sm); /* 0.8rem -> 14px */
+  color: var(--game-secondary-text);
+  border-top: 1px solid var(--game-border-color);
 }
 
 /* Styles pour les liens et boutons */
 a, .profile-link {
-  color: var(--accent-color);
+  color: var(--game-accent-color);
   text-decoration: none;
-  transition: all 0.3s ease;
-  font-weight: 600;
+  transition: color 0.15s ease-in-out, transform 0.15s ease-in-out; /* Standard transition */
+  font-weight: 600; /* Consider var(--font-weight-semibold) if defined */
 }
 
 a:hover, .profile-link:hover {
-  color: var(--accent-hover);
-  transform: translateY(-2px);
+  color: var(--game-accent-hover);
+  transform: translateY(-2px); /* Keep for style */
 }
 
-button {
-  background-image: linear-gradient(45deg, var(--accent-color) 0%, var(--accent-hover) 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+/* General button styling using CSS variables */
+button, .button-base { /* Applied to global button tag for App.tsx buttons */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3); /* 12px 24px */
+  font-size: var(--font-size-base);
+  font-weight: 500; /* Standardized weight */
+  line-height: var(--line-height-base);
+  color: var(--text-color-light); /* Text on dark buttons */
+  background-color: var(--game-accent-color); /* Default button background */
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, transform 0.1s ease-in-out; /* Added transform */
+  margin: 0 calc(var(--spacing-unit) * 0.5); /* 0 4px, was 0 5px */
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin: 0 5px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  user-select: none;
 }
 
 button:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  background-color: var(--game-accent-hover);
+  box-shadow: var(--box-shadow-lg);
+  transform: translateY(-2px); /* Keep hover effect */
 }
 
-button:disabled {
-  background-image: none;
-  background-color: #555;
+button:active:not(:disabled), .button-base:active:not(:disabled) {
+  transform: scale(0.97) translateY(-1px); /* Combine with hover's Y translate or adjust */
+  background-color: color-mix(in srgb, var(--game-accent-color) 80%, black); /* Darker than hover */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.125);
+}
+
+button:disabled, button.disabled {
+  background-color: var(--game-secondary-bg); /* Using game's secondary for disabled */
+  color: var(--game-secondary-text);
+  opacity: var(--disabled-opacity);
   cursor: not-allowed;
-  opacity: 0.6;
+  box-shadow: none;
+  transform: none; /* No hover effect on disabled */
 }
 
+/* Specific button types */
 button.secondary, .logout-button {
-  background-image: none;
-  background-color: var(--secondary-bg);
-  border: 1px solid var(--accent-color);
+  background-color: var(--game-secondary-bg);
+  color: var(--game-primary-text);
+  border: 1px solid var(--game-accent-color);
+  /* Ensure transition includes transform if not already inherited */
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, transform 0.1s ease-in-out;
 }
 
-button.secondary:hover, .logout-button:hover {
-  background-color: #3c3c42;
-  border-color: var(--accent-hover);
+button.secondary:hover:not(:disabled), .logout-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--game-secondary-bg) 80%, #000); /* Darken secondary */
+  border-color: var(--game-accent-hover);
+  /* transform: translateY(-2px); already applied by global button:hover if these are also <button> */
+}
+
+button.secondary:active:not(:disabled), .logout-button:active:not(:disabled) {
+  transform: scale(0.97);
+  background-color: color-mix(in srgb, var(--game-secondary-bg) 70%, black);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.125);
 }
 
 .delete-button {
-    background-image: linear-gradient(45deg, #c0392b 0%, #e74c3c 100%);
+  background-color: var(--error-color); /* Use error color variable */
+  color: var(--text-color-light);
+  /* Ensure transition includes transform if not already inherited */
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, transform 0.1s ease-in-out;
 }
 .delete-button:hover:not(:disabled) {
-    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  background-color: color-mix(in srgb, var(--error-color) 80%, black);
+  box-shadow: var(--box-shadow-lg); /* Consistent shadow */
+  /* transform: translateY(-2px); already applied by global button:hover if this is also a <button> */
+}
+
+.delete-button:active:not(:disabled) {
+  transform: scale(0.97);
+  background-color: color-mix(in srgb, var(--error-color) 70%, black);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.125);
 }
 
 
 /* Styles pour les conteneurs (Login, Profile, Lobby) */
 .login-container, .profile-container, .lobby-container {
-  background-color: var(--card-bg);
-  padding: 2rem 3rem;
-  border-radius: 12px;
+  background-color: var(--game-card-bg);
+  padding: calc(var(--spacing-unit) * 4) calc(var(--spacing-unit) * 6); /* 32px 48px */
+  border-radius: var(--border-radius-lg); /* 12px -> 8px (standardized) */
   width: 100%;
-  max-width: 500px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border-top: 3px solid var(--accent-color);
+  max-width: 500px; /* Keep max-width */
+  box-shadow: var(--box-shadow-lg); /* Standardized shadow */
+  border-top: 3px solid var(--game-accent-color);
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: calc(var(--spacing-unit) * 3); /* 1.5rem -> 24px */
   text-align: left;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
-  color: var(--secondary-text);
-  font-weight: 600;
+  margin-bottom: var(--spacing-unit); /* 0.5rem -> 8px */
+  color: var(--game-secondary-text);
+  font-weight: 600; /* Consider var(--font-weight-semibold) */
 }
 
 .form-group input {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--secondary-bg);
-  color: var(--primary-text);
+  padding: calc(var(--spacing-unit) * 1.5); /* 12px */
+  border-radius: var(--border-radius); /* 8px -> 4px (standardized) */
+  border: 1px solid var(--game-border-color);
+  background-color: var(--game-secondary-bg);
+  color: var(--game-primary-text);
   box-sizing: border-box;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  font-size: var(--font-size-base);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; /* Standard transition */
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.3);
+  border-color: var(--game-accent-color);
+  box-shadow: 0 0 0 calc(var(--spacing-unit) * 0.5) color-mix(in srgb, var(--game-accent-color) 30%, transparent); /* Standard focus ring */
 }
 
 .form-actions {
   display: flex;
   justify-content: space-around;
-  margin-top: 1.5rem;
+  margin-top: calc(var(--spacing-unit) * 3); /* 1.5rem -> 24px */
 }
 
 .error-message {
-  color: var(--error-color);
-  background-color: rgba(231, 76, 60, 0.1);
-  padding: 10px;
-  border-radius: 5px;
-  margin-top: 1rem;
+  color: var(--error-color); /* Standard error color */
+  background-color: color-mix(in srgb, var(--error-color) 10%, transparent); /* Lighter error bg */
+  padding: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
+  border-radius: var(--border-radius); /* 5px -> 4px */
+  margin-top: calc(var(--spacing-unit) * 2); /* 1rem -> 16px */
   border-left: 3px solid var(--error-color);
 }
 
@@ -185,18 +210,18 @@ button.secondary:hover, .logout-button:hover {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: calc(var(--spacing-unit) * 3); /* 15px -> 24px */
 }
 
 .user-info p {
   margin: 0;
-  color: var(--secondary-text);
+  color: var(--game-secondary-text);
 }
 
 
 /* Styles pour la liste des parties dans le salon */
 .game-list {
-  margin-top: 2rem;
+  margin-top: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
   width: 100%;
 }
 
@@ -209,41 +234,41 @@ button.secondary:hover, .logout-button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--secondary-bg);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--accent-color);
-  transition: all 0.3s ease;
+  background-color: var(--game-secondary-bg);
+  padding: calc(var(--spacing-unit) * 2) calc(var(--spacing-unit) * 3); /* 16px 24px */
+  border-radius: var(--border-radius); /* 8px -> 4px */
+  margin-bottom: calc(var(--spacing-unit) * 2); /* 1rem -> 16px */
+  border-left: 4px solid var(--game-accent-color);
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out; /* Standard transition */
 }
 
 .game-item:hover {
-  transform: translateX(5px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  border-left-color: var(--accent-hover);
+  transform: translateX(5px); /* Keep for style */
+  box-shadow: var(--box-shadow); /* Standard shadow */
+  border-left-color: var(--game-accent-hover);
 }
 
 .game-item-actions {
   display: flex;
-  gap: 10px;
+  gap: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
 }
 
 
 /* Styles pour le HUD du joueur */
 .player-hud {
   width: 100%;
-  background-color: var(--secondary-bg);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  background-color: var(--game-secondary-bg);
+  padding: calc(var(--spacing-unit) * 2); /* 1rem -> 16px */
+  border-radius: var(--border-radius); /* 8px -> 4px */
+  margin-bottom: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--game-border-color);
 }
 
 .hud-item {
-  color: var(--primary-text);
+  color: var(--game-primary-text);
 }
 
 .mana-bar-container {
@@ -253,20 +278,20 @@ button.secondary:hover, .logout-button:hover {
 }
 
 .mana-bar {
-  width: 150px;
-  height: 20px;
-  background-color: var(--primary-bg);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
+  width: 150px; /* Keep specific size */
+  height: 20px; /* Keep specific size */
+  background-color: var(--game-primary-bg);
+  border-radius: var(--border-radius-lg); /* 10px -> 8px */
+  border: 1px solid var(--game-border-color);
   position: relative;
   overflow: hidden;
-  margin-top: 5px;
+  margin-top: var(--spacing-unit); /* 5px -> 8px */
 }
 
 .mana-bar-fill {
   height: 100%;
-  background-image: linear-gradient(45deg, #3498db, #2980b9);
-  border-radius: 10px;
+  background-image: linear-gradient(45deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, black)); /* Use primary color */
+  border-radius: var(--border-radius-lg); /* Match parent */
   transition: width 0.5s ease-in-out;
 }
 
@@ -274,9 +299,9 @@ button.secondary:hover, .logout-button:hover {
   position: absolute;
   width: 100%;
   text-align: center;
-  line-height: 20px;
-  font-size: 12px;
-  color: white;
+  line-height: 20px; /* Match height */
+  font-size: var(--font-size-sm); /* 12px -> 14px */
+  color: var(--text-color-light);
   text-shadow: 1px 1px 2px black;
 }
 
@@ -289,18 +314,18 @@ button.secondary:hover, .logout-button:hover {
 
 .fragments {
   display: flex;
-  gap: 1rem;
-  margin-top: 5px;
+  gap: var(--spacing-unit); /* 1rem -> 0.5rem (8px) for tighter fit if many fragments */
+  margin-top: var(--spacing-unit); /* 5px -> 8px */
 }
 
 .fragments span {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 1.1rem;
-  background-color: var(--primary-bg);
-  padding: 4px 8px;
-  border-radius: 5px;
+  gap: var(--spacing-unit); /* 5px -> 8px */
+  font-size: var(--font-size-base); /* 1.1rem -> 1rem */
+  background-color: var(--game-primary-bg);
+  padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5); /* 4px 8px -> 8px 12px */
+  border-radius: var(--border-radius); /* 5px -> 4px */
 }
 
 /* Styles pour la mise en page de la page de jeu */
@@ -308,87 +333,59 @@ button.secondary:hover, .logout-button:hover {
   display: flex;
   flex-direction: row;
   width: 100%;
-  max-width: 1400px;
-  gap: 2rem;
-  margin: 0 auto; /* Pour centrer la mise en page */
+  max-width: 1600px; /* Increased for large screens, keep */
+  gap: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
+  margin: 0 auto;
+  align-items: flex-start;
 }
 
 .left-panel {
   flex: 1;
-  max-width: 350px;
+  max-width: 350px; /* Keep specific size */
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
+  position: sticky;
+  top: calc(var(--spacing-unit) * 4); /* 2rem -> 32px */
 }
 
 .main-panel {
   flex: 3;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Styles pour le tracker de quêtes */
 .quest-tracker {
-  background-color: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid var(--success-color);
+  background-color: var(--game-card-bg);
+  padding: calc(var(--spacing-unit) * 3); /* 1.5rem -> 24px */
+  border-radius: var(--border-radius-lg); /* 12px -> 8px */
+  border-left: 4px solid var(--success-color); /* Standard success color */
   text-align: left;
 }
 
 .quest-tracker h4 {
   margin-top: 0;
-  color: var(--accent-color);
+  color: var(--game-accent-color);
 }
 
 .quest-tracker.completed {
-  border-left-color: var(--accent-hover);
+  border-left-color: var(--game-accent-hover);
 }
 
 .game-container {
-    padding: 0; /* On retire le padding pour que le panel prenne toute la place */
+    padding: 0;
 }
 
 
 
-/* Styles pour la mise en page de la page de jeu */
-.game-page-layout {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 1600px; /* Augmenté pour les grands écrans */
-  gap: 2rem;
-  margin: 0 auto;
-  align-items: flex-start; /* Aligne les panneaux en haut */
-}
+/* Styles pour la mise en page de la page de jeu (duplicate, can be removed or merged if identical) */
+/* Assuming this is a duplicate or very similar to above .game-page-layout, review and remove if redundant */
 
-.left-panel {
-  flex: 1;
-  max-width: 350px;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  position: sticky; /* Pour que le panneau de gauche reste visible */
-  top: 2rem;
-}
 
-.main-panel {
-  flex: 3;
-  display: flex;
-  flex-direction: column;
-}
+/* Styles pour le tracker de quêtes (duplicate) */
+/* Assuming this is a duplicate or very similar to above .quest-tracker, review and remove if redundant */
 
-/* Styles pour le tracker de quêtes */
-.quest-tracker {
-  background-color: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid var(--success-color);
-  text-align: left;
-}
-
-.quest-tracker h4 {
-  margin-top: 0;
-  color: var(--accent-color);
-}
 
 .quest-steps-list {
   list-style: none;
@@ -396,14 +393,14 @@ button.secondary:hover, .logout-button:hover {
 }
 
 .quest-steps-list li {
-  margin-bottom: 0.5rem;
-  transition: color 0.3s ease;
+  margin-bottom: var(--spacing-unit); /* 0.5rem -> 8px */
+  transition: color 0.15s ease-in-out; /* Standard transition */
 }
 
 .quest-steps-list li.completed {
   text-decoration: line-through;
-  color: var(--secondary-text);
-  opacity: 0.7;
+  color: var(--game-secondary-text);
+  opacity: 0.7; /* Keep opacity for style */
 }
 
 /* Styles pour la mise en page du plateau de jeu */
@@ -440,4 +437,74 @@ button.secondary:hover, .logout-button:hover {
   flex-shrink: 0;
   padding-top: 1rem;
   min-height: 80px; /* Espace pour les boutons/mini-jeux */
+}
+
+/* Transition Styles */
+.fade-enter {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.fade-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+.fade-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+.fade-exit-active {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 300ms ease-in, transform 300ms ease-in;
+  /* The exiting page can be positioned absolutely to allow the new page to slide in. */
+  /* position: absolute; */ /* Uncomment if needed, depends on desired effect */
+  /* width: 100%; */ /* If using position: absolute, ensure width is maintained */
+}
+
+/* Success Message Styles */
+.success-message {
+  color: var(--success-color);
+  background-color: color-mix(in srgb, var(--success-color) 10%, transparent);
+  padding: calc(var(--spacing-unit) * 2);
+  border-radius: var(--border-radius);
+  margin-top: calc(var(--spacing-unit) * 2);
+  border-left: 3px solid var(--success-color);
+}
+
+/* Styled Table for Guild List */
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: calc(var(--spacing-unit) * 2);
+  font-size: var(--font-size-sm); /* Smaller font for tables */
+}
+
+.styled-table th,
+.styled-table td {
+  border: 1px solid var(--game-border-color); /* Use game's border color for dark theme */
+  padding: calc(var(--spacing-unit) * 1.5) var(--spacing-unit); /* 12px 8px */
+  text-align: left;
+  color: var(--game-primary-text); /* Ensure text is visible on dark theme */
+}
+
+.styled-table thead th {
+  background-color: var(--game-secondary-bg); /* Slightly different bg for header */
+  color: var(--game-accent-color); /* Accent color for header text */
+  font-weight: 600; /* Bolder header text */
+}
+
+.styled-table tbody tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--game-secondary-bg) 50%, var(--game-primary-bg)); /* Subtle striping for dark theme */
+}
+
+.styled-table tbody tr:hover {
+  background-color: color-mix(in srgb, var(--game-accent-color) 20%, var(--game-secondary-bg)); /* Accent hover for rows */
+}
+
+/* Ensure buttons within tables are spaced correctly if needed */
+.styled-table td button {
+  margin: 0; /* Remove default button margin if it's too much in a small cell */
+  padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5); /* Smaller padding for table buttons */
+  font-size: var(--font-size-sm);
 }

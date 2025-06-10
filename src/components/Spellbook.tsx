@@ -8,11 +8,14 @@ import './Spellbook.css';
 
 interface SpellbookProps {
   player: Player;
-  selectedSpellId: SpellId | null; // La prop pour savoir quel sort est sélectionné
-  onSelectSpell: (spellId: SpellId) => void; // La fonction à appeler au clic
+  selectedSpellId: SpellId | null;
+  onSelectSpell: (spellId: SpellId) => void;
+  isCastingSpell?: boolean;
+  castingSpellId?: SpellId | null;
 }
 
-const Spellbook: React.FC<SpellbookProps> = ({ player, selectedSpellId, onSelectSpell }) => {
+const Spellbook: React.FC<SpellbookProps> = (props) => {
+  const { player, selectedSpellId, onSelectSpell, isCastingSpell, castingSpellId } = props;
   const { t } = useTranslation();
 
   return (
@@ -22,21 +25,34 @@ const Spellbook: React.FC<SpellbookProps> = ({ player, selectedSpellId, onSelect
         {SPELL_DEFINITIONS.map(spell => {
           const canCast = player.mana >= spell.manaCost;
           const isSelected = selectedSpellId === spell.id;
+          const isThisSpellCasting = isCastingSpell && castingSpellId === spell.id;
+          const isAnySpellCasting = !!isCastingSpell; // True if any spell is being cast
+
+          let buttonText;
+          if (isThisSpellCasting) {
+            buttonText = (
+              <>
+                <span className="loading-spinner"></span> {t('spellbook.casting_button', 'Incantation...')}
+              </>
+            );
+          } else if (isSelected) {
+            buttonText = t('spellbook.cancel_button', 'Annuler');
+          } else {
+            buttonText = t('spellbook.cast_button', 'Lancer');
+          }
 
           return (
-            // Appliquer la classe 'selected' si le sort est sélectionné
-            <li key={spell.id} className={`spell-item ${!canCast ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}>
+            <li key={spell.id} className={`spell-item ${(!canCast && !isSelected) || isAnySpellCasting ? 'disabled' : ''} ${isSelected && !isThisSpellCasting ? 'selected' : ''} ${isThisSpellCasting ? 'casting' : ''}`}>
               <div className="spell-header">
                 <span className="spell-name">{t(spell.nameKey)}</span>
                 <span className="spell-cost">{spell.manaCost} Mana</span>
               </div>
               <p className="spell-description">{t(spell.descriptionKey)}</p>
               <button
-                disabled={!canCast && !isSelected} // On peut toujours annuler
+                disabled={isAnySpellCasting || (!canCast && !isSelected)}
                 onClick={() => onSelectSpell(spell.id)}
               >
-                {/* Changer le texte du bouton si le sort est sélectionné */}
-                {isSelected ? t('spellbook.cancel_button', 'Annuler') : t('spellbook.cast_button', 'Lancer')}
+                {buttonText}
               </button>
             </li>
           );

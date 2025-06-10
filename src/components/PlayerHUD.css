@@ -2,23 +2,25 @@
 
 .player-hud {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 15px;
-  border-radius: 10px;
-  border: 2px solid #a445ed;
-  font-family: 'Arial', sans-serif;
+  bottom: calc(var(--spacing-unit) * 4); /* 20px */
+  left: calc(var(--spacing-unit) * 4); /* 20px */
+  background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 70%, transparent); /* rgba(0,0,0,0.7) */
+  color: var(--game-primary-text); /* white */
+  padding: calc(var(--spacing-unit) * 3); /* 15px */
+  border-radius: var(--border-radius-lg); /* 10px */
+  border: 2px solid var(--game-accent-color); /* #a445ed */
+  font-family: var(--font-family-sans-serif); /* Arial */
   z-index: 100;
-  min-width: 250px;
+  min-width: 250px; /* Keep min-width */
+  box-shadow: var(--box-shadow-lg);
 }
 
 .player-hud h3 {
   margin-top: 0;
-  color: #ffc107;
-  border-bottom: 1px solid #ffc107;
-  padding-bottom: 5px;
+  color: var(--accent-color); /* #ffc107 */
+  border-bottom: 1px solid var(--accent-color); /* #ffc107 */
+  padding-bottom: var(--spacing-unit); /* 5px */
+  font-size: var(--font-size-lg); /* Ensure consistent heading sizes */
 }
 
 .player-hud ul {
@@ -28,13 +30,59 @@
 }
 
 .player-hud li {
-  margin-bottom: 5px;
+  margin-bottom: var(--spacing-unit); /* 5px */
+  font-size: var(--font-size-sm);
 }
 
-.hud-mana p {
-    font-size: 1.5em;
+.hud-mana {
+  /* hud-mana itself doesn't need position:relative if mana-display-container handles it */
+}
+
+.mana-display-container {
+  position: relative; /* Crucial for positioning floating texts */
+  display: inline-block; /* Or block, centers the floating text if p is centered */
+  text-align: center; /* Ensure p content is centered for floating text alignment */
+}
+
+.hud-mana p { /* Styling for the mana value itself */
+    font-size: 1.8em; /* Keep larger or use var(--font-size-xl) or similar */
     font-weight: bold;
-    color: #4dd0e1;
+    color: var(--primary-color); /* #4dd0e1, using standard primary (blue) for mana */
     text-align: center;
-    margin: 5px 0;
+    margin: var(--spacing-unit) 0; /* 5px */
+}
+
+.floating-text {
+  position: absolute;
+  left: 50%;
+  /* transform: translateX(-50%); Will be part of the animation */
+  font-size: var(--font-size-lg); /* Larger font for impact */
+  font-weight: bold;
+  opacity: 0; /* Start transparent, animation handles fade in */
+  animation: floatAndFade 2s ease-out forwards;
+  pointer-events: none; /* So they don't interfere with clicks */
+  white-space: nowrap; /* Prevent text from wrapping */
+}
+
+.floating-text.gain {
+  color: var(--success-color); /* Green for gains */
+}
+
+.floating-text.loss {
+  color: var(--error-color); /* Red for losses */
+}
+
+@keyframes floatAndFade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0); /* Start at original position (adjusted by 'top' style) */
+  }
+  20% { /* Stay visible for a bit longer */
+    opacity: 1;
+    transform: translate(-50%, -10px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70px); /* Float upwards by total 70px (additional 60 from the 20% mark) */
+  }
 }

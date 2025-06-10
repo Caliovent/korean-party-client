@@ -60,12 +60,24 @@ const GameControls: React.FC<GameControlsProps> = ({ game }) => {
     <div className="game-controls">
       {game.turnState === 'AWAITING_ROLL' && (
         <button onClick={handleRollDice} disabled={isLoading}>
-          {isLoading ? 'Lancement...' : 'Lancer le dé'}
+          {isLoading ? (
+            <>
+              <span className="loading-spinner"></span> Lancement...
+            </>
+          ) : (
+            'Lancer le dé'
+          )}
         </button>
       )}
       {game.turnState === 'RESOLVING_TILE' && (
         <button onClick={handleResolveTile} disabled={isLoading}>
-          {isLoading ? 'Résolution...' : 'Terminer le tour'}
+          {isLoading ? (
+            <>
+              <span className="loading-spinner"></span> Résolution...
+            </>
+          ) : (
+            'Terminer le tour'
+          )}
         </button>
       )}
     </div>

@@ -24,6 +24,7 @@ const GamePage: React.FC = () => {
   const [game, setGame] = useState<Game | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [selectedSpellId, setSelectedSpellId] = useState<SpellId | null>(null);
+  const [isCastingSpell, setIsCastingSpell] = useState<boolean>(false); // Added for spell casting loading state
   // AJOUT : Nouvel état pour la cible
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const gameNotFoundTimerRef = useRef<NodeJS.Timeout | null>(null); // For delayed redirect
@@ -116,11 +117,18 @@ const GamePage: React.FC = () => {
 
     // Handle self-cast spells immediately
     if (spellDefinition.type === SpellType.SELF) {
-      if (game && user) { // Ensure game and user context is available
+      if (game && user && !isCastingSpell) { // Ensure game and user context is available and not already casting
         console.log(`[React] Casting self-spell ${spellId} for game ${game.id}`);
-        castSpell(game.id, spellId, user.uid); // Use user.uid as targetId for self-cast
-        setSelectedSpellId(null); // Reset immediately after casting
-        setSelectedTargetId(null);
+        setIsCastingSpell(true);
+        castSpell(game.id, spellId, user.uid) // Use user.uid as targetId for self-cast
+          .catch((error) => console.error(`Error casting self-spell ${spellId}:`, error))
+          .finally(() => {
+            setIsCastingSpell(false);
+            setSelectedSpellId(null); // Reset selected spell
+            // No need to reset selectedTargetId here as it's a self-cast
+          });
+      } else if (isCastingSpell) {
+        console.log("Already casting a spell.");
       } else {
         console.error("Game or user not available for self-cast spell.");
       }
@@ -144,14 +152,23 @@ const GamePage: React.FC = () => {
     if (game && selectedSpellId && selectedTargetId && user) {
       const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
       // Ensure it's not a SELF spell trying to cast via target selection, though this path shouldn't be hit for SELF.
-      if (spellDefinition && spellDefinition.type !== SpellType.SELF) {
+      if (spellDefinition && spellDefinition.type !== SpellType.SELF && !isCastingSpell) {
         console.log(`[React] Casting spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
-        castSpell(game.id, selectedSpellId, selectedTargetId);
-        setSelectedSpellId(null);
-        setSelectedTargetId(null);
+        setIsCastingSpell(true);
+        castSpell(game.id, selectedSpellId, selectedTargetId)
+          .catch((error) => console.error(`Error casting spell ${selectedSpellId} on ${selectedTargetId}:`, error))
+          .finally(() => {
+            setIsCastingSpell(false);
+            setSelectedSpellId(null);
+            setSelectedTargetId(null);
+          });
+      } else if (isCastingSpell) {
+        // This case might occur if state updates batch oddly, or if user somehow double-triggers.
+        // Or if a self-cast spell was initiated while a targeted one was also trying to resolve.
+        console.log("Already casting another spell or target selection occurred while casting.");
       }
     }
-  }, [selectedTargetId, selectedSpellId, game, user]); // Déclenché quand la cible est choisie
+  }, [selectedTargetId, selectedSpellId, game, user, isCastingSpell]); // Added isCastingSpell to dependencies
 
 
   if (!game || !gameId) {
@@ -179,6 +196,8 @@ const GamePage: React.FC = () => {
           player={currentPlayer}
           selectedSpellId={selectedSpellId}
           onSelectSpell={handleSelectSpell}
+          isCastingSpell={isCastingSpell}
+          castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
         />
       )}
       <PhaserGame

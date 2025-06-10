@@ -2,25 +2,26 @@
 
 .spellbook-container {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 300px;
-  background-color: rgba(20, 10, 30, 0.85);
-  border: 2px solid #a445ed;
-  border-radius: 10px;
-  color: white;
-  padding: 15px;
-  z-index: 101;
-  font-family: 'Arial', sans-serif;
-  backdrop-filter: blur(5px);
+  top: calc(var(--spacing-unit) * 4); /* 20px */
+  left: calc(var(--spacing-unit) * 4); /* 20px */
+  width: 300px; /* Keep specific width */
+  background-color: color-mix(in srgb, var(--game-dark-bg, #140a1e) 85%, transparent); /* rgba(20,10,30,0.85) */
+  border: 2px solid var(--game-accent-color); /* #a445ed -> game's violet */
+  border-radius: var(--border-radius-lg); /* 10px -> 8px */
+  color: var(--game-primary-text); /* white -> game's primary text */
+  padding: calc(var(--spacing-unit) * 3); /* 15px -> 24px */
+  z-index: 101; /* Keep z-index */
+  font-family: var(--font-family-sans-serif); /* Arial -> standard */
+  backdrop-filter: blur(5px); /* Keep style */
+  box-shadow: var(--box-shadow-lg);
 }
 
 .spellbook-container h4 {
   text-align: center;
   margin-top: 0;
-  margin-bottom: 15px;
-  color: #ffc107;
-  font-size: 1.2em;
+  margin-bottom: calc(var(--spacing-unit) * 3); /* 15px -> 24px */
+  color: var(--accent-color); /* #ffc107 -> standard yellow accent */
+  font-size: var(--font-size-lg); /* 1.2em -> 1.25rem */
 }
 
 .spell-list {
@@ -32,19 +33,19 @@
 }
 
 .spell-item {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 5px;
-  padding: 10px;
-  margin-bottom: 10px;
+  background-color: color-mix(in srgb, var(--game-primary-text) 5%, transparent); /* rgba(255,255,255,0.05) */
+  border-radius: var(--border-radius); /* 5px -> 4px */
+  padding: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
+  margin-bottom: calc(var(--spacing-unit) * 2); /* 10px -> 16px */
 }
 
 .spell-item.disabled {
-  color: #888;
-  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--game-secondary-text); /* #888 -> game's secondary text */
+  background-color: color-mix(in srgb, var(--game-dark-bg) 20%, transparent); /* rgba(0,0,0,0.2) */
 }
 
 .spell-item.disabled .spell-header .spell-cost {
-  color: #a23f3f;
+  color: var(--error-color); /* #a23f3f -> standard error red */
 }
 
 .spell-header {
@@ -54,37 +55,85 @@
 }
 
 .spell-cost {
-  color: #4dd0e1;
+  color: var(--primary-color); /* #4dd0e1 -> standard primary (blue) for mana/info */
 }
 
 .spell-description {
-  font-size: 0.9em;
-  margin: 5px 0 10px;
+  font-size: var(--font-size-sm); /* 0.9em -> 0.875rem (14px) */
+  margin: var(--spacing-unit) 0 calc(var(--spacing-unit) * 2); /* 5px 0 10px -> 8px 0 16px */
 }
 
 .spell-item button {
   width: 100%;
-  padding: 8px;
-  background-color: #ffc107;
-  border: none;
-  border-radius: 4px;
-  color: black;
-  font-weight: bold;
+  padding: var(--spacing-unit); /* 8px */
+  background-color: var(--accent-color); /* #ffc107 -> standard yellow accent */
+  border: 1px solid transparent; /* Added for consistency */
+  border-radius: var(--border-radius); /* 4px */
+  color: var(--text-color); /* black -> standard dark text */
+  font-weight: bold; /* Keep bold */
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--box-shadow);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, transform 0.1s ease-in-out; /* Added transform */
+}
+
+.spell-item button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--accent-color) 90%, black); /* Darken accent */
+  box-shadow: var(--box-shadow-lg);
+  /* Consider adding transform: translateY(-1px); for hover if desired */
+}
+
+/* Active state for the default "Lancer" button */
+.spell-item button:active:not(:disabled):not(.spell-item.selected button) { /* Ensure it doesn't apply to the selected/cancel button */
+  transform: scale(0.97);
+  background-color: color-mix(in srgb, var(--accent-color) 70%, black); /* Darker yellow */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.125);
 }
 
 .spell-item button:disabled {
-  background-color: #555;
-  color: #aaa;
+  background-color: var(--secondary-color); /* #555 -> standard secondary */
+  color: var(--text-color); /* #aaa -> standard dark text, ensure contrast */
+  opacity: var(--disabled-opacity); /* Added for consistency */
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .spell-item.selected {
-  outline: 2px solid #ffc107;
-  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+  outline: 2px solid var(--accent-color); /* #ffc107 -> standard yellow accent */
+  box-shadow: 0 0 calc(var(--spacing-unit) * 3) color-mix(in srgb, var(--accent-color) 50%, transparent); /* Standardized glow */
 }
 
-.spell-item.selected button {
-  background-color: #dc3545; /* Rouge pour "Annuler" */
-  color: white;
+.spell-item.selected button:not(.casting) {
+  background-color: var(--error-color); /* #dc3545 -> standard error red */
+  color: var(--text-color-light); /* white -> standard light text */
+  /* Ensure transition includes transform if not already inherited from .spell-item button, though it should */
 }
+
+/* Active state specifically for the "Annuler" (selected) button */
+.spell-item.selected button:not(.casting):active:not(:disabled) {
+  transform: scale(0.97);
+  background-color: color-mix(in srgb, var(--error-color) 70%, black); /* Darker red */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.125);
+}
+
+/* Styles for the loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid color-mix(in srgb, var(--text-color) 30%, transparent); /* Spinner track for light buttons */
+  border-radius: 50%;
+  border-top-color: var(--text-color); /* Spinner active color for light buttons */
+  animation: spin 1s linear infinite;
+  margin-right: var(--spacing-unit); /* 0.5em -> 8px */
+}
+
+/* Keyframes spin is already defined, assuming it's the same as GameControls.css one.
+   If not, ensure it's:
+   @keyframes spin {
+     0% { transform: rotate(0deg); }
+     100% { transform: rotate(360deg); }
+   }
+   It is indeed the same, so no need to repeat. */

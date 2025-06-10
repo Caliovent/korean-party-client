@@ -2,7 +2,7 @@
 
 import Phaser from 'phaser';
 import type { Game, Player } from '../types/game'; // Ensure this matches the updated structure
-import { SpellType, type SpellId } from '../data/spells'; // Import SpellType
+import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Import SpellType and SPELL_DEFINITIONS
 
 // Updated TileConfig to match src/types/game.ts
 interface TileConfig {
@@ -186,49 +186,75 @@ export default class MainBoardScene extends Phaser.Scene {
   // MÉTHODE POUR L'ANIMATION DES SORTS (peut rester similaire ou être adaptée)
   // ===================================================================
 
-  public playSpellAnimation(spellData: { casterId: string, targetId: string, spellId: SpellId }) {
-    // This method might need adjustment if some spells don't have a targetId (e.g. SELF spells if they have animations)
-    // For now, assuming it's for targeted spells.
+  public playSpellAnimation(spellData: { casterId: string, targetId?: string, spellId: SpellId }) {
     const { casterId, targetId, spellId } = spellData;
 
     const casterSprite = this.playerSprites[casterId];
-    const targetSprite = this.playerSprites[targetId];
+    // targetSprite might be undefined for SELF spells or if targetId is not a player
+    const targetSprite = targetId ? this.playerSprites[targetId] : null;
 
-    if (!casterSprite || !targetSprite) {
-      console.warn("Could not find sprites for spell animation.");
+    if (!casterSprite) {
+      console.warn("[Phaser] Caster sprite not found for spell animation.");
       return;
     }
 
-    console.log(`[Phaser] Playing animation for spell ${spellId}`);
+    console.log(`[Phaser] Playing animation for spell ${spellId} by ${casterId}`);
 
-    // Créer la particule à la position du lanceur
-    const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
-    bolt.setScale(0.5);
-    bolt.setAlpha(0.7);
+    // --- Muzzle Flash Effect ---
+    const muzzleFlash = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt'); // Reuse mana_bolt or use a specific muzzle flash asset
+    muzzleFlash.setScale(0.3); // Start smaller
+    muzzleFlash.setAlpha(0.9);
+    muzzleFlash.setDepth(casterSprite.depth + 1); // Ensure it's on top of the caster
 
-    // Animer la particule vers la cible
     this.tweens.add({
-      targets: bolt,
-      x: targetSprite.x,
-      y: targetSprite.y,
-      duration: 800, // Durée du trajet en ms
-      ease: 'Power2',
+      targets: muzzleFlash,
+      scale: { from: 0.3, to: 0.8 }, // Grow effect
+      alpha: { from: 0.9, to: 0 },   // Fade out
+      duration: 250, // Short duration for a flash
+      ease: 'Cubic.easeOut',
       onComplete: () => {
-        // Optionnel : Créer un petit flash d'impact sur la cible
-        const impactFlash = this.add.circle(targetSprite.x, targetSprite.y, 20, 0xffffff, 0.8);
-        this.tweens.add({
-          targets: impactFlash,
-          alpha: 0,
-          duration: 300,
-          onComplete: () => {
-            impactFlash.destroy();
-          }
-        });
-
-        // Détruire la particule à la fin de son trajet
-        bolt.destroy();
+        muzzleFlash.destroy();
       }
     });
+    // --- End Muzzle Flash Effect ---
+
+    const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spellId);
+
+    if (targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+      const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
+      bolt.setScale(0.5);
+      bolt.setAlpha(0.7);
+      bolt.setDepth(casterSprite.depth); // Projectile can be at same depth or slightly below muzzle flash initially
+
+      this.tweens.add({
+        targets: bolt,
+        x: targetSprite.x,
+        y: targetSprite.y,
+        duration: 800,
+        ease: 'Power2',
+        onComplete: () => {
+          const impactFlash = this.add.circle(targetSprite.x, targetSprite.y, 20, 0xffffff, 0.8);
+          impactFlash.setDepth(targetSprite.depth + 1);
+          this.tweens.add({
+            targets: impactFlash,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => {
+              impactFlash.destroy();
+            }
+          });
+          bolt.destroy();
+        }
+      });
+    } else if (spellDefinition && spellDefinition.type === SpellType.SELF) {
+      // For SELF spells, the muzzle flash might be the primary effect.
+      console.log(`[Phaser] SELF spell ${spellId} cast by ${casterId}. Muzzle flash shown.`);
+    } else if (!targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+      // This handles cases like tile-targeted spells where targetId might be a tile index, not a player ID.
+      // Projectile logic for tiles would need to resolve targetId to tile coordinates.
+      // For now, only muzzle flash is guaranteed.
+      console.warn(`[Phaser] Spell ${spellId} to target ${targetId} (non-player?) shown. Muzzle flash only for now.`);
+    }
   }
 
   public updateGameState(newState: Game) {
