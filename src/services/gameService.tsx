@@ -3,7 +3,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { SpellId } from '../data/spells'; // Importer le type
 import { app } from '../firebaseConfig';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { collection, getDocs, getFirestore, doc, getDoc } from 'firebase/firestore'; // Import doc and getDoc
 import type { Guild } from '../types/guild'; // Importer le type Guild
 const functions = getFunctions(app, 'europe-west1');
 const db = getFirestore(app);
@@ -87,6 +87,53 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
     throw error; // Re-throw the error to be handled by the caller
   }
 };
+
+/**
+ * Fetches a specific guild by its ID from Firestore.
+ * @param guildId The ID of the guild to fetch.
+ * @returns A promise that resolves to the Guild object if found, otherwise null.
+ */
+export const getGuildById = async (guildId: string): Promise<Guild | null> => {
+  if (!guildId) {
+    console.error("getGuildById: guildId is null or undefined.");
+    return null;
+  }
+  try {
+    const guildDocRef = doc(db, 'guilds', guildId);
+    const guildDocSnap = await getDoc(guildDocRef);
+
+    if (guildDocSnap.exists()) {
+      const guildData = { id: guildDocSnap.id, ...guildDocSnap.data() } as Guild;
+      console.log('Fetched guild by ID:', guildData);
+      return guildData;
+    } else {
+      console.log('No such guild found for ID:', guildId);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching guild by ID:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};
+
+
+/**
+ * Calls the Cloud Function for a user to leave their current guild.
+ * The Cloud Function is expected to identify the user and their guild via context.
+ * @returns A promise that resolves with the result of the Cloud Function call.
+ */
+export const leaveGuild = async (): Promise<any> => {
+  try {
+    const leaveGuildFunction = httpsCallable(functions, 'leaveGuild');
+    const result = await leaveGuildFunction(); // No parameters needed for this call
+    console.log(`Cloud Function 'leaveGuild' called successfully`, result);
+    return result.data; // Functions usually return data in a 'data' property
+  } catch (error) {
+    console.error("Error calling leaveGuild function:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};
+
 
 /**
  * Calls the Cloud Function for a user to join a guild.

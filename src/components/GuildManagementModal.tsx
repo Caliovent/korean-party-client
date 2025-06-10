@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getGuilds, createGuild, joinGuild } from '../services/gameService'; // Import joinGuild
+import { getGuilds, createGuild, joinGuild, getGuildById, leaveGuild } from '../services/gameService'; // Import leaveGuild
 import type { Guild } from '../types/guild';
 import { useAuth } from '../hooks/useAuth'; // Import the useAuth hook
 
@@ -24,6 +24,16 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null); // State for loading indicator on specific button
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccessMessage, setJoinSuccessMessage] = useState<string | null>(null);
+
+  // State for current guild details
+  const [currentGuildDetails, setCurrentGuildDetails] = useState<Guild | null>(null);
+  const [isLoadingGuildDetails, setIsLoadingGuildDetails] = useState<boolean>(false);
+  const [guildDetailsError, setGuildDetailsError] = useState<string | null>(null);
+
+  // State for leaving guild operation
+  const [isLeavingGuild, setIsLeavingGuild] = useState<boolean>(false);
+  const [leaveGuildError, setLeaveGuildError] = useState<string | null>(null);
+  const [leaveGuildSuccessMessage, setLeaveGuildSuccessMessage] = useState<string | null>(null);
 
   const fetchGuildsList = useCallback(async () => {
     try {
@@ -53,8 +63,48 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
       setJoinError(null);
       setJoinSuccessMessage(null); // Clear join success message
       setJoiningGuildId(null);
+      // Reset current guild details state
+      setCurrentGuildDetails(null);
+      setGuildDetailsError(null);
+      setIsLoadingGuildDetails(false);
+      // Reset leave guild state
+      setLeaveGuildError(null);
+      setLeaveGuildSuccessMessage(null);
+      setIsLeavingGuild(false);
     }
   }, [isOpen, fetchGuildsList]);
+
+  // Effect to fetch current guild details if user has a guildId
+  useEffect(() => {
+    const fetchCurrentGuild = async () => {
+      if (user && user.guildId && isOpen) { // Also check isOpen to avoid fetching when modal is closed
+        setIsLoadingGuildDetails(true);
+        setGuildDetailsError(null);
+        // Clear join success message when we are about to show guild details
+        // as it's part of the same "user is in a guild" view.
+        setJoinSuccessMessage(null);
+        try {
+          const details = await getGuildById(user.guildId);
+          setCurrentGuildDetails(details);
+          if (!details) {
+            setGuildDetailsError("Could not fetch your guild's details. It may have been disbanded.");
+            // Potentially call updateUserGuildId(null) if the guild doesn't exist,
+            // though this could also be a backend responsibility (e.g. on user login).
+          }
+        } catch (err) {
+          console.error("Error fetching current guild details:", err);
+          setGuildDetailsError("Failed to fetch your guild's details.");
+        } finally {
+          setIsLoadingGuildDetails(false);
+        }
+      } else if (!user?.guildId) {
+        // Clear details if user somehow loses guildId (e.g. after leaving)
+        setCurrentGuildDetails(null);
+      }
+    };
+
+    fetchCurrentGuild();
+  }, [user, user?.guildId, isOpen]); // Depend on user object and specifically guildId and isOpen
 
   const handleCreateGuild = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +163,36 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     }
   };
 
+  const handleLeaveGuild = async () => {
+    if (!user || !user.guildId) {
+      setLeaveGuildError("Vous n'êtes pas membre d'une maison ou votre session a expiré.");
+      return;
+    }
+    setIsLeavingGuild(true);
+    setLeaveGuildError(null);
+    setLeaveGuildSuccessMessage(null);
+    // Clear other messages
+    setCreateError(null);
+    setCreateSuccessMessage(null);
+    setJoinError(null);
+    setJoinSuccessMessage(null);
+
+    try {
+      await leaveGuild(); // Call the service function
+      updateUserGuildId(null); // Update auth state
+      setLeaveGuildSuccessMessage("Vous avez quitté la maison.");
+      setCurrentGuildDetails(null); // Clear current guild details
+      // The modal will re-render due to user.guildId change, showing join/create options.
+      // Fetch the list of guilds again for the updated view.
+      fetchGuildsList();
+    } catch (err: any) {
+      console.error("Error leaving guild:", err);
+      setLeaveGuildError(err.message || "Erreur en quittant la maison.");
+    } finally {
+      setIsLeavingGuild(false);
+    }
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -120,15 +200,53 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
   // Determine content based on user's guild status
   const renderContent = () => {
     if (user && user.guildId) {
-      // User is in a guild - Show guild details or management options (Sous-Ordre #4)
-      // For now, just show success message if one exists from joining
-      return (
-        <div>
-          {joinSuccessMessage && <p style={{ color: 'green' }}>{joinSuccessMessage}</p>}
-          <p>Vous êtes membre de la maison avec ID: {user.guildId}.</p>
-          {/* Placeholder for future guild management options */}
-        </div>
-      );
+      // User is in a guild - Show guild details or management options
+      if (isLoadingGuildDetails) {
+        return <p>Loading your guild details...</p>;
+      }
+      if (guildDetailsError) {
+        return <p style={{ color: 'red' }}>Error: {guildDetailsError}</p>;
+      }
+      if (currentGuildDetails) {
+        return (
+          <div style={{ textAlign: 'left' }}>
+            <h3>{currentGuildDetails.name} [{currentGuildDetails.tag}]</h3>
+            <h4>Membres ({currentGuildDetails.members.length}):</h4>
+            {currentGuildDetails.members && currentGuildDetails.members.length > 0 ? (
+              <ul style={{ listStyleType: 'none', paddingLeft: '10px' }}>
+                {currentGuildDetails.members.map((member, index) => (
+                  // Assuming member is a string (user ID or name). If it's an object, adjust accordingly.
+                  <li key={index}>{typeof member === 'string' ? member : JSON.stringify(member)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>Cette maison n'a pas encore de membres.</p>
+            )}
+            <button
+              onClick={handleLeaveGuild}
+              disabled={isLeavingGuild}
+              style={{ marginTop: '15px', backgroundColor: 'red', color: 'white' }}
+            >
+              {isLeavingGuild ? 'Départ en cours...' : 'Quitter la Maison'}
+            </button>
+            {leaveGuildError && <p style={{ color: 'red', marginTop: '10px' }}>{leaveGuildError}</p>}
+            {/* leaveGuildSuccessMessage is handled by the view changing */}
+          </div>
+        );
+      }
+      // If joinSuccessMessage is present, it means we just joined, and details might still be loading.
+      if (joinSuccessMessage && !isLoadingGuildDetails && !guildDetailsError) {
+         // This case might occur if guild details fetch was too fast and returned null right after joining.
+         // Or if the user joined a guild that was immediately disbanded.
+         return (
+            <div>
+                <p style={{ color: 'green' }}>{joinSuccessMessage}</p>
+                <p>Les détails de votre maison sont en cours de chargement ou un problème est survenu.</p>
+            </div>
+         );
+      }
+      // Fallback if currentGuildDetails is null for other reasons after loading and no error.
+      return <p>Vous êtes membre d'une maison, mais ses détails n'ont pu être chargés. Elle a peut-être été dissoute.</p>;
     }
 
     // User is NOT in a guild - Show options to create or join
@@ -189,6 +307,7 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
         )}
         {createSuccessMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{createSuccessMessage}</p>}
         {joinError && <p style={{ color: 'red', marginBottom: '15px' }}>{joinError}</p>}
+        {leaveGuildSuccessMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{leaveGuildSuccessMessage}</p>}
         {/* Join success message is handled inside renderContent when user has a guildId */}
 
         {/* Guild List Section - only if not showing create form and no guild */}
