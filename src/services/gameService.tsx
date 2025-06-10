@@ -87,3 +87,20 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
     throw error; // Re-throw the error to be handled by the caller
   }
 };
+
+/**
+ * Calls the Cloud Function for a user to join a guild.
+ * @param guildId The ID of the guild to join.
+ * @returns A promise that resolves with the result of the Cloud Function call.
+ */
+export const joinGuild = async (guildId: string): Promise<any> => {
+  try {
+    const joinGuildFunction = httpsCallable(functions, 'joinGuild');
+    const result = await joinGuildFunction({ guildId });
+    console.log(`Cloud Function 'joinGuild' called successfully for guildId: ${guildId}`, result);
+    return result.data; // Functions usually return data in a 'data' property
+  } catch (error) {
+    console.error("Error calling joinGuild function:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};
