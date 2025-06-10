@@ -274,13 +274,7 @@ export default class MainBoardScene extends Phaser.Scene {
     }
   }
 
-// Helper function to determine if a player sprite needs non-movement visual updates (e.g. effects list changed)
-// This is a placeholder; actual implementation might depend on specific visual cues tied to player properties beyond position.
-function playerSpriteNeedsUpdate(oldPlayer: Player, newPlayer: Player): boolean {
-  // Example: Check if effects array reference changed or length changed.
-  // A more robust check might involve deep comparison of relevant effect properties if they influence sprite appearance beyond shield.
-  return oldPlayer.effects !== newPlayer.effects || oldPlayer.effects?.length !== newPlayer.effects?.length;
-}
+  // playerSpriteNeedsUpdate function moved to the end of the file (after class definition)
 
   private defineBoardPath() {
     const { width, height } = this.scale;
@@ -403,4 +397,12 @@ function playerSpriteNeedsUpdate(oldPlayer: Player, newPlayer: Player): boolean 
     const color = (hash & 0x00FFFFFF).toString(16).toUpperCase();
     return parseInt("0x" + "00000".substring(0, 6 - color.length) + color);
   }
+}
+
+// Helper function to determine if a player sprite needs non-movement visual updates (e.g. effects list changed)
+// This is a placeholder; actual implementation might depend on specific visual cues tied to player properties beyond position.
+function playerSpriteNeedsUpdate(oldPlayer: Player, newPlayer: Player): boolean {
+  // Example: Check if effects array reference changed or length changed.
+  // A more robust check might involve deep comparison of relevant effect properties if they influence sprite appearance beyond shield.
+  return oldPlayer.effects !== newPlayer.effects || oldPlayer.effects?.length !== newPlayer.effects?.length;
 }

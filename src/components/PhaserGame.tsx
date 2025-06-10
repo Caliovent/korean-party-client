@@ -40,7 +40,12 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
   useEffect(() => {
     if (game && gameRef.current) {
       const scene = gameRef.current.scene.getScene('MainBoardScene') as MainBoardScene;
-      if (scene && scene.scene.isActive()) {
+      // Corrected way to check if a scene is active in Phaser 3
+      // scene.sys.isActive() is a method, or check scene.sys.settings.status === Phaser.Scenes.RUNNING
+      // Using scene.sys.isActive() for simplicity as it's commonly available.
+      if (scene && scene.sys && typeof scene.sys.isActive === 'function' && scene.sys.isActive()) {
+        scene.updateGameState(game);
+      } else if (scene && scene.sys && scene.sys.settings && scene.sys.settings.active) { // Fallback for some Phaser versions/structures
         scene.updateGameState(game);
       }
     }
@@ -48,7 +53,9 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
 
   useEffect(() => {
     const scene = gameRef.current?.scene.getScene('MainBoardScene') as MainBoardScene;
-    if (scene?.scene.isActive()) {
+  // Corrected way to check if a scene is active
+  const isActive = scene && scene.sys && ( (typeof scene.sys.isActive === 'function' && scene.sys.isActive()) || (scene.sys.settings && scene.sys.settings.active) );
+  if (isActive) {
       if (selectedSpellId) {
         const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
         if (spellDefinition) {
