@@ -6,13 +6,15 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import { castSpell } from '../services/gameService'; // Importer castSpell
+import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Importer le type SpellId
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
 import type { Game, Player } from '../types/game';
 import Spellbook from '../components/spellBook';
-import type { SpellId } from '../data/spells'; // Importer le type SpellId
+// import type { SpellId } from '../data/spells'; // Importer le type SpellId - Already imported above
 import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
+import EventCardModal from '../components/EventCardModal'; // Import the modal
 
 
 const GamePage: React.FC = () => {
@@ -25,6 +27,8 @@ const GamePage: React.FC = () => {
   // AJOUT : Nouvel état pour la cible
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const gameNotFoundTimerRef = useRef<NodeJS.Timeout | null>(null); // For delayed redirect
+  const [currentEvent, setCurrentEvent] = useState<Game['lastEventCard'] | null>(null);
+  const eventTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 
   useEffect(() => {
@@ -58,9 +62,74 @@ const GamePage: React.FC = () => {
     };
   }, [gameId, user, navigate]); // +navigate
 
+  useEffect(() => {
+    if (game?.lastEventCard) {
+      setCurrentEvent(game.lastEventCard);
+      // Clear any existing timer
+      if (eventTimerRef.current) {
+        clearTimeout(eventTimerRef.current);
+      }
+      // Set a new timer
+      eventTimerRef.current = setTimeout(() => {
+        setCurrentEvent(null); // Hide modal after timeout
+      }, 7000); // 7 seconds
+    } else {
+      // If lastEventCard becomes null from Firestore (e.g., another event replaced it or backend cleared it)
+      setCurrentEvent(null);
+      if (eventTimerRef.current) {
+        clearTimeout(eventTimerRef.current);
+      }
+    }
+
+    // Cleanup timer on component unmount or if game/lastEventCard changes before timeout
+    return () => {
+      if (eventTimerRef.current) {
+        clearTimeout(eventTimerRef.current);
+      }
+    };
+  }, [game?.lastEventCard]); // Effect runs when game.lastEventCard changes
+
+  const handleCloseEventModal = () => {
+    setCurrentEvent(null);
+    if (eventTimerRef.current) {
+      clearTimeout(eventTimerRef.current); // Also clear timer if manually closed
+    }
+    // Optional: If we need to signal the backend or modify local game state further, do it here.
+    // For now, just hiding it locally is fine as per requirements.
+  };
+
   const handleSelectSpell = (spellId: SpellId) => {
-    setSelectedSpellId(prev => (prev === spellId ? null : spellId));
-    setSelectedTargetId(null); // Réinitialiser la cible si on change de sort
+    const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spellId);
+    if (!spellDefinition) {
+      console.error(`Spell definition for ${spellId} not found!`);
+      return;
+    }
+
+    // If clicking the currently selected spell, deselect it.
+    if (selectedSpellId === spellId) {
+      setSelectedSpellId(null);
+      setSelectedTargetId(null);
+      // Potentially tell Phaser to exit targeting mode here if it was active
+      // This will be handled by PhaserGame's reaction to selectedSpellId becoming null
+      return;
+    }
+
+    // Handle self-cast spells immediately
+    if (spellDefinition.type === SpellType.SELF) {
+      if (game && user) { // Ensure game and user context is available
+        console.log(`[React] Casting self-spell ${spellId} for game ${game.id}`);
+        castSpell(game.id, spellId, user.uid); // Use user.uid as targetId for self-cast
+        setSelectedSpellId(null); // Reset immediately after casting
+        setSelectedTargetId(null);
+      } else {
+        console.error("Game or user not available for self-cast spell.");
+      }
+    } else {
+      // For spells requiring a target (player or tile)
+      setSelectedSpellId(spellId);
+      setSelectedTargetId(null); // Reset target when a new spell is selected
+      // PhaserGame component will observe selectedSpellId and trigger targeting mode in Phaser scene
+    }
   };
 
   // AJOUT : Handler appelé par Phaser quand une cible est cliquée
@@ -72,16 +141,17 @@ const GamePage: React.FC = () => {
     // AJOUT : useEffect qui déclenche le lancement du sort
   useEffect(() => {
     // Si nous avons toutes les infos nécessaires...
-    if (game && selectedSpellId && selectedTargetId) {
-      console.log(`[React] Casting spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
-      // On lance le sort !
-      castSpell(game.id, selectedSpellId, selectedTargetId);
-      
-      // On réinitialise l'état pour terminer l'action
-      setSelectedSpellId(null);
-      setSelectedTargetId(null);
+    if (game && selectedSpellId && selectedTargetId && user) {
+      const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
+      // Ensure it's not a SELF spell trying to cast via target selection, though this path shouldn't be hit for SELF.
+      if (spellDefinition && spellDefinition.type !== SpellType.SELF) {
+        console.log(`[React] Casting spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
+        castSpell(game.id, selectedSpellId, selectedTargetId);
+        setSelectedSpellId(null);
+        setSelectedTargetId(null);
+      }
     }
-  }, [selectedTargetId, selectedSpellId, game]); // Déclenché quand la cible est choisie
+  }, [selectedTargetId, selectedSpellId, game, user]); // Déclenché quand la cible est choisie
 
 
   if (!game || !gameId) {
@@ -102,6 +172,7 @@ const GamePage: React.FC = () => {
   // Le rendu normal du jeu si la partie n'est pas terminée
   return (
     <div>
+      <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
       <PlayerHUD player={currentPlayer} />
       {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
         <Spellbook

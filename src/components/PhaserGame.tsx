@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import MainBoardScene from '../phaser/MainBoardScene';
 import type { Game } from '../types/game';
-import type { SpellId } from '../data/spells'; // Importer le type
+import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Importer le type
 
 interface PhaserGameProps {
   game: Game | null;
@@ -50,7 +50,14 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
     const scene = gameRef.current?.scene.getScene('MainBoardScene') as MainBoardScene;
     if (scene?.scene.isActive()) {
       if (selectedSpellId) {
-        scene.enterTargetingMode(selectedSpellId);
+        const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
+        if (spellDefinition) {
+          scene.enterTargetingMode(spellDefinition.type);
+        } else {
+          // Spell definition not found, maybe exit targeting mode or log error
+          console.error(`[PhaserGame] Spell definition not found for ${selectedSpellId}`);
+          scene.exitTargetingMode();
+        }
       } else {
         scene.exitTargetingMode();
       }

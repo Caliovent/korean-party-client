@@ -29,6 +29,18 @@
     "mana_drain": {
       "name": "Absorption de Mana",
       "description": "Vole 10 points de Mana à un autre joueur."
+    },
+    "trap_rune": {
+      "name": "Piège Runique",
+      "description": "Place un piège sur une case. Le prochain joueur à s'arrêter dessus subit un effet."
+    },
+    "mana_shield": {
+      "name": "Bouclier de Mana",
+      "description": "Vous entoure d'une barrière protectrice qui absorbe le prochain effet négatif."
+    },
+    "astral_swap": {
+      "name": "Échange Astral",
+      "description": "Échangez de position avec un autre joueur sur le plateau."
     }
   },
   "cancel_button": "Annuler",
@@ -40,5 +52,9 @@
   },
   "welcomeMessage": "Bienvenue dans le jeu de fête coréen !",
   "homePageDescription": "C'est un jeu amusant et interactif où les joueurs peuvent lancer des sorts, collecter des grimoires et rivaliser les uns contre les autres dans un monde de jeu vibrant.",
-  "footerText": "Ce jeu est développé par une équipe passionnée. Suivez-nous sur les réseaux sociaux pour les dernières mises à jour et événements !"
+  "footerText": "Ce jeu est développé par une équipe passionnée. Suivez-nous sur les réseaux sociaux pour les dernières mises à jour et événements !",
+  "event": {
+    "example_title": "Titre de l'Événement Exemple",
+    "example_description": "Description de l'événement exemple."
+  }
 }

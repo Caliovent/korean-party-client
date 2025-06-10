@@ -1,23 +1,29 @@
 // src/phaser/MainBoardScene.ts
 
 import Phaser from 'phaser';
-import type { Game, Player } from '../types/game';
-import type { SpellId } from '../data/spells';
+import type { Game, Player } from '../types/game'; // Ensure this matches the updated structure
+import { SpellType, type SpellId } from '../data/spells'; // Import SpellType
 
-// L'interface pour le layout du plateau passé par le serveur
-interface BoardLayout {
+// Updated TileConfig to match src/types/game.ts
+interface TileConfig {
   type: string;
+  trap?: 'RUNE_TRAP' | string;
 }
 
 export default class MainBoardScene extends Phaser.Scene {
   private playerSprites: { [key:string]: Phaser.GameObjects.Sprite } = {};
+  private tileSprites: Phaser.GameObjects.Sprite[] = []; // Added for tile targeting
   private boardPath: { x: number; y: number }[] = [];
   private gameState: Game | null = null;
   private boardIsDrawn = false;
-  private isTargeting = false;
+  // private isTargeting = false; // Replaced by currentTargetingType
+  private currentTargetingType: SpellType | null = null; // Added
   private targetingTweens: Phaser.Tweens.Tween[] = [];
   // AJOUT : Propriété pour stocker la fonction de rappel
   private onTargetSelected: (targetId: string) => void = () => {};
+  // For new visual effects
+  private trapSprites: { [tileIndex: number]: Phaser.GameObjects.Sprite } = {};
+  private shieldEffects: { [playerId: string]: Phaser.GameObjects.Sprite } = {};
 
   constructor() {
     super('MainBoardScene');
@@ -33,77 +39,156 @@ export default class MainBoardScene extends Phaser.Scene {
     this.load.image('board_background', '/assets/korean-game-board.png');
     this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');
+    this.load.image('rune_trap_icon', 'assets/effects/rune_trap.png');
+    this.load.image('shield_effect', 'assets/effects/shield_aura.png');
 
     // MODIFICATION : On charge les images avec les noms correspondants aux types du backend
     this.load.image('tile_SAFE_ZONE', '/assets/tiles/tile_SAFE_ZONE.png');
     this.load.image('tile_MANA_GAIN', '/assets/tiles/tile_MANA_GAIN.png');
     this.load.image('tile_MINI_GAME_QUIZ', '/assets/tiles/tile_MINI_GAME_QUIZ.png');
  
-    this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
+    // this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 }); // Duplicate
     // AJOUT : Charger l'asset pour l'animation du sort
-    this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');
+    // this.load.image('mana_bolt', '/assets/effects/mana_bolt.png'); // Duplicate
   }
 
   create() {
     this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'board_background').setScale(0.8);
     this.defineBoardPath();
+    this.tileSprites = []; // Initialize tileSprites array
   }
 
+  public enterTargetingMode(spellType: SpellType) {
+    this.exitTargetingMode(); // Clear previous targeting state first
+    this.currentTargetingType = spellType;
+    console.log(`[Phaser] Entering targeting mode for type: ${spellType}`);
 
-  public enterTargetingMode(spellId: SpellId) {
-    console.log(`[Phaser] Entering targeting mode for spell: ${spellId}`);
-    this.isTargeting = true;
-    this.input.setDefaultCursor('crosshair');
-
-    // Mettre en surbrillance les cibles valides (tous les autres joueurs)
     if (!this.gameState) return;
 
-    this.gameState.players.forEach(player => {
-      if (player.id !== this.gameState?.currentPlayerId) {
+    if (spellType === SpellType.TARGET_PLAYER) {
+      this.input.setDefaultCursor('crosshair');
+      this.gameState.players.forEach(player => {
+        if (player.id !== this.gameState?.currentPlayerId) { // Can't target self for player-targeted spells
+          const sprite = this.playerSprites[player.id];
+          if (sprite) {
+            sprite.setInteractive(); // Make sure it's interactive
+            const tween = this.tweens.add({
+              targets: sprite,
+              scale: 1.8, // Existing scale is 1.5, so 1.8 is larger
+              duration: 500,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut'
+            });
+            this.targetingTweens.push(tween);
+          }
+        }
+      });
+    } else if (spellType === SpellType.TARGET_TILE) {
+      this.input.setDefaultCursor('pointer');
+      this.tileSprites.forEach(tileSprite => {
+        tileSprite.setInteractive(); // Make sure tiles are interactive
+        // Add visual feedback for targetable tiles, e.g., highlight or pulse
+        const tween = this.tweens.add({
+          targets: tileSprite,
+          alpha: 0.7,
+          duration: 600,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+        this.targetingTweens.push(tween);
+      });
+    }
+  }
+
+  public exitTargetingMode() {
+    if (!this.currentTargetingType) return;
+    console.log('[Phaser] Exiting targeting mode.');
+
+    this.input.setDefaultCursor('default');
+    this.targetingTweens.forEach(tween => tween.stop());
+    this.targetingTweens = [];
+
+    // Reset player sprite scales and interactivity if modified for targeting
+    if (this.currentTargetingType === SpellType.TARGET_PLAYER && this.gameState) {
+      this.gameState.players.forEach(player => {
         const sprite = this.playerSprites[player.id];
         if (sprite) {
-          // Créer un tween de pulsation pour la surbrillance
-          const tween = this.tweens.add({
-            targets: sprite,
-            scale: 1.8,
-            duration: 500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-          });
-          this.targetingTweens.push(tween);
+          sprite.setScale(1.5); // Reset to default scale
+          // sprite.disableInteractive(); // Optionally disable if only interactive for targeting
         }
+      });
+    }
+    // Reset tile sprite visuals and interactivity
+    if (this.currentTargetingType === SpellType.TARGET_TILE) {
+      this.tileSprites.forEach(tileSprite => {
+        tileSprite.setAlpha(1.0); // Reset alpha
+        // tileSprite.disableInteractive(); // Optionally disable if only interactive for targeting
+      });
+    }
+    this.currentTargetingType = null;
+  }
+
+  // ===================================================================
+  // Visual Feedback Updates
+  // ===================================================================
+  private updateTrapVisuals() {
+    if (!this.gameState || !this.boardIsDrawn) return;
+
+    this.gameState.board.forEach((tile, index) => {
+      const position = this.boardPath[index % this.boardPath.length];
+      if (!position) return;
+
+      if (tile.trap && !this.trapSprites[index]) {
+        // Add trap icon
+        const trapIcon = this.add.sprite(position.x, position.y + 10, 'rune_trap_icon'); // Offset slightly
+        trapIcon.setScale(0.3); // Adjust scale as needed
+        trapIcon.setAlpha(0.8);
+        this.trapSprites[index] = trapIcon;
+      } else if (!tile.trap && this.trapSprites[index]) {
+        // Remove trap icon
+        this.trapSprites[index].destroy();
+        delete this.trapSprites[index];
       }
     });
   }
 
-  public exitTargetingMode() {
-    if (!this.isTargeting) return; // Ne rien faire si on n'est pas en mode ciblage
-
-    console.log('[Phaser] Exiting targeting mode.');
-    this.isTargeting = false;
-    this.input.setDefaultCursor('default');
-
-    // Arrêter et supprimer tous les tweens de ciblage
-    this.targetingTweens.forEach(tween => tween.stop());
-    this.targetingTweens = [];
-
-    // Réinitialiser l'échelle de tous les sprites
+  private updatePlayerEffects() {
     if (!this.gameState) return;
+
     this.gameState.players.forEach(player => {
-       const sprite = this.playerSprites[player.id];
-        if (sprite) {
-          sprite.setScale(1.5);
-        }
+      const playerSprite = this.playerSprites[player.id];
+      if (!playerSprite) return;
+
+      const isShielded = player.effects?.some(effect => effect.type === 'SHIELDED');
+
+      if (isShielded && !this.shieldEffects[player.id]) {
+        // Add shield effect
+        const shieldSprite = this.add.sprite(playerSprite.x, playerSprite.y, 'shield_effect');
+        shieldSprite.setScale(0.7); // Adjust as needed
+        shieldSprite.setAlpha(0.6);
+        // Ensure shield is behind player sprite but above tiles/traps
+        shieldSprite.setDepth(playerSprite.depth - 1);
+        this.shieldEffects[player.id] = shieldSprite;
+      } else if (!isShielded && this.shieldEffects[player.id]) {
+        // Remove shield effect
+        this.shieldEffects[player.id].destroy();
+        delete this.shieldEffects[player.id];
+      } else if (isShielded && this.shieldEffects[player.id]) {
+        // Ensure shield follows player if already exists (e.g. after non-move update)
+        this.shieldEffects[player.id].setPosition(playerSprite.x, playerSprite.y);
+      }
     });
   }
 
-
   // ===================================================================
-  // NOUVELLE MÉTHODE POUR L'ANIMATION DES SORTS
+  // MÉTHODE POUR L'ANIMATION DES SORTS (peut rester similaire ou être adaptée)
   // ===================================================================
 
   public playSpellAnimation(spellData: { casterId: string, targetId: string, spellId: SpellId }) {
+    // This method might need adjustment if some spells don't have a targetId (e.g. SELF spells if they have animations)
+    // For now, assuming it's for targeted spells.
     const { casterId, targetId, spellId } = spellData;
 
     const casterSprite = this.playerSprites[casterId];
@@ -152,23 +237,50 @@ export default class MainBoardScene extends Phaser.Scene {
 
     if (!this.boardIsDrawn && this.gameState.players && this.gameState.players.length > 0 && this.gameState.board) {
       console.log('[Phaser] Drawing board for the first time.');
-      // MODIFICATION : On passe 'board' à la fonction
-      this.drawBoard(this.gameState.board);
+      this.drawBoard(this.gameState.board); // Pass the board layout
       this.initializePlayers(this.gameState.players);
       this.boardIsDrawn = true;
+      // Initial visual updates after board is drawn
+      this.updateTrapVisuals();
+      this.updatePlayerEffects();
       return;
     }
 
-    if (oldState && this.boardIsDrawn) {
-      this.gameState.players.forEach(player => {
-        const oldPlayer = oldState.players.find(p => p.id === player.id);
-        if (oldPlayer && oldPlayer.position !== player.position) {
-          console.log(`[Phaser] Player ${player.name} moved from ${oldPlayer.position} to ${player.position}`);
-          this.movePlayerSprite(player.id, oldPlayer.position, player.position);
-        }
-      });
+    if (this.boardIsDrawn) { // Ensure board is drawn before updating visuals
+      // Update player positions
+      if (oldState) { // Ensure oldState exists for comparison
+        this.gameState.players.forEach(player => {
+          const oldPlayer = oldState.players.find(p => p.id === player.id);
+          if (oldPlayer && oldPlayer.position !== player.position) {
+            console.log(`[Phaser] Player ${player.name} moved from ${oldPlayer.position} to ${player.position}`);
+            this.movePlayerSprite(player.id, oldPlayer.position, player.position);
+          } else if (oldPlayer && (playerSpriteNeedsUpdate(oldPlayer, player) || !this.playerSprites[player.id])) {
+            // Fallback to redraw/update player sprite if position is same but other visual info changed, or if sprite somehow missing
+            // This might be simplified if only position changes trigger moves.
+            const currentCoords = this.boardPath[player.position % this.boardPath.length];
+            if (this.playerSprites[player.id]) {
+              this.playerSprites[player.id].setPosition(currentCoords.x, currentCoords.y);
+            } else {
+              // Re-initialize this specific player if sprite is missing (should be rare)
+              // This part of the logic might need refinement based on how player data can change without moving.
+            }
+          }
+        });
+      }
+
+      // Update visual effects based on the new state
+      this.updateTrapVisuals();
+      this.updatePlayerEffects();
     }
   }
+
+// Helper function to determine if a player sprite needs non-movement visual updates (e.g. effects list changed)
+// This is a placeholder; actual implementation might depend on specific visual cues tied to player properties beyond position.
+function playerSpriteNeedsUpdate(oldPlayer: Player, newPlayer: Player): boolean {
+  // Example: Check if effects array reference changed or length changed.
+  // A more robust check might involve deep comparison of relevant effect properties if they influence sprite appearance beyond shield.
+  return oldPlayer.effects !== newPlayer.effects || oldPlayer.effects?.length !== newPlayer.effects?.length;
+}
 
   private defineBoardPath() {
     const { width, height } = this.scale;
@@ -192,49 +304,60 @@ export default class MainBoardScene extends Phaser.Scene {
     ];
   }
 
-  private drawBoard(boardLayout: BoardLayout[]) {
+  private drawBoard(boardLayout: TileConfig[]) { // Use updated TileConfig
     if (this.boardPath.length === 0) {
       console.error("drawBoard was called before defineBoardPath set the path.");
       return;
     }
+    // Clear existing tile sprites if any (e.g., for redraw scenarios, though not strictly needed with current logic)
+    this.tileSprites.forEach(sprite => sprite.destroy());
+    this.tileSprites = [];
 
-    this.boardPath.forEach((position, index) => {
-      const tileConfig = boardLayout[index];
-      if (!tileConfig) return;
+    boardLayout.forEach((tileConfig, index) => {
+      const position = this.boardPath[index % this.boardPath.length]; // Ensure we loop if boardLayout is longer
+      if (!tileConfig || !position) return;
 
       const tileSprite = this.add.image(position.x, position.y, `tile_${tileConfig.type}`).setScale(0.5);
-      tileSprite.setInteractive();
-      tileSprite.on('pointerdown', () => console.log(`Clicked on tile ${index} (${tileConfig.type})`));
+      // tileSprite.setInteractive(); // Will be set dynamically in enterTargetingMode
+      tileSprite.setData('tileIndex', index); // Store index on the sprite
+
+      tileSprite.on('pointerdown', () => {
+        if (this.currentTargetingType === SpellType.TARGET_TILE) {
+            const TILE_INDEX_CLICKED = tileSprite.getData('tileIndex');
+            console.log(`[Phaser] Clicked on target tile: ${TILE_INDEX_CLICKED}. Calling React callback.`);
+            this.onTargetSelected(TILE_INDEX_CLICKED.toString()); // Convert index to string for consistency
+        } else {
+          console.log(`Clicked on tile ${index} (${tileConfig.type}) - not in tile targeting mode.`);
+        }
+      });
+      this.tileSprites.push(tileSprite); // Add to the array
     });
 
     this.boardIsDrawn = true;
   }
 
   private initializePlayers(players: Player[]) {
-    players.forEach((player, index) => {
+    players.forEach((player, spriteIndex) => { // Use spriteIndex for player_spritesheet frame
         const startPosition = player.position || 0;
-        const startCoords = this.boardPath[startPosition];
-        const playerSprite = this.add.sprite(startCoords.x, startCoords.y, 'player_spritesheet', index);
+        const startCoords = this.boardPath[startPosition % this.boardPath.length];
+        const playerSprite = this.add.sprite(startCoords.x, startCoords.y, 'player_spritesheet', spriteIndex);
         
         playerSprite.setTint(this.getPlayerColor(player.id));
-        playerSprite.setScale(1.5);
+        playerSprite.setScale(1.5); // Default scale
         this.playerSprites[player.id] = playerSprite;
 
-                // AJOUT : Rendre le sprite interactif
-        playerSprite.setInteractive();
-        // Stocker l'ID du joueur sur l'objet sprite pour un accès facile
+        // playerSprite.setInteractive(); // Will be set dynamically in enterTargetingMode
         playerSprite.setData('playerId', player.id);
 
-        // AJOUT : Gérer le clic sur le sprite
         playerSprite.on('pointerdown', () => {
-            if (this.isTargeting) {
+            if (this.currentTargetingType === SpellType.TARGET_PLAYER) {
                 const targetId = playerSprite.getData('playerId');
-                // On ne peut pas se cibler soi-même
-                if (targetId !== this.gameState?.currentPlayerId) {
-                    console.log(`[Phaser] Clicked on target: ${targetId}. Calling React callback.`);
-                    // On appelle la fonction de rappel pour remonter l'info à React
+                if (targetId !== this.gameState?.currentPlayerId) { // Ensure not targeting self
+                    console.log(`[Phaser] Clicked on target player: ${targetId}. Calling React callback.`);
                     this.onTargetSelected(targetId);
                 }
+            } else {
+              // Handle non-targeting click if needed, e.g., show player info
             }
         });
     });
@@ -244,29 +367,30 @@ export default class MainBoardScene extends Phaser.Scene {
     const playerSprite = this.playerSprites[playerId];
     if (!playerSprite) return;
 
-    const path = new Phaser.Curves.Path(this.boardPath[startPosition].x, this.boardPath[startPosition].y);
-    const boardSize = this.boardPath.length;
-    
-    // Assurer que le mouvement se fait bien vers l'avant, même en passant par la case départ
-    let currentPos = startPosition;
-    while(currentPos % boardSize !== endPosition % boardSize) {
-        currentPos++;
-        path.lineTo(this.boardPath[currentPos % boardSize].x, this.boardPath[currentPos % boardSize].y);
+    const endCoords = this.boardPath[endPosition % this.boardPath.length];
+    if (!endCoords) {
+      console.error(`[Phaser] Invalid end position for player ${playerId}: ${endPosition}`);
+      return;
     }
-    
-    // Le tween anime une propriété 't' de 0 à 1 sur la cible (le sprite)
+
+    // If path-based movement is desired, re-implement it here.
+    // For direct tween to new coordinates (e.g., for Astral Swap or simpler moves):
     this.tweens.add({
       targets: playerSprite,
-      t: 1,
-      duration: path.getLength() * 10, // Vitesse de déplacement
-      ease: 'Sine.easeInOut',
-      onUpdate: (_tween, target) => {
-        const position = path.getPoint(target.t);
-        target.setPosition(position.x, position.y);
+      x: endCoords.x,
+      y: endCoords.y,
+      duration: 750, // Standard duration, adjust as needed
+      ease: 'Power2',
+      onUpdate: () => {
+        // Continuously update shield position during movement if it exists
+        if (this.shieldEffects[playerId]) {
+          this.shieldEffects[playerId].setPosition(playerSprite.x, playerSprite.y);
+        }
       },
       onComplete: () => {
-        // La position du sprite est maintenant à jour.
-        // On ne met PAS à jour un état local, car la source de vérité est le serveur.
+        if (this.shieldEffects[playerId]) {
+          this.shieldEffects[playerId].setPosition(endCoords.x, endCoords.y);
+        }
       }
     });
   }
