@@ -1,7 +1,7 @@
 // src/phaser/HubScene.ts
 import Phaser from 'phaser';
 import { db, auth } from '../firebaseConfig'; // Firebase setup
-import { doc, setDoc, onSnapshot, collection, query, where, deleteDoc, Unsubscribe, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, query, where, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 interface HubPlayerData {
@@ -21,7 +21,7 @@ export class HubScene extends Phaser.Scene {
   private otherPlayers!: Phaser.GameObjects.Group; // Group to manage other player sprites
   // Map to store target positions for other players for interpolation
   private remotePlayerTargets: Map<string, Phaser.Math.Vector2> = new Map();
-  private firestoreListenerUnsubscribe?: Unsubscribe;
+  private firestoreListenerUnsubscribe?: () => void;
 
   constructor() {
     super({ key: 'HubScene' });
