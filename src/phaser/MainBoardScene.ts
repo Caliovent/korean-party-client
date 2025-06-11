@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import type { Game, Player } from '../types/game'; // Ensure this matches the updated structure
 import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Import SpellType and SPELL_DEFINITIONS
-import soundService from '../../services/soundService'; // Import SoundService
+import soundService from '../services/soundService'; // Import SoundService
 
 // Updated TileConfig to match src/types/game.ts
 interface TileConfig {
