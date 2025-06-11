@@ -57,3 +57,4 @@ storage-debug.log
 # Assurez-vous d'ignorer le node_modules à l'intérieur du dossier functions
 functions/node_modules
 functions/lib
+src/.env
