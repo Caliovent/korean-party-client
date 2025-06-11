@@ -21,6 +21,7 @@ function App() {
   const location = useLocation(); // Hook pour obtenir la page actuelle
   const navigate = useNavigate(); // + useNavigate
   const gameInstanceRef = useRef<Phaser.Game | null>(null); // Ref to hold the game instance
+  const mainNodeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     // Initialize Phaser game instance
@@ -141,10 +142,13 @@ function App() {
       <TransitionGroup>
         <CSSTransition
           key={location.key}
+          nodeRef={mainNodeRef} // Add nodeRef
           classNames="fade"
           timeout={300}
+          unmountOnExit // Optional: good practice for CSSTransition with routes
+          mountOnEnter // Optional: good practice for CSSTransition with routes
         >
-          <main className="app-content">
+          <main ref={mainNodeRef} className="app-content"> {/* Add ref */}
             <Outlet />
           </main>
         </CSSTransition>
