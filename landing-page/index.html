@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mabeopsa - L'Académie K-Mage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals & Muted Accents -->
+    <!-- Application Structure Plan: Tab-based SPA design to segment the rich lore into digestible, non-linear sections (Monde, Maisons, Personnages, Quêtes). This prioritizes user-driven exploration over a passive linear read. Key interactions include an interactive rune table, and a dynamic radar chart for comparing the 'Maisons', transforming static tables from the report into engaging tools for understanding. -->
+    <!-- Visualization & Content Choices: Report Info: Table of 28 Runes -> Goal: Inform/Interact -> Viz: Interactive HTML Table -> Interaction: Hover/click to reveal magical properties -> Justification: Makes the core magic system memorable and less intimidating than a static table. -> Library/Method: HTML/JS. Report Info: Maison comparison table -> Goal: Compare/Engage -> Viz: Radar Chart -> Interaction: Click a house card to update chart, highlighting its strengths -> Justification: Provides an immediate, powerful visual comparison of qualitative traits, superior to a text table for quick comprehension. -> Library/Method: Chart.js/Canvas. Report Info: Character and Quest descriptions -> Goal: Inform/Organize -> Viz: Clickable Cards & Accordions -> Interaction: Click to expand/reveal -> Justification: Standard, clean UX to manage large amounts of text without overwhelming the user. -> Library/Method: HTML/CSS/JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDF8F2; 
+            color: #403234;
+        }
+        .font-lora {
+            font-family: 'Lora', serif;
+        }
+        .active-tab {
+            background-color: #A68B66; 
+            color: #FDF8F2;
+        }
+        .inactive-tab {
+            background-color: #EFE6DA;
+            color: #A68B66;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EFE6DA;
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold font-lora text-[#6B5B49]">Mabeopsa</h1>
+            <p class="mt-2 text-lg text-[#A68B66]">Le Grimoire Interactif</p>
+        </header>
+
+        <nav class="flex justify-center mb-8 rounded-lg shadow-sm p-1 bg-[#EFE6DA] max-w-2xl mx-auto">
+            <button data-tab="monde" class="nav-tab active-tab flex-1 py-2 px-4 text-center font-semibold rounded-md transition-colors duration-300">Le Monde</button>
+            <button data-tab="maisons" class="nav-tab inactive-tab flex-1 py-2 px-4 text-center font-semibold rounded-md transition-colors duration-300">Les Maisons</button>
+            <button data-tab="personnages" class="nav-tab inactive-tab flex-1 py-2 px-4 text-center font-semibold rounded-md transition-colors duration-300">Personnages</button>
+            <button data-tab="quetes" class="nav-tab inactive-tab flex-1 py-2 px-4 text-center font-semibold rounded-md transition-colors duration-300">Quêtes</button>
+        </nav>
+
+        <main>
+            <section id="monde" class="content-section active">
+                <div class="card p-6 md:p-8 rounded-lg shadow-lg">
+                    <h2 class="text-3xl font-bold font-lora mb-4 text-[#6B5B49]">Mythe Fondateur: L'Origine de la Magie</h2>
+                    <p class="mb-6 text-base leading-relaxed">Bien avant que l'histoire ne grave ses premiers récits, la péninsule coréenne vibrait d'une magie brute. Le Roi Sejong le Grand, plutôt que d'inventer le Hangeul en 1443, a redécouvert ce savoir ancien et puissant. Guidé par des visions, il déchiffra les "Runes de Création" – les 28 lettres originelles du Hangeul, briques élémentaires de la réalité. En proclamant le Hangeul, il n'a pas seulement donné un alphabet au peuple, mais lui a rendu la clé de sa propre magie intérieure.</p>
+                    
+                    <h3 class="text-2xl font-bold font-lora mt-8 mb-4 text-[#6B5B49]">Les 28 Runes de Création</h3>
+                     <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs uppercase bg-[#EFE6DA] text-[#A68B66]">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Rune</th>
+                                    <th scope="col" class="px-4 py-3">Nom</th>
+                                    <th scope="col" class="px-4 py-3">Propriété Magique Fondamentale</th>
+                                </tr>
+                            </thead>
+                            <tbody id="runes-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2 class="text-3xl font-bold font-lora mt-12 mb-4 text-[#6B5B49]">L'Académie K-Mage</h2>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div class="p-4 bg-[#FDF8F2] rounded-lg border border-[#EFE6DA]">
+                            <h3 class="font-bold text-lg mb-2 text-[#A68B66]">Héritage</h3>
+                            <p class="text-sm">Héritière spirituelle du Jiphyeonjeon (Hall des Érudits), l'Académie a été fondée en secret pour préserver la magie du Hangeul après sa dissolution.</p>
+                        </div>
+                        <div class="p-4 bg-[#FDF8F2] rounded-lg border border-[#EFE6DA]">
+                            <h3 class="font-bold text-lg mb-2 text-[#A68B66]">Mission</h3>
+                            <p class="text-sm">Préserver, diffuser et enseigner l'usage éthique de la magie linguistique pour accomplir le rêve d'autonomisation du Roi Sejong.</p>
+                        </div>
+                        <div class="p-4 bg-[#FDF8F2] rounded-lg border border-[#EFE6DA]">
+                            <h3 class="font-bold text-lg mb-2 text-[#A68B66]">Lieu Secret</h3>
+                            <p class="text-sm">Cachée sur l'île mystique de Ganghwa-do, un lieu de haute importance spirituelle et historique, protégée par de puissantes illusions.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="maisons" class="content-section">
+                <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold font-lora text-[#6B5B49]">Les Grandes Maisons</h2>
+                     <p class="mt-2 text-md text-[#A68B66]">Chaque Apprenant-Sorcier rejoint une Maison pour y parfaire son art.</p>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="space-y-4" id="maisons-selector">
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                         <div class="card p-6 md:p-8 rounded-lg shadow-lg sticky top-8">
+                            <div id="maison-details" class="mb-6">
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="maisonsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="personnages" class="content-section">
+                 <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold font-lora text-[#6B5B49]">Personnages Clés</h2>
+                     <p class="mt-2 text-md text-[#A68B66]">Les piliers et les ombres de l'Académie.</p>
+                </div>
+                <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-6" id="personnages-container">
+                </div>
+            </section>
+
+            <section id="quetes" class="content-section">
+                <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold font-lora text-[#6B5B49]">Germes d'Aventure</h2>
+                     <p class="mt-2 text-md text-[#A68B66]">Des exemples de quêtes qui vous attendent.</p>
+                </div>
+                <div class="space-y-4" id="quetes-container">
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loreData = {
+                runes: [
+                    { rune: 'ㄱ', nom: 'Giyeok', prop: 'Rune de la Stabilité, Ancrage' },
+                    { rune: 'ㄴ', nom: 'Nieun', prop: 'Rune du Flux, Connexion' },
+                    { rune: 'ㄷ', nom: 'Digeut', prop: 'Rune de la Délimitation, Manifestation' },
+                    { rune: 'ㄹ', nom: 'Rieul', prop: 'Rune du Changement, Transformation' },
+                    { rune: 'ㅁ', nom: 'Mieum', prop: 'Rune du Confinement, Contention' },
+                    { rune: 'ㅂ', nom: 'Bieup', prop: "Rune de l'Expansion, Éclatement" },
+                    { rune: 'ㅅ', nom: 'Siot', prop: 'Rune de la Coupe, Pénétration' },
+                    { rune: 'ㅇ', nom: 'Ieung', prop: 'Rune du Passage, Silence' },
+                    { rune: 'ㅈ', nom: 'Jieut', prop: 'Rune de la Jonction, Catalyse' },
+                    { rune: 'ㅊ', nom: 'Chieut', prop: "Rune de l'Intensification, Projection" },
+                    { rune: 'ㅋ', nom: 'Kieuk', prop: 'Rune de la Force Brute, Impact' },
+                    { rune: 'ㅌ', nom: 'Tieut', prop: 'Rune de la Résistance, Fortification' },
+                    { rune: 'ㅍ', nom: 'Pieup', prop: 'Rune de la Libération, Éruption' },
+                    { rune: 'ㅎ', nom: 'Hieut', prop: "Rune de l'Animation, Esprit" },
+                    { rune: 'ㅏ', nom: 'A', prop: "Rune de l'Illumination, Clarté" },
+                    { rune: 'ㅓ', nom: 'Eo', prop: 'Rune de la Profondeur, Intuition' },
+                    { rune: 'ㅗ', nom: 'O', prop: "Rune de l'Élévation, Inspiration" },
+                    { rune: 'ㅜ', nom: 'U', prop: "Rune de l'Enracinement, Stabilité Terrestre" },
+                    { rune: 'ㅡ', nom: 'Eu', prop: 'Rune de la Base, Potentiel' },
+                    { rune: 'ㅣ', nom: 'I', prop: 'Rune du Soi, Canalisation' },
+                    { rune: 'ㆍ', nom: 'Arae-a (Perdue)', prop: "Rune de la Création Pure, Source d'Énergie" },
+                    { rune: 'ㅿ', nom: 'Bansiot (Perdue)', prop: 'Rune du Murmure des Esprits, Vent Subtil' },
+                    { rune: 'ㆆ', nom: 'Yeorinhieut (Perdue)', prop: 'Rune du Silence Puissant, Interruption' },
+                ],
+                maisons: [
+                    { 
+                        id: 'gumiho', 
+                        nom: 'Maison du Gumiho', 
+                        symbole: '🦊', 
+                        desc: "Fondée par Ari, une Gumiho sage, cette maison valorise la ruse, l'éloquence et la maîtrise de la grammaire complexe.", 
+                        philosophie: "Le Courant Invisible des Mots.",
+                        competence: "Grammaire des Illusions",
+                        stats: [9, 5, 7, 4],
+                        color: 'rgba(239, 108, 0, 0.4)'
+                    },
+                    { 
+                        id: 'haetae', 
+                        nom: 'Maison du Haetae', 
+                        symbole: '🦁', 
+                        desc: "Fondée par Jeongui, un Haetae gardien de la justice, cette maison prône la droiture, la précision et le langage formel.", 
+                        philosophie: "La Parole Inébranlable de la Vérité.",
+                        competence: "Verbe de Justice",
+                        stats: [6, 9, 3, 7],
+                        color: 'rgba(27, 94, 32, 0.4)'
+                    },
+                    { 
+                        id: 'dokkaebi', 
+                        nom: 'Maison du Dokkaebi', 
+                        symbole: '👹', 
+                        desc: "Fondée par Jaemi, un Dokkaebi farceur, cette maison célèbre la créativité, la spontanéité et la maîtrise des onomatopées.", 
+                        philosophie: "Le Pouls Vivant du Langage.",
+                        competence: "Charme Onomatopéique",
+                        stats: [7, 4, 9, 5],
+                        color: 'rgba(183, 28, 28, 0.4)'
+                    },
+                     { 
+                        id: 'samjoko', 
+                        nom: 'Maison du Samjoko', 
+                        symbole: '🐦', 
+                        desc: "Fondée par Hae Bichi, un corbeau solaire à trois pattes, cette maison se concentre sur la prescience et la sagesse ancienne.", 
+                        philosophie: "La Parole Illuminatrice de la Prophétie.",
+                        competence: "Langues Oraculaires",
+                        stats: [5, 6, 6, 9],
+                        color: 'rgba(255, 193, 7, 0.4)'
+                    },
+                ],
+                personnages: [
+                    { 
+                        nom: 'Yong Geomwi, Le Directeur',
+                        role: 'Dragon Céleste',
+                        desc: 'Le dragon même qui a inspiré le Roi Sejong. Puissant et sage, mais a du mal à comprendre les "petites" émotions humaines, ce qui le rend parfois maladroit et touchant.'
+                    },
+                    { 
+                        nom: 'Maître Cheon Mun, Maître des Runes',
+                        role: 'Professeur de Hangeul',
+                        desc: "Ancien cartographe obsédé par la beauté de la calligraphie. Il cherche les 'lignes de pouvoir' qui relient les runes entre elles sur d'anciennes stèles."
+                    },
+                    {
+                        nom: 'Dame Seoyeon, L\'Antagoniste',
+                        role: 'Chef des "Puristes du Jade"',
+                        desc: "Une noble convaincue que la magie du langage Hanja est trop sacrée pour le peuple. Elle ne cherche pas à détruire l'Académie, mais à la 'purifier' de ses éléments populaires."
+                    }
+                ],
+                quetes: [
+                    {
+                        titre: "L'Écho du Dragon",
+                        pnj: "Pour le Directeur Yong Geomwi",
+                        desc: "Le flux d'énergie céleste qui nourrit l'Académie faiblit. Enquêtez sur les sites géomantiques de l'île de Ganghwa pour trouver la source de la perturbation et rétablir l'harmonie avec une incantation Hangeul spéciale."
+                    },
+                    {
+                        titre: "Les Syllabes Perdues",
+                        pnj: "Pour Maître Cheon Mun",
+                        desc: "Aidez Maître Cheon Mun à déchiffrer des cartes anciennes pour trouver une stèle cachée contenant la connaissance d'une rune Hangeul perdue. Réveillez son pouvoir par la prononciation et la calligraphie parfaites."
+                    },
+                    {
+                        titre: "La Guerre des Mots",
+                        pnj: "Impliquant Dame Seoyeon",
+                        desc: "Les Puristes du Jade sabotent l'Académie avec des sorts de confusion basés sur les Hanja. Participez à un 'défi érudit' pour prouver la puissance du Hangeul et découvrir les véritables intentions de Dame Seoyeon."
+                    }
+                ]
+            };
+
+            const tabs = document.querySelectorAll('.nav-tab');
+            const sections = document.querySelectorAll('.content-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.tab;
+
+                    tabs.forEach(t => {
+                        t.classList.remove('active-tab');
+                        t.classList.add('inactive-tab');
+                    });
+                    tab.classList.add('active-tab');
+                    tab.classList.remove('inactive-tab');
+
+                    sections.forEach(section => {
+                        if (section.id === target) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            const runesTableBody = document.getElementById('runes-table-body');
+            loreData.runes.forEach(rune => {
+                const row = document.createElement('tr');
+                row.className = 'bg-white border-b border-[#EFE6DA] hover:bg-[#FDF8F2]';
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-xl text-center">${rune.rune}</td>
+                    <td class="px-4 py-3">${rune.nom}</td>
+                    <td class="px-4 py-3">${rune.prop}</td>
+                `;
+                runesTableBody.appendChild(row);
+            });
+
+            const maisonsSelector = document.getElementById('maisons-selector');
+            const maisonDetails = document.getElementById('maison-details');
+            
+            loreData.maisons.forEach(maison => {
+                const button = document.createElement('button');
+                button.className = 'card w-full text-left p-4 rounded-lg';
+                button.dataset.maisonId = maison.id;
+                button.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <span class="text-3xl">${maison.symbole}</span>
+                        <div>
+                            <h3 class="font-bold text-lg text-[#6B5B49]">${maison.nom}</h3>
+                            <p class="text-sm text-[#A68B66]">${maison.competence}</p>
+                        </div>
+                    </div>
+                `;
+                maisonsSelector.appendChild(button);
+            });
+
+            const ctx = document.getElementById('maisonsChart').getContext('2d');
+            const maisonsChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Éloquence', 'Précision', 'Créativité', 'Sagesse Ancienne'],
+                    datasets: []
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#EFE6DA' },
+                            grid: { color: '#EFE6DA' },
+                            pointLabels: { 
+                                font: { size: 12, family: 'Inter' },
+                                color: '#A68B66'
+                            },
+                            ticks: {
+                                backdropColor: 'rgba(0,0,0,0)',
+                                color: '#A68B66',
+                                stepSize: 2
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            function updateMaisonDisplay(maisonId) {
+                const maison = loreData.maisons.find(m => m.id === maisonId);
+                if (!maison) return;
+
+                maisonDetails.innerHTML = `
+                    <div class="flex items-start space-x-4 mb-4">
+                        <span class="text-5xl">${maison.symbole}</span>
+                        <div>
+                            <h3 class="text-2xl font-bold font-lora text-[#6B5B49]">${maison.nom}</h3>
+                            <p class="text-[#A68B66] font-semibold">"${maison.philosophie}"</p>
+                        </div>
+                    </div>
+                    <p class="text-base leading-relaxed">${maison.desc}</p>
+                `;
+
+                maisonsChart.data.datasets = [{
+                    label: maison.nom,
+                    data: maison.stats,
+                    fill: true,
+                    backgroundColor: maison.color,
+                    borderColor: maison.color.replace('0.4', '1'),
+                    pointBackgroundColor: maison.color.replace('0.4', '1'),
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: maison.color.replace('0.4', '1')
+                }];
+                maisonsChart.update();
+                
+                document.querySelectorAll('#maisons-selector button').forEach(btn => {
+                    if (btn.dataset.maisonId === maisonId) {
+                        btn.classList.add('ring-2', 'ring-[#A68B66]');
+                    } else {
+                        btn.classList.remove('ring-2', 'ring-[#A68B66]');
+                    }
+                });
+            }
+
+            maisonsSelector.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button) {
+                    updateMaisonDisplay(button.dataset.maisonId);
+                }
+            });
+
+            const personnagesContainer = document.getElementById('personnages-container');
+            loreData.personnages.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'card p-6 rounded-lg shadow-lg';
+                div.innerHTML = `
+                    <h3 class="text-xl font-bold font-lora text-[#6B5B49]">${p.nom}</h3>
+                    <p class="text-sm font-semibold text-[#A68B66] mb-2">${p.role}</p>
+                    <p class="text-base leading-relaxed">${p.desc}</p>
+                `;
+                personnagesContainer.appendChild(div);
+            });
+            
+            const quetesContainer = document.getElementById('quetes-container');
+            loreData.quetes.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'card rounded-lg shadow-lg overflow-hidden';
+                div.innerHTML = `
+                    <button class="accordion-toggle w-full p-4 text-left">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-bold font-lora text-[#6B5B49]">${q.titre}</h3>
+                                <p class="text-sm font-semibold text-[#A68B66]">${q.pnj}</p>
+                            </div>
+                            <span class="transform transition-transform duration-300 text-2xl text-[#A68B66]">&#x25BC;</span>
+                        </div>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 pt-0">
+                             <p class="text-base leading-relaxed">${q.desc}</p>
+                        </div>
+                    </div>
+                `;
+                quetesContainer.appendChild(div);
+            });
+
+            quetesContainer.addEventListener('click', function (event) {
+                const header = event.target.closest('.accordion-toggle');
+                if (!header) return;
+
+                const content = header.nextElementSibling;
+                const arrow = header.querySelector('span');
+                
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    arrow.style.transform = 'rotate(0deg)';
+                } else {
+                    document.querySelectorAll('.accordion-content').forEach(item => {
+                        item.style.maxHeight = null;
+                        const prevArrow = item.previousElementSibling.querySelector('span');
+                        if(prevArrow) prevArrow.style.transform = 'rotate(0deg)';
+                    });
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    arrow.style.transform = 'rotate(180deg)';
+                }
+            });
+
+            updateMaisonDisplay('gumiho');
+        });
+    </script>
+</body>
+</html>
