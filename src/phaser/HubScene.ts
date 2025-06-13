@@ -54,7 +54,7 @@ export class HubScene extends Phaser.Scene {
     // Setup player
     if (this.textures.exists('player_avatar')) {
       this.player = this.add.sprite(this.cameras.main.width / 2, this.cameras.main.height / 2, 'player_avatar') as any;
-      this.player.setScale(2);
+      this.player.setScale(1);
     } else {
       // Fallback for player avatar (as before)
       console.error('Player avatar texture not found!');
@@ -92,9 +92,29 @@ export class HubScene extends Phaser.Scene {
     const portalX = this.cameras.main.width - 100; // Example position
     const portalY = this.cameras.main.height / 2;
     const gamePortal = this.add.sprite(portalX, portalY, 'game_portal').setInteractive();
+    // Ensure gamePortal fits within 128x128px, maintaining aspect ratio
+    gamePortal.setOrigin(0.5, 0.5); // Ensure scaling is from center if not already
+    const maxDimPortal = 128;
+    if (gamePortal.width > maxDimPortal || gamePortal.height > maxDimPortal) {
+        const scalePortal = maxDimPortal / Math.max(gamePortal.width, gamePortal.height);
+        gamePortal.setScale(scalePortal);
+    }
+    // No else needed: if smaller than 128x128, it will display at its native size (scale 1 by default)
     gamePortal.on('pointerdown', () => {
       console.log('Game portal clicked');
       this.game.events.emit('openGameLobbyModal');
+    });
+
+    // Add pulsing animation to gamePortal
+    const baseScalePortal = gamePortal.scaleX; // Get current scale
+    this.tweens.add({
+      targets: gamePortal,
+      scaleX: baseScalePortal * 1.08, // Pulse by 8%
+      scaleY: baseScalePortal * 1.08,
+      duration: 800,                 // Duration for one pulse
+      yoyo: true,                    // Reverse the animation
+      repeat: -1,                  // Loop indefinitely
+      ease: 'Sine.easeInOut'         // Smooth easing function
     });
 
     // Handle scene shutdown to remove player from Firestore
@@ -104,9 +124,29 @@ export class HubScene extends Phaser.Scene {
     const guildPanelX = 100; // Example position
     const guildPanelY = this.cameras.main.height / 2;
     const guildPanelSprite = this.add.sprite(guildPanelX, guildPanelY, 'guild_panel').setInteractive();
+    // Ensure guildPanelSprite fits within 128x128px, maintaining aspect ratio
+    guildPanelSprite.setOrigin(0.5, 0.5); // Ensure scaling is from center
+    const maxDimPanel = 128;
+    if (guildPanelSprite.width > maxDimPanel || guildPanelSprite.height > maxDimPanel) {
+        const scalePanel = maxDimPanel / Math.max(guildPanelSprite.width, guildPanelSprite.height);
+        guildPanelSprite.setScale(scalePanel);
+    }
+    // No else needed: if smaller than 128x128, it will display at its native size (scale 1 by default)
     guildPanelSprite.on('pointerdown', () => {
       console.log('Guild panel clicked');
       this.game.events.emit('openGuildManagementModal');
+    });
+
+    // Add pulsing animation to guildPanelSprite
+    const baseScaleGuildPanel = guildPanelSprite.scaleX; // Get current scale
+    this.tweens.add({
+      targets: guildPanelSprite,
+      scaleX: baseScaleGuildPanel * 1.08, // Pulse by 8%
+      scaleY: baseScaleGuildPanel * 1.08,
+      duration: 800,                    // Duration for one pulse
+      yoyo: true,                       // Reverse the animation
+      repeat: -1,                     // Loop indefinitely
+      ease: 'Sine.easeInOut'            // Smooth easing function
     });
   }
 
@@ -146,7 +186,7 @@ export class HubScene extends Phaser.Scene {
         if (change.type === 'added' || change.type === 'modified') {
           if (!remotePlayerSprite) {
             remotePlayerSprite = this.add.sprite(playerData.x, playerData.y, 'other_player_avatar') as any;
-            remotePlayerSprite.setScale(1.5); // Slightly different scale for others
+            remotePlayerSprite.setScale(1); // Slightly different scale for others
             (remotePlayerSprite as any).uid = playerUid; // Store UID on the sprite
             this.otherPlayers.add(remotePlayerSprite);
             this.physics.world.enable(remotePlayerSprite); // Enable physics for basic movement

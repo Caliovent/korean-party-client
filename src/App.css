@@ -508,3 +508,13 @@ button.secondary:active:not(:disabled), .logout-button:active:not(:disabled) {
   padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5); /* Smaller padding for table buttons */
   font-size: var(--font-size-sm);
 }
+
+/* Styles for the HubPage container to enable full screen Phaser canvas */
+.hub-page-container,
+#phaser-hub-container {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Ensure no scrollbars from the container itself */
+}

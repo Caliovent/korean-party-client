@@ -17,6 +17,12 @@ const HubPage: React.FC = () => {
         width: 800,
         height: 600,
         parent: gameRef.current,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: '100%',
+          height: '100%'
+        },
         scene: [HubScene], // Add HubScene here
         physics: {
           default: 'arcade',
@@ -56,7 +62,7 @@ const HubPage: React.FC = () => {
   }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
 
   return (
-    <div style={{ position: 'relative' }}> {/* Added for potential stacking context if needed */}
+    <div className="hub-page-container" style={{ position: 'relative' }}> {/* Added for potential stacking context if needed */}
       <div ref={gameRef} id="phaser-hub-container" />
       <GameLobbyModal
         isOpen={isGameLobbyModalOpen}
