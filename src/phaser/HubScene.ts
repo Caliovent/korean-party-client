@@ -1,8 +1,18 @@
 // src/phaser/HubScene.ts
-import Phaser from 'phaser';
-import { db, auth } from '../firebaseConfig'; // Firebase setup
-import { doc, setDoc, onSnapshot, collection, query, where, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import Phaser from "phaser";
+import { db, auth } from "../firebaseConfig"; // Firebase setup
+import {
+  doc,
+  setDoc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  deleteDoc,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
+import type { User } from "firebase/auth";
 
 interface HubPlayerData {
   uid: string;
@@ -13,8 +23,12 @@ interface HubPlayerData {
 }
 
 export class HubScene extends Phaser.Scene {
-  private player?: Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body };
-  private targetPosition?: Phaser.Math.Vector2;
+  private player?: Phaser.GameObjects.Sprite & {
+    body: Phaser.Physics.Arcade.Body;
+  };
+  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private obstacles!: Phaser.Physics.Arcade.StaticGroup;
+  private triggerZones!: Phaser.Physics.Arcade.StaticGroup;
   private moveSpeed = 200;
 
   private currentUser: User | null = null;
@@ -24,7 +38,7 @@ export class HubScene extends Phaser.Scene {
   private firestoreListenerUnsubscribe?: () => void;
 
   constructor() {
-    super({ key: 'HubScene' });
+    super({ key: "HubScene" });
   }
 
   init() {
@@ -37,17 +51,22 @@ export class HubScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('hub_background_village', 'assets/hub.png');
-    this.load.image('player_avatar', 'assets/player.png');
-    this.load.image('other_player_avatar', 'assets/player.png'); // Can be a different asset or tinted
-    this.load.image('game_portal', 'assets/game_portal.jpeg'); // Placeholder for portal/NPC
-    this.load.image('guild_panel', 'assets/guild_panel.jpeg'); // Placeholder for guild panel
+    this.load.image("hub_background_village", "assets/hub.png");
+    this.load.image("player_avatar", "assets/player_32.png");
+    this.load.image("other_player_avatar", "assets/player_32.png"); // Can be a different asset or tinted
+    this.load.image("game_portal", "assets/game_portal.png"); // Placeholder for portal/NPC
+    this.load.image("guild_panel", "assets/guild_panel.png"); // Placeholder for guild panel
+    this.load.image("transparent", "assets/effects/transparent.png");
   }
 
   create() {
-    console.log('HubScene created! Current user:', this.currentUser?.uid);
+    console.log("HubScene created! Current user:", this.currentUser?.uid);
     // Setup background image to cover the screen
-    const bg = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'hub_background_village');
+    const bg = this.add.image(
+      this.cameras.main.width / 2,
+      this.cameras.main.height / 2,
+      "hub_background_village",
+    );
 
     const screenWidth = this.cameras.main.width;
     const screenHeight = this.cameras.main.height;
@@ -61,126 +80,141 @@ export class HubScene extends Phaser.Scene {
     bg.setScale(scale).setScrollFactor(0); // setScrollFactor(0) ensures it stays fixed during camera movement
     bg.setDepth(-1); // Ensure background is behind everything else
 
+    // Initialize physics groups
+    this.obstacles = this.physics.add.staticGroup();
+    this.triggerZones = this.physics.add.staticGroup();
+
+    // Add example obstacles
+    this.obstacles
+      .create(400, 300, "transparent")
+      .setSize(200, 150)
+      .setVisible(false)
+      .refreshBody();
+    this.obstacles
+      .create(100, 500, "transparent")
+      .setSize(150, 100)
+      .setVisible(false)
+      .refreshBody();
+
     // Initialize other players group
     this.otherPlayers = this.add.group();
 
     // Setup player
-    if (this.textures.exists('player_avatar')) {
-      this.player = this.add.sprite(this.cameras.main.width / 2, this.cameras.main.height / 2, 'player_avatar') as any;
+    if (this.textures.exists("player_avatar")) {
+      this.player = this.add.sprite(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        "player_avatar",
+      ) as any;
       this.player.setScale(1);
     } else {
       // Fallback for player avatar (as before)
-      console.error('Player avatar texture not found!');
+      console.error("Player avatar texture not found!");
       const graphics = this.add.graphics();
       graphics.fillStyle(0xff0000, 1);
       graphics.fillRect(-16, -16, 32, 32);
-      const textureKey = 'player_placeholder_self';
+      const textureKey = "player_placeholder_self";
       if (this.textures.exists(textureKey)) this.textures.remove(textureKey);
-      this.player = this.add.sprite(this.cameras.main.width / 2, this.cameras.main.height / 2, textureKey) as any;
+      this.player = this.add.sprite(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        textureKey,
+      ) as any;
       this.player.setTexture(graphics.generateTexture(textureKey, 32, 32));
       graphics.destroy();
     }
 
     if (this.player) {
-        this.physics.world.enable(this.player);
-        if (this.player.body) {
-            this.player.body.setCollideWorldBounds(true);
-            // Send initial position
-            this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
-        }
+      this.physics.world.enable(this.player);
+      if (this.player.body) {
+        this.player.body.setCollideWorldBounds(true);
+        this.physics.add.collider(this.player, this.obstacles);
+        // Send initial position
+        this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+      }
     }
 
-
-    // Click-to-move input
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.player || !this.player.body) return;
-      this.targetPosition = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
-      this.physics.moveTo(this.player, this.targetPosition.x, this.targetPosition.y, this.moveSpeed);
-    });
+    // Initialize keyboard controls
+    this.cursors = this.input.keyboard.createCursorKeys();
 
     // Listen for other players
     this.listenForOtherPlayers();
 
     // Add Game Lobby Portal/NPC
-    const portalX = this.cameras.main.width - 100; // Example position
-    const portalY = this.cameras.main.height / 2;
-    const gamePortal = this.add.sprite(portalX, portalY, 'game_portal').setInteractive();
-    // Ensure gamePortal fits within 128x128px, maintaining aspect ratio
-    gamePortal.setOrigin(0.5, 0.5); // Ensure scaling is from center if not already
-    const maxDimPortal = 128;
-    if (gamePortal.width > maxDimPortal || gamePortal.height > maxDimPortal) {
-        const scalePortal = maxDimPortal / Math.max(gamePortal.width, gamePortal.height);
-        gamePortal.setScale(scalePortal);
-    }
-    // No else needed: if smaller than 128x128, it will display at its native size (scale 1 by default)
-    gamePortal.on('pointerdown', () => {
-      console.log('Game portal clicked');
-      this.game.events.emit('openGameLobbyModal');
-    });
+    const gamePortal = this.triggerZones
+      .create(
+        this.cameras.main.width - 150,
+        this.cameras.main.height / 2,
+        "game_portal",
+      )
+      .setScale(0.5) // 128x128px
+      .setInteractive()
+      .refreshBody(); // Important for a static physics body
 
-    // Add pulsing animation to gamePortal
-    const baseScalePortal = gamePortal.scaleX; // Get current scale
-    this.tweens.add({
-      targets: gamePortal,
-      scaleX: baseScalePortal * 1.08, // Pulse by 8%
-      scaleY: baseScalePortal * 1.08,
-      duration: 800,                 // Duration for one pulse
-      yoyo: true,                    // Reverse the animation
-      repeat: -1,                  // Loop indefinitely
-      ease: 'Sine.easeInOut'         // Smooth easing function
+    gamePortal.on("pointerdown", () => {
+      console.log("Game portal clicked");
+      this.game.events.emit("openGameLobbyModal");
     });
-
-    // Handle scene shutdown to remove player from Firestore
-    this.events.on('shutdown', this.shutdown, this);
 
     // Add Guild Panel
-    const guildPanelX = 100; // Example position
-    const guildPanelY = this.cameras.main.height / 2;
-    const guildPanelSprite = this.add.sprite(guildPanelX, guildPanelY, 'guild_panel').setInteractive();
-    // Ensure guildPanelSprite fits within 128x128px, maintaining aspect ratio
-    guildPanelSprite.setOrigin(0.5, 0.5); // Ensure scaling is from center
-    const maxDimPanel = 128;
-    if (guildPanelSprite.width > maxDimPanel || guildPanelSprite.height > maxDimPanel) {
-        const scalePanel = maxDimPanel / Math.max(guildPanelSprite.width, guildPanelSprite.height);
-        guildPanelSprite.setScale(scalePanel);
-    }
-    // No else needed: if smaller than 128x128, it will display at its native size (scale 1 by default)
-    guildPanelSprite.on('pointerdown', () => {
-      console.log('Guild panel clicked');
-      this.game.events.emit('openGuildManagementModal');
+    const guildPanel = this.triggerZones
+      .create(150, this.cameras.main.height / 2, "guild_panel")
+      .setScale(0.5) // 128x128px
+      .setInteractive()
+      .refreshBody();
+
+    guildPanel.on("pointerdown", () => {
+      console.log("Guild panel clicked");
+      this.game.events.emit("openGuildManagementModal");
     });
 
-    // Add pulsing animation to guildPanelSprite
-    const baseScaleGuildPanel = guildPanelSprite.scaleX; // Get current scale
-    this.tweens.add({
-      targets: guildPanelSprite,
-      scaleX: baseScaleGuildPanel * 1.08, // Pulse by 8%
-      scaleY: baseScaleGuildPanel * 1.08,
-      duration: 800,                    // Duration for one pulse
-      yoyo: true,                       // Reverse the animation
-      repeat: -1,                     // Loop indefinitely
-      ease: 'Sine.easeInOut'            // Smooth easing function
-    });
+    // Add overlap physics for gamePortal
+    this.physics.add.overlap(
+      this.player!,
+      gamePortal,
+      () => {
+        console.log("Player is overlapping with game portal");
+        this.game.events.emit("openGameLobbyModal");
+      },
+      undefined,
+      this,
+    );
+
+    // Add overlap physics for guildPanel
+    this.physics.add.overlap(
+      this.player!,
+      guildPanel,
+      () => {
+        console.log("Player is overlapping with guild panel");
+        this.game.events.emit("openGuildManagementModal");
+      },
+      undefined,
+      this,
+    );
+
+    // Handle scene shutdown to remove player from Firestore
+    this.events.on("shutdown", this.shutdown, this);
   }
 
   updatePlayerPositionInFirestore(x: number, y: number) {
     if (!this.currentUser) return;
-    const playerDocRef = doc(db, 'hub_players', this.currentUser.uid);
+    const playerDocRef = doc(db, "hub_players", this.currentUser.uid);
     const playerData: HubPlayerData = {
       uid: this.currentUser.uid,
       x,
       y,
-      displayName: this.currentUser.displayName || 'Anonymous',
-      lastSeen: serverTimestamp() as Timestamp // Firestore server timestamp
+      displayName: this.currentUser.displayName || "Anonymous",
+      lastSeen: serverTimestamp() as Timestamp, // Firestore server timestamp
     };
-    setDoc(playerDocRef, playerData, { merge: true })
-      .catch(error => console.error("Error updating player position:", error));
+    setDoc(playerDocRef, playerData, { merge: true }).catch((error) =>
+      console.error("Error updating player position:", error),
+    );
   }
 
   listenForOtherPlayers() {
     if (!this.currentUser) return; // Cannot filter self without current user
 
-    const hubPlayersRef = collection(db, 'hub_players');
+    const hubPlayersRef = collection(db, "hub_players");
     // Query for players other than the current user.
     // Firestore doesn't support "not-equal" queries directly in this manner for onSnapshot efficiently.
     // We will filter client-side after getting all players.
@@ -194,82 +228,139 @@ export class HubScene extends Phaser.Scene {
         // Skip current player
         if (playerUid === this.currentUser!.uid) return;
 
-        let remotePlayerSprite = this.otherPlayers.getChildren().find(p => (p as any).uid === playerUid) as Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body } | undefined;
+        let remotePlayerSprite = this.otherPlayers
+          .getChildren()
+          .find((p) => (p as any).uid === playerUid) as
+          | (Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body })
+          | undefined;
 
-        if (change.type === 'added' || change.type === 'modified') {
+        if (change.type === "added" || change.type === "modified") {
           if (!remotePlayerSprite) {
-            remotePlayerSprite = this.add.sprite(playerData.x, playerData.y, 'other_player_avatar') as any;
+            remotePlayerSprite = this.add.sprite(
+              playerData.x,
+              playerData.y,
+              "other_player_avatar",
+            ) as any;
             remotePlayerSprite.setScale(1); // Slightly different scale for others
             (remotePlayerSprite as any).uid = playerUid; // Store UID on the sprite
             this.otherPlayers.add(remotePlayerSprite);
             this.physics.world.enable(remotePlayerSprite); // Enable physics for basic movement
-            if (remotePlayerSprite.body) remotePlayerSprite.body.setImmovable(true); // So local player doesn't push them easily
+            if (remotePlayerSprite.body)
+              remotePlayerSprite.body.setImmovable(true); // So local player doesn't push them easily
 
-            console.log(`Player ${playerData.displayName || playerUid} added to hub scene.`);
+            console.log(
+              `Player ${playerData.displayName || playerUid} added to hub scene.`,
+            );
           }
           // Store target position for interpolation in update()
-          this.remotePlayerTargets.set(playerUid, new Phaser.Math.Vector2(playerData.x, playerData.y));
-
-        } else if (change.type === 'removed') {
+          this.remotePlayerTargets.set(
+            playerUid,
+            new Phaser.Math.Vector2(playerData.x, playerData.y),
+          );
+        } else if (change.type === "removed") {
           if (remotePlayerSprite) {
             this.otherPlayers.remove(remotePlayerSprite, true, true); // Remove from group and destroy
             this.remotePlayerTargets.delete(playerUid);
-            console.log(`Player ${playerData.displayName || playerUid} removed from hub scene.`);
+            console.log(
+              `Player ${playerData.displayName || playerUid} removed from hub scene.`,
+            );
           }
         }
       });
     });
   }
 
-  update() {
+  update(time: number, delta: number) {
     // Current player movement
-    if (this.player && this.player.body && this.targetPosition) {
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.targetPosition.x,
-        this.targetPosition.y
-      );
+    if (!this.player || !this.player.body || !this.cursors) {
+      return;
+    }
 
-      if (distance < 4) {
-        this.player.body.setVelocity(0, 0);
-        this.updatePlayerPositionInFirestore(this.player.x, this.player.y); // Send final position
-        this.targetPosition = undefined;
-      }
+    this.player.body.setVelocity(0);
+
+    let velocityX = 0;
+    let velocityY = 0;
+
+    if (this.cursors.left.isDown) {
+      velocityX = -this.moveSpeed;
+    } else if (this.cursors.right.isDown) {
+      velocityX = this.moveSpeed;
+    }
+
+    if (this.cursors.up.isDown) {
+      velocityY = -this.moveSpeed;
+    } else if (this.cursors.down.isDown) {
+      velocityY = this.moveSpeed;
+    }
+
+    this.player.body.setVelocityX(velocityX);
+    this.player.body.setVelocityY(velocityY);
+
+    if (velocityX !== 0 && velocityY !== 0) {
+      const vector = new Phaser.Math.Vector2(velocityX, velocityY)
+        .normalize()
+        .scale(this.moveSpeed);
+      this.player.body.setVelocity(vector.x, vector.y);
+    }
+
+    if (
+      this.player.body.velocity.x !== 0 ||
+      this.player.body.velocity.y !== 0
+    ) {
+      this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
     }
 
     // Other players movement (interpolation)
-    this.otherPlayers.getChildren().forEach(sprite => {
-      const remotePlayer = sprite as Phaser.GameObjects.Sprite & { uid: string, body: Phaser.Physics.Arcade.Body };
+    this.otherPlayers.getChildren().forEach((sprite) => {
+      const remotePlayer = sprite as Phaser.GameObjects.Sprite & {
+        uid: string;
+        body: Phaser.Physics.Arcade.Body;
+      };
       const target = this.remotePlayerTargets.get(remotePlayer.uid);
       if (target) {
-        const distance = Phaser.Math.Distance.Between(remotePlayer.x, remotePlayer.y, target.x, target.y);
-        if (distance > 2) { // Only move if not already close
-            // Simple linear interpolation (can be replaced with Phaser.Physics.moveToObject for smoother movement)
-            // this.physics.moveToObject(remotePlayer, target, this.moveSpeed * 0.8); // Move slightly slower
-             const angle = Phaser.Math.Angle.Between(remotePlayer.x, remotePlayer.y, target.x, target.y);
-             const speed = this.moveSpeed * 0.8; // Can adjust speed
-             remotePlayer.x += Math.cos(angle) * speed * (this.game.loop.delta / 1000);
-             remotePlayer.y += Math.sin(angle) * speed * (this.game.loop.delta / 1000);
-
+        const distance = Phaser.Math.Distance.Between(
+          remotePlayer.x,
+          remotePlayer.y,
+          target.x,
+          target.y,
+        );
+        if (distance > 2) {
+          // Only move if not already close
+          // Simple linear interpolation (can be replaced with Phaser.Physics.moveToObject for smoother movement)
+          // this.physics.moveToObject(remotePlayer, target, this.moveSpeed * 0.8); // Move slightly slower
+          const angle = Phaser.Math.Angle.Between(
+            remotePlayer.x,
+            remotePlayer.y,
+            target.x,
+            target.y,
+          );
+          const speed = this.moveSpeed * 0.8; // Can adjust speed
+          remotePlayer.x +=
+            Math.cos(angle) * speed * (this.game.loop.delta / 1000);
+          remotePlayer.y +=
+            Math.sin(angle) * speed * (this.game.loop.delta / 1000);
         } else {
-            // remotePlayer.body.setVelocity(0,0); // Stop if using physics move
-            // If not using physics move, just set position to ensure it's exact
-            remotePlayer.setPosition(target.x, target.y);
+          // remotePlayer.body.setVelocity(0,0); // Stop if using physics move
+          // If not using physics move, just set position to ensure it's exact
+          remotePlayer.setPosition(target.x, target.y);
         }
       }
     });
   }
 
   shutdown() {
-    console.log('HubScene shutdown. Removing player from Firestore and unsubscribing.');
+    console.log(
+      "HubScene shutdown. Removing player from Firestore and unsubscribing.",
+    );
     if (this.currentUser) {
-      const playerDocRef = doc(db, 'hub_players', this.currentUser.uid);
-      deleteDoc(playerDocRef).catch(error => console.error("Error removing player from hub:", error));
+      const playerDocRef = doc(db, "hub_players", this.currentUser.uid);
+      deleteDoc(playerDocRef).catch((error) =>
+        console.error("Error removing player from hub:", error),
+      );
     }
     if (this.firestoreListenerUnsubscribe) {
       this.firestoreListenerUnsubscribe();
     }
-    this.events.off('shutdown', this.shutdown, this);
+    this.events.off("shutdown", this.shutdown, this);
   }
 }
