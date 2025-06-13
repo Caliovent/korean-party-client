@@ -54,8 +54,8 @@ export class HubScene extends Phaser.Scene {
     this.load.image("hub_background_village", "assets/hub.png");
     this.load.image("player_avatar", "assets/player_32.png");
     this.load.image("other_player_avatar", "assets/player_32.png"); // Can be a different asset or tinted
-    this.load.image("game_portal", "assets/game_portal.png"); // Placeholder for portal/NPC
-    this.load.image("guild_panel", "assets/guild_panel.png"); // Placeholder for guild panel
+    this.load.image("game_portal", "assets/game_portal.jpeg"); // Placeholder for portal/NPC
+    this.load.image("guild_panel", "assets/guild_panel.jpeg"); // Placeholder for guild panel
     this.load.image("transparent", "assets/effects/transparent.png");
   }
 
@@ -147,7 +147,7 @@ export class HubScene extends Phaser.Scene {
         this.cameras.main.height / 2,
         "game_portal",
       )
-      .setScale(0.5) // 128x128px
+      .setScale(0.1) // 128x128px
       .setInteractive()
       .refreshBody(); // Important for a static physics body
 
@@ -159,7 +159,7 @@ export class HubScene extends Phaser.Scene {
     // Add Guild Panel
     const guildPanel = this.triggerZones
       .create(150, this.cameras.main.height / 2, "guild_panel")
-      .setScale(0.5) // 128x128px
+      .setScale(0.1) // 128x128px
       .setInteractive()
       .refreshBody();
 
