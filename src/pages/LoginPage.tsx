@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { useTranslation } from 'react-i18next';
 
@@ -26,21 +26,10 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleSignInAnonymously = async () => {
-    setError(null);
-    try {
-      await signInAnonymously(auth);
-      navigate('/hub');
-    } catch (err: any) {
-      setError(err.message);
-      console.error(err);
-    }
-  };
-
   return (
     <div className="login-container"> {/* Added class for card styling */}
       <form onSubmit={handleSignIn}>
-        <h2>{t('login.email_signin_button')}</h2>
+        <h2>{t('login.title')}</h2>
         <div className="form-group"> {/* Added class for form styling */}
           <label htmlFor="email">{t('login.email_label')}</label>
           <input
@@ -61,20 +50,15 @@ const LoginPage: React.FC = () => {
             required
           />
         </div>
+        <p className="form-helper-text">{t('login.form_helper_text')}</p> {/* Added helper text */}
         {/* Buttons will pick up global styles from App.css which are now variable-based */}
         <div className="form-actions"> {/* Optional: wrap button for layout if needed, or style directly */}
-          <button type="submit">{t('login.email_signin_button')}</button>
+          <button type="submit">{t('login.title')}</button>
         </div>
       </form>
       
       <hr style={{ margin: 'var(--spacing-unit) * 4 0' }} /> {/* Added margin to hr */}
       
-      <div className="form-actions"> {/* Optional: wrap button for layout */}
-        <button type="button" onClick={handleSignInAnonymously} className="button-secondary"> {/* Example: make it secondary */}
-          {t('login.anon_signin_button')}
-        </button>
-      </div>
-
       {error && <p className="error-message">{error}</p>} {/* Used class for error message */}
     </div>
   );

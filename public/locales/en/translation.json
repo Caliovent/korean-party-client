@@ -5,10 +5,11 @@
     "logout": "Logout"
   },
   "login": {
-    "email_signin_button": "Sign In with Email",
+    "title": "Sign In / Create Account",
     "anon_signin_button": "Sign In Anonymously",
     "email_label": "Email",
-    "password_label": "Password"
+    "password_label": "Password",
+    "form_helper_text": "If you don't have an account, one will be created for you automatically."
   },
   "lobby": {
     "title": "Game Lobbies",
