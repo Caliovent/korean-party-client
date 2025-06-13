@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { auth, db } from '../firebaseConfig';
+import { auth, db, app } from '../firebaseConfig'; // Added app
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from '../hooks/useAuth'; // Import useAuth
@@ -17,7 +17,13 @@ const ReviewSession: React.FC<{ items: any[], onFinish: () => void }> = ({ items
 
   const handleSelectResult = async (wasCorrect: boolean) => {
     setIsSubmitting(true);
-    const functions = getFunctions();
+    let functions;
+    if (import.meta.env.DEV) {
+      functions = getFunctions(app, 'us-central1');
+      functions.customDomain = `http://localhost:5173/functions-proxy`;
+    } else {
+      functions = getFunctions(app, 'us-central1');
+    }
     const submitSrsReview = httpsCallable(functions, 'submitSrsReview');
     
     try {
@@ -143,7 +149,13 @@ const ProfilePage: React.FC = () => {
     }
     setError('');
 
-    const functions = getFunctions();
+    let functions;
+    if (import.meta.env.DEV) {
+      functions = getFunctions(app, 'us-central1');
+      functions.customDomain = `http://localhost:5173/functions-proxy`;
+    } else {
+      functions = getFunctions(app, 'us-central1');
+    }
     const updateUserProfile = httpsCallable(functions, 'updateUserProfile');
     try {
       await updateUserProfile({ pseudo: newPseudo });
@@ -158,7 +170,13 @@ const ProfilePage: React.FC = () => {
   const handleStartReviewSession = async () => {
     setIsLoadingReview(true);
     setReviewItems(null); // Réinitialise au cas où
-    const functions = getFunctions();
+    let functions;
+    if (import.meta.env.DEV) {
+      functions = getFunctions(app, 'us-central1');
+      functions.customDomain = `http://localhost:5173/functions-proxy`;
+    } else {
+      functions = getFunctions(app, 'us-central1');
+    }
     const getReviewItems = httpsCallable(functions, 'getReviewItems');
     try {
       const result = await getReviewItems();

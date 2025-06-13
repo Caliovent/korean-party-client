@@ -1,8 +1,9 @@
 // src/components/GameLobbyModal.tsx
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore'; // Removed addDoc
 import { db } from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
+import { createGame } from '../services/gameService'; // Added import
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import './GameLobbyModal.css'; // Import the CSS
@@ -47,27 +48,41 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onClose }) => {
     const existingGamesQuery = query(collection(db, 'games'), where('hostId', '==', user.uid));
     const existingGamesSnapshot = await getDocs(existingGamesQuery);
     if (!existingGamesSnapshot.empty) {
-      alert(t('lobby.already_hosting_error')); // Use translation
+      alert(t('lobby.already_hosting_error'));
       return;
     }
 
-    const gameData = {
-      name: newGameName,
-      hostId: user.uid,
-      hostPseudo: user.displayName || 'Anonymous Mage', // Ensure user.displayName is available
-      players: [user.uid], // Start with the host as a player
-      status: 'waiting',
-      createdAt: serverTimestamp(),
-    };
+    // gameData is now created within the cloud function
+    // const gameData = {
+    //   name: newGameName,
+    //   hostId: user.uid,
+    //   hostPseudo: user.displayName || 'Anonymous Mage',
+    //   players: [user.uid],
+    //   status: 'waiting',
+    //   createdAt: serverTimestamp(),
+    // };
 
     try {
-      const docRef = await addDoc(collection(db, 'games'), gameData);
-      setNewGameName('');
-      onClose(); // Close modal after creating game
-      navigate(`/game/${docRef.id}`);
+      // Call the createGame cloud function
+      const result = await createGame(newGameName);
+      console.log("Game creation result:", result);
+
+      // Ensure result and result.data are defined and gameId is present
+      if (result && result.data && (result.data as { gameId: string }).gameId) {
+        const gameId = (result.data as { gameId: string }).gameId;
+        setNewGameName('');
+        onClose(); // Close modal after creating game
+        navigate(`/game/${gameId}`);
+      } else {
+        // Handle cases where gameId is not in the result
+        console.error("Error creating game: Invalid result from createGame function", result);
+        alert(t('lobby.create_game_error_invalid_result') || 'Error creating game: Could not retrieve game ID.'); // Provide a more specific error or fallback
+      }
     } catch (error) {
       console.error("Error creating game:", error);
-      alert(t('lobby.create_game_error')); // Use translation
+      // It's good practice to check the error type if possible, or log more details
+      // For example, if (error instanceof FunctionsError && error.code === 'already-exists') { ... }
+      alert(t('lobby.create_game_error'));
     }
   };
 
