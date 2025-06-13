@@ -37,11 +37,11 @@ export class HubScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('hub_tiles', 'http://labs.phaser.io/assets/textures/grass.png');
+    this.load.image('hub_tiles', 'assets/korean-game-board.png');
     this.load.image('player_avatar', 'assets/player.png');
     this.load.image('other_player_avatar', 'assets/player.png'); // Can be a different asset or tinted
-    this.load.image('game_portal', 'http://labs.phaser.io/assets/sprites/orb-red.png'); // Placeholder for portal/NPC
-    this.load.image('guild_panel', 'http://labs.phaser.io/assets/sprites/orb-green.png'); // Placeholder for guild panel
+    this.load.image('game_portal', 'assets/event.png'); // Placeholder for portal/NPC
+    this.load.image('guild_panel', 'assets/tiles/tile_MANA_GAIN.png'); // Placeholder for guild panel
   }
 
   create() {
