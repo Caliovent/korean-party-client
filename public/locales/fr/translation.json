@@ -5,10 +5,11 @@
     "logout": "Déconnexion"
   },
   "login": {
-    "email_signin_button": "Connexion avec Email",
+    "title": "Se connecter / Créer un compte",
     "anon_signin_button": "Connexion Anonyme",
     "email_label": "Email",
-    "password_label": "Mot de passe"
+    "password_label": "Mot de passe",
+    "form_helper_text": "Si vous n'avez pas de compte, un sera créé pour vous automatiquement."
   },
   "lobby": {
     "title": "Salles de Jeu",
