@@ -37,7 +37,7 @@ export class HubScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('hub_tiles', 'assets/hub.png');
+    this.load.image('hub_background_village', 'assets/hub.png');
     this.load.image('player_avatar', 'assets/player.png');
     this.load.image('other_player_avatar', 'assets/player.png'); // Can be a different asset or tinted
     this.load.image('game_portal', 'assets/game_portal.jpeg'); // Placeholder for portal/NPC
@@ -46,7 +46,20 @@ export class HubScene extends Phaser.Scene {
 
   create() {
     console.log('HubScene created! Current user:', this.currentUser?.uid);
-    this.add.tileSprite(0, 0, this.cameras.main.width, this.cameras.main.height, 'hub_tiles').setOrigin(0, 0);
+    // Setup background image to cover the screen
+    const bg = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'hub_background_village');
+
+    const screenWidth = this.cameras.main.width;
+    const screenHeight = this.cameras.main.height;
+    const bgWidth = bg.width;
+    const bgHeight = bg.height;
+
+    const scaleX = screenWidth / bgWidth;
+    const scaleY = screenHeight / bgHeight;
+    const scale = Math.max(scaleX, scaleY); // Use Math.max to "cover" the screen
+
+    bg.setScale(scale).setScrollFactor(0); // setScrollFactor(0) ensures it stays fixed during camera movement
+    bg.setDepth(-1); // Ensure background is behind everything else
 
     // Initialize other players group
     this.otherPlayers = this.add.group();
