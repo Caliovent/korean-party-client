@@ -37,7 +37,7 @@ export class HubScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('hub_tiles', 'assets/korean-game-board.png');
+    this.load.image('hub_tiles', 'assets/hub.png');
     this.load.image('player_avatar', 'assets/player.png');
     this.load.image('other_player_avatar', 'assets/player.png'); // Can be a different asset or tinted
     this.load.image('game_portal', 'assets/game_portal.jpeg'); // Placeholder for portal/NPC
