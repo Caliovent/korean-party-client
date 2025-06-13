@@ -1,4 +1,11 @@
 /* src/index.css */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent scrollbars if Phaser canvas slightly overflows */
+}
+
 :root {
   /* Colors */
   --primary-color: #007bff; /* Example: Blue */
@@ -48,6 +55,10 @@ body {
   line-height: var(--line-height-base);
   color: var(--text-color); /* Default text color */
   background-color: var(--light-bg-color); /* Default background */
+}
+
+#root { /* The div React mounts into */
+  height: 100%;
 }
 
 /* General styling for links */
