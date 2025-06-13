@@ -5,7 +5,18 @@ import type { SpellId } from '../data/spells'; // Importer le type
 import { app } from '../firebaseConfig';
 import { collection, getDocs, getFirestore, doc, getDoc } from 'firebase/firestore'; // Import doc and getDoc
 import type { Guild } from '../types/guild'; // Importer le type Guild
-const functions = getFunctions(app, 'europe-west1');
+
+// Initialize Firebase Functions
+let functions;
+if (import.meta.env.DEV) {
+  // For development, use the proxy
+  functions = getFunctions(app, 'us-central1'); // Correct region for functions
+  functions.customDomain = `http://localhost:5173/functions-proxy`; // Vite proxy
+} else {
+  // For production, call functions directly in the correct region
+  functions = getFunctions(app, 'us-central1');
+}
+
 const db = getFirestore(app);
 
 // --- Game Lifecycle Functions ---
