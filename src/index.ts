@@ -850,6 +850,97 @@ export const submitHangeulTyphoonResult = onCall({ cors: true }, async (request)
   }
 });
 
+
+// =================================================================
+//                    HANGEUL TYPHOON DUEL FUNCTIONS
+// =================================================================
+
+export const sendTyphoonAttack = onCall({ cors: true }, async (request) => {
+    logger.info("sendTyphoonAttack received request with data:", request.data);
+    logger.info("Auth context:", request.auth);
+
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated to send an attack.");
+    }
+
+    const { gameId, targetId, word } = request.data;
+    const attackingPlayerId = request.auth.uid;
+
+    if (!gameId || typeof gameId !== 'string') {
+        throw new HttpsError("invalid-argument", "gameId (string) is required.");
+    }
+    if (!targetId || typeof targetId !== 'string') {
+        throw new HttpsError("invalid-argument", "targetId (string) is required.");
+    }
+    if (!word || typeof word !== 'string' || word.length === 0) {
+        throw new HttpsError("invalid-argument", "word (string) is required and cannot be empty.");
+    }
+    if (attackingPlayerId === targetId) {
+        throw new HttpsError("invalid-argument", "Player cannot target themselves.");
+    }
+
+    const gameRef = db.collection('games').doc(gameId);
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            const gameDoc = await transaction.get(gameRef);
+            if (!gameDoc.exists) {
+                throw new HttpsError("not-found", `Game document \${gameId} not found.`);
+            }
+
+            const gameData = gameDoc.data();
+            if (!gameData) {
+                throw new HttpsError("internal", `Game data for \${gameId} is undefined.`);
+            }
+
+            // Verify game status is 'playing_duel_hangeul_typhoon' or similar (add this status later)
+            // For now, let's assume a generic 'playing' status or a specific duel status.
+            // if (gameData.status !== 'playing_duel_hangeul_typhoon') {
+            //    throw new HttpsError('failed-precondition', 'Game is not in a duel state.');
+            // }
+
+            let targetPlayerExists = false;
+            if (gameData.players && Array.isArray(gameData.players)) {
+                targetPlayerExists = gameData.players.some((p: any) => p.uid === targetId);
+            }
+            // TODO: Adapt if player data is stored differently (e.g., gameData.playerStates[targetId])
+
+            if (!targetPlayerExists) {
+                 throw new HttpsError('not-found', `Target player \${targetId} not found in game \${gameId}.`);
+            }
+
+            // Simulate successful attack: Increase target's ground penalty.
+            // Example: players: [{ uid: 'xxx', groundPenalty: 0, ...}, {uid: 'yyy', groundPenalty: 0, ...}]
+            let targetFoundAndUpdated = false;
+            const updatedPlayers = gameData.players.map((player: any) => {
+                if (player.uid === targetId) {
+                    targetFoundAndUpdated = true;
+                    const currentPenalty = player.groundPenalty || 0;
+                    const attackPower = 1; // Each successful attack raises ground by 1 unit.
+                    return { ...player, groundPenalty: currentPenalty + attackPower };
+                }
+                return player;
+            });
+
+            if (!targetFoundAndUpdated) {
+                throw new HttpsError('internal', `Target player \${targetId} could not be updated in game \${gameId}.`);
+            }
+
+            transaction.update(gameRef, { players: updatedPlayers });
+
+            logger.info(`Attack successful: \${targetId}'s ground penalty increased in game \${gameId}.`);
+            return { success: true, message: `Attack on \${targetId} with '\${word}' recorded. Ground penalty increased.` };
+
+        });
+    } catch (error) {
+        logger.error(`Error in sendTyphoonAttack for game \${gameId} by \${attackingPlayerId}:\`, error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError("internal", "An unexpected error occurred while processing the attack.", { originalError: error });
+    }
+});
+
 // --- FONCTIONS DE TOUR DE JEU ---
 
 export const rollDice = onCall({ cors: true }, async (request: functions.https.CallableRequest) => {
