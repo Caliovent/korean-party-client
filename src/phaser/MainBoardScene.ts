@@ -31,8 +31,47 @@ export default class MainBoardScene extends Phaser.Scene {
   }
 
   // MODIFICATION : init reçoit maintenant la fonction de rappel
-  init(data: { onTargetSelected: (targetId: string) => void }) {
-    this.onTargetSelected = data.onTargetSelected;
+  public init(data: any) { // Use 'any' or a more complex type for data
+    console.log('[MainBoardScene] Init with data:', data);
+    if (data && data.fromMiniGame && data.miniGameResults) {
+      console.log('[MainBoardScene] Returned from HangeulTyphoon with results:', data.miniGameResults);
+      // gameService.processMiniGameResults(data.miniGameResults); // Example
+      // For now, just log them.
+      // If onTargetSelected was passed initially and needs to be preserved,
+      // it should be handled by the calling context (e.g. React component re-passing it)
+      // or by using a more persistent way to store it if MainBoardScene isn't fully destroyed.
+      // For this simple restart, we might need to re-establish it if it's vital for immediate re-use.
+      // If the game state is managed externally (e.g. Zustand/Redux), that external store
+      // would handle the results, and MainBoardScene would get updated gameState.
+      // The onTargetSelected is typically for React -> Phaser communication, so if React re-renders
+      // the Phaser container and restarts the scene, it would pass it again.
+    } else if (data && data.onTargetSelected) {
+      this.onTargetSelected = data.onTargetSelected;
+    } else {
+      console.warn('[MainBoardScene] Init called without expected data (onTargetSelected or miniGameResults).');
+      // Provide a default a no-op onTargetSelected to prevent errors if it's called somewhere.
+      this.onTargetSelected = (targetId: string) => {
+        console.log(`[MainBoardScene] Default onTargetSelected (no-op) called with ${targetId}. This might indicate an issue if targeting is expected to work now.`);
+      };
+    }
+
+    // Reset scene-specific state for a clean (re)start
+    this.boardIsDrawn = false;
+    this.playerSprites = {};
+    this.tileSprites.forEach(tile => tile.destroy()); // Clear old tile sprites
+    this.tileSprites = [];
+    Object.values(this.trapSprites).forEach(sprite => sprite.destroy());
+    this.trapSprites = {};
+    Object.values(this.shieldEffects).forEach(sprite => sprite.destroy());
+    this.shieldEffects = {};
+    this.currentTargetingType = null;
+    this.targetingTweens.forEach(tween => tween.stop()); // Stop any active tweens
+    this.targetingTweens = [];
+    // this.gameState = null; // Reset or rely on updateGameState to provide the new state.
+                           // If gameState is managed by React/Zustand and passed in via updateGameState,
+                           // then it will be updated naturally. Resetting here might be premature
+                           // if create() relies on an initial gameState from an external source.
+                           // For a full scene restart, this is usually fine.
   }
 
   preload() {
@@ -370,7 +409,60 @@ export default class MainBoardScene extends Phaser.Scene {
             console.log(`[Phaser] Clicked on target tile: ${TILE_INDEX_CLICKED}. Calling React callback.`);
             this.onTargetSelected(TILE_INDEX_CLICKED.toString()); // Convert index to string for consistency
         } else {
-          console.log(`Clicked on tile ${index} (${tileConfig.type}) - not in tile targeting mode.`);
+          // Not in targeting mode, check for tile activation
+          console.log(`[Phaser] Clicked on tile ${index} of type: ${tileConfig.type} (not in targeting mode).`);
+
+          const currentPlayer = this.gameState?.players.find(p => p.id === this.gameState?.currentPlayerId);
+          if (currentPlayer && currentPlayer.position === index) {
+              console.log(`[Phaser] Current player ${currentPlayer.id} is on tile ${index}. Evaluating tile action.`);
+
+              let hangeulTyphoonOptions: any = null;
+              const currentTileConfig = tileConfig; // tileConfig is already the config for the clicked tile (index)
+
+              switch (currentTileConfig.type) {
+                  case 'DOJO_DU_CLAVIER':
+                      console.log('[Phaser] Landing on Dojo du Clavier. Launching Hangeul Typhoon (Scribe Mode).');
+                      hangeulTyphoonOptions = {
+                          gameMode: 'eupreuveDuScribe',
+                          isDuel: false,
+                          attackerPlayerId: currentPlayer.id
+                      };
+                      break;
+
+                  case 'DUEL_ARENA':
+                      console.log('[Phaser] Landing on Duel Arena. Launching Hangeul Typhoon (Duel Mode).');
+                      const opponent = this.gameState?.players.find(p => p.id !== currentPlayer.id);
+                      if (opponent) {
+                          hangeulTyphoonOptions = {
+                              gameMode: 'eupreuveDuScribe',
+                              isDuel: true,
+                              gameId: `duel_${currentPlayer.id}_vs_${opponent.id}_${Date.now()}`,
+                              attackerPlayerId: currentPlayer.id,
+                              targetPlayerId: opponent.id
+                          };
+                      } else {
+                          console.warn('[Phaser] Duel tile landed, but no opponent found to start Hangeul Typhoon duel.');
+                      }
+                      break;
+
+                  case 'MINI_GAME_QUIZ':
+                      console.log('[Phaser] Landing on Mini Game Quiz. Offering Hangeul Typhoon (Interpreter/Translator Mode).');
+                      const translationModes = ['defiDeLInterprete', 'testDuTraducteur'];
+                      const selectedTranslationMode = Phaser.Utils.Array.GetRandom(translationModes);
+                      hangeulTyphoonOptions = {
+                          gameMode: selectedTranslationMode,
+                          isDuel: false,
+                          attackerPlayerId: currentPlayer.id
+                      };
+                      break;
+              }
+
+              if (hangeulTyphoonOptions) {
+                  this.scene.start('HangeulTyphoonScene', hangeulTyphoonOptions);
+              }
+          } else {
+              console.log(`[Phaser] Clicked tile ${index}, but current player ${currentPlayer?.id} is at ${currentPlayer?.position}. No action.`);
+          }
         }
       });
       this.tileSprites.push(tileSprite); // Add to the array
