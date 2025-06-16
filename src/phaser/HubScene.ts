@@ -22,7 +22,7 @@ interface HubPlayerData {
   lastSeen?: Timestamp; // For potentially cleaning up stale players
 }
 
-export class HubScene extends Phaser.Scene {
+export default class HubScene extends Phaser.Scene {
   private player?: Phaser.GameObjects.Sprite & {
     body: Phaser.Physics.Arcade.Body;
   };

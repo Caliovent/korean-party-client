@@ -40,6 +40,23 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   private playerGroundLine!: Phaser.GameObjects.Line;
   private initialPlayerBaseGroundY!: number;
 
+  private currentCombo: number = 0;
+  private comboText!: Phaser.GameObjects.Text;
+  private comboTimer: Phaser.Time.TimerEvent | null = null;
+  private readonly COMBO_TIMEOUT: number = 3000; // 3 seconds
+
+  private currentGameMode: string = 'eupreuveDuScribe'; // Default mode
+  private modeText!: Phaser.GameObjects.Text; // Reference to HUD mode text
+  private translationPairs: { lang1: string, lang2_korean: string, type: 'word' | 'phrase' }[] = [
+    { lang1: "Maison", lang2_korean: "집", type: 'word' },
+    { lang1: "Amour", lang2_korean: "사랑", type: 'word' },
+    { lang1: "École", lang2_korean: "학교", type: 'word' },
+    { lang1: "Bonjour", lang2_korean: "안녕하세요", type: 'phrase' },
+    { lang1: "Merci", lang2_korean: "감사합니다", type: 'phrase' },
+    { lang1: "Oui", lang2_korean: "네", type: 'word' },
+    { lang1: "Non", lang2_korean: "아니요", type: 'word' }
+  ];
+
   constructor() {
     super({ key: 'HangeulTyphoonScene' });
   }
@@ -47,12 +64,56 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   preload() {
     // This method is ready for asset loading in future steps.
     // For now, it can remain empty or contain comments.
+
+    // // Background Image
+    // // this.load.image('hangeulTyphoon_bg', 'assets/minigames/hangeul_typhoon/background.png');
+
+    // // Block Sprites (if blocks become sprites instead of just text objects)
+    // // this.load.spritesheet('hangeul_block_sheet', 'assets/minigames/hangeul_typhoon/block_sheet.png', { frameWidth: 64, frameHeight: 32 });
+    // // or individual images for different block types/states
+    // // this.load.image('hangeul_block_protected', 'assets/minigames/hangeul_typhoon/block_protected.png');
+    // // this.load.image('hangeul_block_vulnerable', 'assets/minigames/hangeul_typhoon/block_vulnerable.png');
+
+    // // Sound Effects
+    // // this.load.audio('sfx_block_destroy', ['assets/sounds/minigames/hangeul_typhoon/block_destroy.mp3', 'assets/sounds/minigames/hangeul_typhoon/block_destroy.ogg']);
+    // // this.load.audio('sfx_game_over_typhoon', ['assets/sounds/minigames/hangeul_typhoon/game_over.mp3']);
+    // // this.load.audio('sfx_attack_sent', ['assets/sounds/minigames/hangeul_typhoon/attack_sent.mp3']);
+    // // this.load.audio('sfx_attack_failed', ['assets/sounds/minigames/hangeul_typhoon/attack_failed.mp3']);
+    // // this.load.audio('sfx_ground_rise', ['assets/sounds/minigames/hangeul_typhoon/ground_rise.mp3']);
+    // // this.load.audio('sfx_combo_tick', ['assets/sounds/minigames/hangeul_typhoon/combo_tick.mp3']); // For combo increment
+    // // this.load.audio('sfx_block_vulnerable', ['assets/sounds/minigames/hangeul_typhoon/block_vulnerable_ping.mp3']); // When block becomes vulnerable
+  }
+
+  public init(data: { gameMode?: string; isDuel?: boolean; gameId?: string; attackerPlayerId?: string; targetPlayerId?: string }) {
+    this.currentGameMode = data.gameMode || 'eupreuveDuScribe';
+    this.gameId = data.gameId || 'testGame123'; // Use provided or default
+    this.attackerPlayerId = data.attackerPlayerId || 'player1'; // Use provided or default
+    this.targetPlayerId = data.targetPlayerId || 'player2'; // Use provided or default
+    // this.isDuelMode = data.isDuel || false; // If you add this property
+
+    // Reset core game state variables
+    this.score = 0;
+    this.currentCombo = 0;
+    if (this.comboTimer) {
+        this.comboTimer.remove(false);
+        this.comboTimer = null;
+    }
+    this.isGameOver = false;
+    this.inputTextString = '';
+    this.isInAttackMode = false;
+    this.targetedBlock = null;
+    // Note: Other properties like blockSpeed, timeSinceLastSpeedIncrease might also need reset
+    // depending on desired behavior for restarting the same scene instance.
+    // For now, these are reset if the whole scene is new, or persist if scene instance is reused.
   }
 
   create() {
     // Get game dimensions
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;
+
+    // // Background
+    // // this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'hangeulTyphoon_bg').setOrigin(0.5);
 
     // Initialize game area properties
     this.gameAreaWidth = gameWidth * 0.7;
@@ -70,11 +131,18 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     // Combo Text
     // Positioned in the center, below the top edge
-    this.add.text(gameWidth * 0.5, hudY, 'Combo: 0', hudStyle).setOrigin(0.5, 0); // Centered horizontally
+    this.comboText = this.add.text(gameWidth * 0.5, hudY, `Combo: ${this.currentCombo}`, hudStyle).setOrigin(0.5, 0);
 
     // Mode Text
     // Positioned towards the right, below the top edge
-    this.add.text(gameWidth * 0.9, hudY, 'Mode: Épreuve du Scribe', hudStyle).setOrigin(1, 0); // Right-aligned
+    let modeDisplayName = 'Épreuve du Scribe';
+    if (this.currentGameMode === 'defiDeLInterprete') {
+      modeDisplayName = 'Défi de l\'Interprète';
+    } else if (this.currentGameMode === 'testDuTraducteur') {
+      // Add display name for Test du Traducteur if different, otherwise it uses Scribe
+      modeDisplayName = 'Test du Traducteur'; // Placeholder, adjust if needed
+    }
+    this.modeText = this.add.text(gameWidth * 0.9, hudY, `Mode: ${modeDisplayName}`, hudStyle).setOrigin(1, 0);
 
     // Define game area dimensions and position
     // HUD will be above, input field below.
@@ -204,6 +272,8 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     this.isGameOver = false; // Initialize game over state
     this.score = 0; // Initialize score
     this.isInAttackMode = false; // Initialize attack mode state
+    this.currentCombo = 0; // Initialize combo
+    this.comboTimer = null; // Initialize combo timer reference
 
     this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
       if (this.isGameOver && event.key !== 'G') return; // Allow 'G' for debug even if game over for testing this feature
@@ -288,34 +358,56 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   }
 
   private spawnBlock() {
-    if (this.isGameOver) return; // Do not spawn blocks if game is over
+    if (this.isGameOver) return;
 
-    // Ensure game area dimensions are set
-    if (this.gameAreaX === undefined) {
-      console.error("Game area dimensions not set before spawning block.");
-      return;
+    let displayString: string;
+    let expectedInput: string;
+    let blockType: string;
+
+    if (this.currentGameMode === 'defiDeLInterprete') {
+      const pair = Phaser.Utils.Array.GetRandom(this.translationPairs);
+      displayString = pair.lang1;
+      expectedInput = pair.lang2_korean;
+      blockType = pair.type;
+    } else if (this.currentGameMode === 'testDuTraducteur') {
+      const pair = Phaser.Utils.Array.GetRandom(this.translationPairs);
+      displayString = pair.lang2_korean; // Korean word on block
+      expectedInput = pair.lang1;       // Expected French/English input
+      blockType = pair.type;
+    }
+    else { // Default to 'eupreuveDuScribe'
+      displayString = Phaser.Utils.Array.GetRandom(this.sampleHangeul);
+      expectedInput = displayString;
+      if (displayString.length === 1) blockType = 'char';
+      else if (displayString.length <= 3) blockType = 'syllable';
+      else blockType = 'word';
     }
 
-    const hangeulString = Phaser.Utils.Array.GetRandom(this.sampleHangeul);
-    // Ensure blocks spawn within the gameAreaX and gameAreaX + gameAreaWidth
-    // Subtracting an estimated width of the block text (e.g., 60-80px for typical strings here)
-    const maxX = this.gameAreaX + this.gameAreaWidth - (hangeulString.length * 15 + 10); // Estimate text width + padding
+    // Adjusted width estimate: using displayString.length * 12 (avg char width) + padding
+    const estimatedTextWidth = displayString.length * 12 + 20;
+    const maxX = this.gameAreaX + this.gameAreaWidth - estimatedTextWidth;
     const randomX = Phaser.Math.Between(this.gameAreaX + 5, maxX > this.gameAreaX + 5 ? maxX : this.gameAreaX + 5);
 
-    const blockText = this.add.text(randomX, this.gameAreaY, hangeulString, {
-        font: '20px Arial', // Slightly smaller font for blocks
+    // // If using sprites for blocks:
+    // // const blockSprite = this.add.sprite(randomX, this.gameAreaY, 'hangeul_block_sheet', 0); // 0 is frame index
+    // // blockSprite.setData('hangeulText', displayString); // Still need to store text data for logic
+    // // Then add text on top of the sprite or integrate it if text is part of sprite frames.
+    // // For now, using text objects directly:
+    const blockText = this.add.text(randomX, this.gameAreaY, displayString, {
+        font: '20px Arial',
         color: '#ffffff',
         backgroundColor: '#333333',
         padding: { x: 5, y: 5 }
     });
 
     this.blocks.add(blockText);
-    // Store speed and original text directly on the object using setData
     blockText.setData('speed', this.blockSpeed);
-    blockText.setData('hangeulText', hangeulString);
-    blockText.setData('spawnTime', this.time.now); // Store spawn time
-    blockText.setData('isProtected', true);       // Set initial protection status
-    blockText.setData('isVulnerable', false);     // Explicitly not vulnerable yet
+    blockText.setData('hangeulText', displayString); // What's visually on the block
+    blockText.setData('expectedInput', expectedInput); // What player needs to type
+    blockText.setData('blockType', blockType);
+    blockText.setData('spawnTime', this.time.now);
+    blockText.setData('isProtected', true);
+    blockText.setData('isVulnerable', false);
   }
 
   update(time: number, delta: number) { // Added time, delta explicitly for clarity
@@ -345,6 +437,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
             block.setColor('#000000');         // Text color for vulnerable block (e.g., black)
             // Optional: Add a small visual effect like a quick flash or scale pulse
             // this.tweens.add({ targets: block, scaleX: 1.1, scaleY: 1.1, duration: 100, yoyo: true });
+            // // this.sound.play('sfx_block_vulnerable');
             console.log(`Block '${block.getData('hangeulText')}' is now VULNERABLE`);
           }
         }
@@ -386,10 +479,10 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     this.blocks.getChildren().forEach(blockObject => {
       const block = blockObject as Phaser.GameObjects.Text;
-      const blockHangeul = block.getData('hangeulText') as string;
+      const blockExpectedInput = block.getData('expectedInput') as string;
 
-      if (blockHangeul && blockHangeul.startsWith(this.inputTextString)) {
-        if (!bestMatch || block.y > bestMatch.y) { // If this block is lower than current best match
+      if (blockExpectedInput && blockExpectedInput.toLowerCase().startsWith(this.inputTextString.toLowerCase())) {
+        if (!bestMatch || block.y > bestMatch.y) {
           bestMatch = block;
         }
       }
@@ -402,20 +495,12 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   }
 
   private handleInputValidation() {
-    if (this.targetedBlock && this.inputTextString === this.targetedBlock.getData('hangeulText')) {
-      // Visual cue for destruction (e.g., quick tint change)
-      this.targetedBlock.setTint(0xff0000); // Red tint for validated
-
-      // Call a new method to handle the actual destruction and score
+    if (this.targetedBlock &&
+        this.inputTextString.toLowerCase() === (this.targetedBlock.getData('expectedInput') as string).toLowerCase()) {
+      this.targetedBlock.setTint(0xff0000);
       this.destroyBlock(this.targetedBlock);
-
-      // No longer need 'toBeDestroyed' if handled immediately
-      // this.targetedBlock.setData('toBeDestroyed', true);
-      // console.log('Block validated for destruction:', this.targetedBlock.getData('hangeulText'));
     } else {
-      // Optional: Add feedback for incorrect validation
-      console.log('Validation failed. Typed:', this.inputTextString, 'Targeted:', this.targetedBlock?.getData('hangeulText'));
-      // Maybe a quick red flash on the input field or a sound
+      console.log('Validation failed. Typed:', this.inputTextString, 'Expected:', this.targetedBlock?.getData('expectedInput'));
     }
 
     // Clear input string and update display text
@@ -426,17 +511,46 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   }
 
   private destroyBlock(blockToDestroy: Phaser.GameObjects.Text) {
-    // Optional: Add a brief animation or particle effect here later
+    if (!blockToDestroy.active) return;
 
-    // For now, simple destruction:
-    this.blocks.remove(blockToDestroy, true, true); // remove from group, destroy game object, remove from scene
+    this.blocks.remove(blockToDestroy, true, true);
 
-    // Add points (e.g., 10 points per block)
-    this.score += 10;
-    // Update the score display
+    // --- Scoring Logic ---
+    const blockType = blockToDestroy.getData('blockType') as string;
+    let basePoints = 0;
+    switch (blockType) {
+      case 'char':
+        basePoints = 10;
+        break;
+      case 'syllable':
+        basePoints = 50;
+        break;
+      case 'word':
+        basePoints = 100;
+        break;
+      case 'phrase': // Added case for phrase
+        basePoints = 150; // Example points for a phrase
+        break;
+      default:
+        basePoints = 10;
+    }
+
+    this.currentCombo++;
+    if (this.comboTimer) {
+      this.comboTimer.remove(false);
+    }
+    this.comboTimer = this.time.delayedCall(this.COMBO_TIMEOUT, this.resetCombo, [], this);
+
+    const pointsEarned = basePoints * (this.currentCombo > 1 ? this.currentCombo : 1);
+    this.score += pointsEarned;
+
     this.updateScoreDisplay();
-
-    // console.log('Destroyed block. Score:', this.score); // For debugging
+    this.updateComboDisplay();
+    // // Play block destruction sound
+    // // this.sound.play('sfx_block_destroy', { volume: 0.7 });
+    // // If combo is active, play combo tick sound
+    // // if (this.currentCombo > 1) { this.sound.play('sfx_combo_tick'); }
+    // --- End Scoring Logic ---
 
     // Ensure the destroyed block is no longer considered targeted
     if (this.targetedBlock === blockToDestroy) {
@@ -455,6 +569,10 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     if (this.blockSpawnTimer) {
        this.blockSpawnTimer.remove(false);
     }
+    if (this.comboTimer) { // Stop combo timer on game over
+      this.comboTimer.remove(false);
+      this.comboTimer = null;
+    }
 
     // Stop player input
     this.input.keyboard.off('keydown'); // Removes all keydown listeners on the keyboard plugin
@@ -462,6 +580,8 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     // Display Game Over message
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;
+    // // Play game over sound
+    // // this.sound.play('sfx_game_over_typhoon', { volume: 0.8 });
     this.gameOverText = this.add.text(
       gameWidth / 2,
       gameHeight / 2,
@@ -471,6 +591,20 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     // Optional: Clear existing blocks or make them stop
     // this.blocks.clear(true, true); // Clears and destroys all blocks
+
+    // Prepare results
+    const results = {
+      miniGame: 'HangeulTyphoon',
+      score: this.score,
+      mode: this.currentGameMode, // Include the mode played
+      // isDuel: this.isDuelMode, // If isDuelMode property exists
+      // outcome: this.isDuelMode ? (didCurrentPlayerWin ? 'victory' : 'defeat') : 'solo_complete',
+    };
+
+    this.time.delayedCall(2500, () => {
+      this.scene.stop('HangeulTyphoonScene');
+      this.scene.start('MainBoardScene', { fromMiniGame: true, miniGameResults: results });
+    });
   }
 
   private updateScoreDisplay() {
@@ -552,8 +686,10 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     if (response.status === 'success') {
       console.log(`Client: Attack reported as SUCCESS. Word: ${response.destroyedBlockWord}. Target ground rise: ${response.targetGroundRiseAmount}`);
       // Opponent's ground rise is handled by them listening to Firestore.
+      // // this.sound.play('sfx_attack_sent');
     } else if (response.status === 'failure') {
       console.log(`Client: Attack reported as FAILURE. Reason: ${response.reason}. Attacker penalty: ${response.attackerPenaltyGroundRiseAmount}`);
+      // // this.sound.play('sfx_attack_failed');
       if (response.attackerPenaltyGroundRiseAmount && response.attackerPenaltyGroundRiseAmount > 0) {
         this.riseOwnGround(response.attackerPenaltyGroundRiseAmount);
         const penaltyText = this.add.text(
@@ -574,6 +710,9 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     const newGroundY = this.groundY - amount;
     this.groundY = newGroundY; // Update logical groundY
+
+    // // Play ground rise sound
+    // // this.sound.play('sfx_ground_rise');
 
     // Animate the visual line
     this.tweens.add({
@@ -614,6 +753,21 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
       console.warn(`Server ground height ${newServerGroundHeight} would lower client ground. Current client Y: ${this.groundY}, Target Y: ${newClientTargetY}. Ignoring or snapping.`);
     } else {
       console.log("Client ground height is already in sync with server.");
+    }
+  }
+
+  private resetCombo() {
+    this.currentCombo = 0;
+    this.comboTimer = null;
+    this.updateComboDisplay();
+    console.log("Combo reset");
+    // // Play combo break sound, if desired
+    // // this.sound.play('sfx_combo_break');
+  }
+
+  private updateComboDisplay() {
+    if (this.comboText) {
+      this.comboText.setText(`Combo: ${this.currentCombo}`);
     }
   }
 }
