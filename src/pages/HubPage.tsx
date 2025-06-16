@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'; // + useState
 import Phaser from 'phaser';
-import { HubScene } from '../phaser/HubScene'; // Assuming HubScene will be created in src/phaser/
+import HubScene from '../phaser/HubScene'; // Assuming HubScene will be created in src/phaser/
 import GameLobbyModal from '../components/GameLobbyModal'; // + Import modal
 import soundService from '../services/soundService'; // Import soundService
 
