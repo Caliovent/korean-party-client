@@ -143,11 +143,6 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
       modeDisplayName = 'Test du Traducteur'; // Placeholder, adjust if needed
     }
     this.modeText = this.add.text(gameWidth * 0.9, hudY, `Mode: ${modeDisplayName}`, hudStyle).setOrigin(1, 0);
-    this.add.text(gameWidth * 0.5, hudY, 'Combo: 0', hudStyle).setOrigin(0.5, 0); // Centered horizontally
-
-    // Mode Text
-    // Positioned towards the right, below the top edge
-    this.add.text(gameWidth * 0.9, hudY, 'Mode: Épreuve du Scribe', hudStyle).setOrigin(1, 0); // Right-aligned
 
     // Define game area dimensions and position
     // HUD will be above, input field below.
@@ -369,12 +364,6 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     let expectedInput: string;
     let blockType: string;
 
-    
-    // Ensure game area dimensions are set
-    if (this.gameAreaX === undefined) {
-      console.error("Game area dimensions not set before spawning block.");
-      return;
-    }
     if (this.currentGameMode === 'defiDeLInterprete') {
       const pair = Phaser.Utils.Array.GetRandom(this.translationPairs);
       displayString = pair.lang1;
@@ -396,16 +385,8 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     // Adjusted width estimate: using displayString.length * 12 (avg char width) + padding
     const estimatedTextWidth = displayString.length * 12 + 20;
-    const hangeulString = Phaser.Utils.Array.GetRandom(this.sampleHangeul);
-    const maxX = this.gameAreaX + this.gameAreaWidth - (hangeulString.length * 15 + 10); // Estimate text width + padding
+    const maxX = this.gameAreaX + this.gameAreaWidth - estimatedTextWidth;
     const randomX = Phaser.Math.Between(this.gameAreaX + 5, maxX > this.gameAreaX + 5 ? maxX : this.gameAreaX + 5);
-
-
-    
-
-    // Ensure blocks spawn within the gameAreaX and gameAreaX + gameAreaWidth
-    // Subtracting an estimated width of the block text (e.g., 60-80px for typical strings here)
-
 
     // // If using sprites for blocks:
     // // const blockSprite = this.add.sprite(randomX, this.gameAreaY, 'hangeul_block_sheet', 0); // 0 is frame index
@@ -417,7 +398,6 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
         color: '#ffffff',
         backgroundColor: '#333333',
         padding: { x: 5, y: 5 }
-        font: '20px Arial', // Slightly smaller font for blocks
     });
 
     this.blocks.add(blockText);
@@ -457,6 +437,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
             block.setColor('#000000');         // Text color for vulnerable block (e.g., black)
             // Optional: Add a small visual effect like a quick flash or scale pulse
             // this.tweens.add({ targets: block, scaleX: 1.1, scaleY: 1.1, duration: 100, yoyo: true });
+            // // this.sound.play('sfx_block_vulnerable');
             console.log(`Block '${block.getData('hangeulText')}' is now VULNERABLE`);
           }
         }
@@ -599,6 +580,8 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     // Display Game Over message
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;
+    // // Play game over sound
+    // // this.sound.play('sfx_game_over_typhoon', { volume: 0.8 });
     this.gameOverText = this.add.text(
       gameWidth / 2,
       gameHeight / 2,
@@ -608,6 +591,20 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     // Optional: Clear existing blocks or make them stop
     // this.blocks.clear(true, true); // Clears and destroys all blocks
+
+    // Prepare results
+    const results = {
+      miniGame: 'HangeulTyphoon',
+      score: this.score,
+      mode: this.currentGameMode, // Include the mode played
+      // isDuel: this.isDuelMode, // If isDuelMode property exists
+      // outcome: this.isDuelMode ? (didCurrentPlayerWin ? 'victory' : 'defeat') : 'solo_complete',
+    };
+
+    this.time.delayedCall(2500, () => {
+      this.scene.stop('HangeulTyphoonScene');
+      this.scene.start('MainBoardScene', { fromMiniGame: true, miniGameResults: results });
+    });
   }
 
   private updateScoreDisplay() {
@@ -713,6 +710,9 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     const newGroundY = this.groundY - amount;
     this.groundY = newGroundY; // Update logical groundY
+
+    // // Play ground rise sound
+    // // this.sound.play('sfx_ground_rise');
 
     // Animate the visual line
     this.tweens.add({
