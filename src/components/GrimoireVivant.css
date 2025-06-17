@@ -1,0 +1,151 @@
+/* Styles for GrimoireVivant component */
+
+.grimoire-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif; /* Example font */
+  color: #e0e0e0; /* Light text color for dark themes */
+}
+
+.grimoire-controls {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.review-button {
+  padding: 12px 24px;
+  font-size: 1.2rem;
+  background-color: #8a2be2; /* Violet magique */
+  color: white;
+  border: 2px solid #4b0082; /* Indigo foncé pour bordure */
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.review-button:hover {
+  background-color: #9932cc; /* MediumOrchid, un violet plus clair */
+  box-shadow: 0 0 15px #c788f6; /* Lueur lavande */
+  transform: translateY(-2px); /* Léger soulèvement */
+}
+
+.review-button:disabled {
+  background-color: #555; /* Gris foncé pour désactivé */
+  border-color: #333;
+  color: #888; /* Texte grisé */
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.runes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem; /* Increased gap for better spacing */
+}
+
+.rune-item {
+  border: 1px solid #ccc; /* Bordure par défaut */
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  background-color: #2a2a2a; /* Fond sombre pour les items */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Pushes mastery label to bottom */
+  min-height: 120px; /* Ensure consistent height */
+}
+
+.rune-item:hover {
+  transform: translateY(-5px); /* Soulèvement au survol */
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Ombre plus prononcée */
+}
+
+.rune-word {
+  font-size: 1.6rem; /* Taille augmentée pour le mot de la rune */
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.75rem; /* Espace accru sous le mot */
+  font-family: 'Times New Roman', serif; /* Police plus "ancienne" pour les runes */
+  color: #f0f0f0; /* Couleur de texte claire pour le mot */
+}
+
+.rune-mastery-label {
+  font-size: 0.9rem;
+  color: #aaa; /* Couleur plus discrète pour le niveau */
+  margin-top: auto; /* Pushes label to the bottom if content is short */
+}
+
+/* --- Styles des Niveaux de Maîtrise --- */
+
+/* Niveau 1: Découverte (Grisâtre, simple) */
+.rune-item.mastery-0, /* Assuming 0 is unlearned/discovery */
+.rune-item.mastery-1 {
+  border-color: #444; /* Bordure gris foncé */
+  color: #777; /* Texte gris */
+  background-color: #222; /* Fond très sombre */
+}
+.rune-item.mastery-0 .rune-word,
+.rune-item.mastery-1 .rune-word {
+  color: #888;
+}
+.rune-item.mastery-0 .rune-mastery-label,
+.rune-item.mastery-1 .rune-mastery-label {
+  color: #666;
+}
+
+
+/* Niveau 2: Apprentissage (Bleu clair, éclat subtil) */
+.rune-item.mastery-2 {
+  border-color: #3a8dff; /* Bordure bleue */
+  color: #a8caff; /* Texte bleu clair */
+  background-color: #283040; /* Fond bleu nuit */
+  box-shadow: 0 0 8px rgba(58, 141, 255, 0.5); /* Lueur bleue */
+}
+.rune-item.mastery-2 .rune-word {
+  color: #cce0ff;
+}
+.rune-item.mastery-2 .rune-mastery-label {
+  color: #8cb0f0;
+}
+
+/* Niveau 3: Maîtrise (Blanc/Argenté, éclat plus fort) */
+.rune-item.mastery-3 {
+  border-color: #c0c0c0; /* Bordure argentée */
+  color: #f0f0f0; /* Texte blanc cassé */
+  background-color: #303035; /* Fond gris moyen */
+  box-shadow: 0 0 12px rgba(224, 224, 224, 0.6); /* Lueur blanche */
+}
+.rune-item.mastery-3 .rune-word {
+  color: #ffffff;
+  text-shadow: 0 0 5px #fff; /* Léger halo sur le mot */
+}
+.rune-item.mastery-3 .rune-mastery-label {
+  color: #b0b0b0;
+}
+
+/* Niveau 4: Gravure (Or, effet radial et lueur intense) */
+.rune-item.mastery-4 {
+  border-color: #ffd700; /* Bordure dorée */
+  color: #fff; /* Texte blanc pour contraste */
+  background: radial-gradient(ellipse at center, #4d3c00 0%, #1a1a1a 90%); /* Fond or sombre vers noir */
+  box-shadow: 0 0 18px #ffd700, inset 0 0 8px rgba(255, 236, 128, 0.5); /* Lueur dorée externe et interne */
+  position: relative; /* Pour effets de pseudo-éléments si besoin */
+}
+.rune-item.mastery-4 .rune-word {
+  color: #ffeb99; /* Jaune pâle pour le mot */
+  text-shadow: 0 0 8px #ffd700; /* Halo doré sur le mot */
+}
+.rune-item.mastery-4 .rune-mastery-label {
+  color: #e0c060; /* Label doré plus sombre */
+  font-weight: bold;
+}
+
+/* Placeholder for .grimoire-vivant if it's a parent or wrapper not used in GrimoireVivant.tsx directly for these styles */
+.grimoire-vivant {
+  /* If this class is used as a wrapper around .grimoire-container, styles can go here */
+}
