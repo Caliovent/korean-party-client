@@ -1,6 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFunctions, type Functions } from "firebase/functions"; // Import Firebase Functions
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,6 +17,7 @@ const firebaseConfig = {
 const app: FirebaseApp = initializeApp(firebaseConfig);
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
+const functions: Functions = getFunctions(app); // Initialize Firebase Functions
 // const storage = getStorage(app); // Si vous utilisez Storage
 
-export { app, auth, db /*, storage */ };
+export { app, auth, db, functions /*, storage */ }; // Export functions

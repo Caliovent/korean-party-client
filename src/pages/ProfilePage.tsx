@@ -5,68 +5,8 @@ import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from '../hooks/useAuth'; // Import useAuth
 import { getGuildById } from '../services/gameService'; // Import getGuildById
-
-// --- SOUS-COMPOSANT POUR LA SESSION DE RÉVISION (SRS) ---
-const ReviewSession: React.FC<{ items: any[], onFinish: () => void }> = ({ items, onFinish }) => {
-  const { t } = useTranslation();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const currentItem = items[currentIndex];
-
-  const handleSelectResult = async (wasCorrect: boolean) => {
-    setIsSubmitting(true);
-    let functions;
-    if (import.meta.env.DEV) {
-      functions = getFunctions(app, 'us-central1');
-      functions.customDomain = `http://localhost:5173/functions-proxy`;
-    } else {
-      functions = getFunctions(app, 'us-central1');
-    }
-    const submitSrsReview = httpsCallable(functions, 'submitSrsReview');
-    
-    try {
-      await submitSrsReview({ itemId: currentItem.id, wasCorrect });
-    } catch (error) {
-      console.error("Erreur de soumission de la révision:", error);
-    } finally {
-      // Passer à la carte suivante ou terminer la session
-      if (currentIndex < items.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-        setIsFlipped(false);
-      } else {
-        onFinish();
-      }
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!currentItem) return null;
-
-  return (
-    <div className="review-session-container">
-      <div className={`flashcard ${isFlipped ? 'is-flipped' : ''}`} onClick={() => !isFlipped && setIsFlipped(true)}>
-        <div className="flashcard-face flashcard-front">
-          {/* Affiche la question/le mot */}
-          {currentItem.id} 
-        </div>
-        <div className="flashcard-face flashcard-back">
-          {/* Ici, on afficherait la vraie réponse. Pour l'instant, c'est un placeholder. */}
-          Réponse : {currentItem.id}
-        </div>
-      </div>
-      
-      {isFlipped && !isSubmitting && (
-        <div className="review-actions">
-          <button onClick={() => handleSelectResult(false)} className="delete-button">{t('incorrect', 'Incorrect')}</button>
-          <button onClick={() => handleSelectResult(true)}>{t('correct', 'Correct')}</button>
-        </div>
-      )}
-    </div>
-  );
-};
-
+import GrimoireVivant from '../components/GrimoireVivant'; // Import GrimoireVivant
+import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
 // --- COMPOSANT PRINCIPAL DE LA PAGE DE PROFIL ---
 const ProfilePage: React.FC = () => {
@@ -78,8 +18,6 @@ const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [newPseudo, setNewPseudo] = useState('');
   const [error, setError] = useState(''); // General errors for profile page
-  const [reviewItems, setReviewItems] = useState<any[] | null>(null);
-  const [isLoadingReview, setIsLoadingReview] = useState(false);
 
   // State for guild information
   const [guildName, setGuildName] = useState<string | null>(null);
@@ -166,34 +104,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Fonction pour démarrer une session de révision SRS
-  const handleStartReviewSession = async () => {
-    setIsLoadingReview(true);
-    setReviewItems(null); // Réinitialise au cas où
-    let functions;
-    if (import.meta.env.DEV) {
-      functions = getFunctions(app, 'us-central1');
-      functions.customDomain = `http://localhost:5173/functions-proxy`;
-    } else {
-      functions = getFunctions(app, 'us-central1');
-    }
-    const getReviewItems = httpsCallable(functions, 'getReviewItems');
-    try {
-      const result = await getReviewItems();
-      setReviewItems((result.data as { items: any[] }).items);
-    } catch (err) {
-      console.error("Erreur de récupération des items:", err);
-      setError("Impossible de charger la session de révision.");
-    } finally {
-      setIsLoadingReview(false);
-    }
-  };
-
-  // Fonction pour terminer et quitter la session de révision
-  const handleFinishReview = () => {
-    setReviewItems(null);
-  };
-
   if (authLoading || loadingProfile) return <div>{t('loading', 'Chargement...')}</div>;
   // Error from auth hook (e.g. not logged in) might be handled by a redirect in App.tsx or useAuth itself
   if (!authUser) return <div>{t('notLoggedIn', 'Veuillez vous connecter pour voir votre profil.')}</div>;
@@ -201,8 +111,13 @@ const ProfilePage: React.FC = () => {
   if (!profile) return <div>{t('profileNotFound', "Profil de l'utilisateur non trouvé.")}</div>;
 
   return (
-    <div className="profile-container">
-      {/* --- SECTION D'AFFICHAGE ET D'ÉDITION DU PROFIL --- */}
+    <div className="profile-page-container"> {/* Updated class name */}
+      <header className="profile-header">
+        <h1>{t('profilePage.title', 'Mon Grimoire Vivant')}</h1>
+        <p>{t('profilePage.description', "Consultez et gérez la maîtrise de vos sortilèges.")}</p>
+      </header>
+
+      {/* --- SECTION D'AFFICHAGE ET D'ÉDITION DU PROFIL (Conservée) --- */}
       <div className="profile-details">
         <h2>{t('profilePageTitle', 'Mon Profil de Sorcier')}</h2>
         <p><strong>Email:</strong> {profile.email}</p>
@@ -218,11 +133,10 @@ const ProfilePage: React.FC = () => {
           ) : guildName ? (
             <p><strong>{t('guildMembership', 'Membre de la Maison')}:</strong> {guildName}</p>
           ) : (
-            // This case might occur if guildId exists but fetch returned null and no error
             <p>{t('guildDetailsUnavailable', 'Détails de la maison non disponibles.')}</p>
           )
         )}
-        {!authUser.guildId && !isLoadingGuildName && ( // Ensure not to show this while guildId might still be loading via authUser
+        {!authUser.guildId && !isLoadingGuildName && (
           <p>{t('noGuildAffiliation', "N'appartient à aucune maison.")}</p>
         )}
       </div>
@@ -247,26 +161,10 @@ const ProfilePage: React.FC = () => {
         </form>
       )}
 
-      {/* --- SECTION DE LA FORGE DES SORTS (SRS) --- */}
-      <div className="srs-section" style={{marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem'}}>
-        <h3>{t('spellForgeTitle', 'Forge des Sorts')}</h3>
-        
-        {reviewItems === null ? (
-          <>
-            <p>{t('srsDescription', 'Révisez vos sortilèges pour les renforcer !')}</p>
-            <button onClick={handleStartReviewSession} disabled={isLoadingReview}>
-              {isLoadingReview ? t('loadingReview', 'Chargement...') : t('startReview', 'Lancer une révision')}
-            </button>
-          </>
-        ) : reviewItems.length > 0 ? (
-          <ReviewSession items={reviewItems} onFinish={handleFinishReview} />
-        ) : (
-          <div>
-            <p>{t('noItemsToReview', 'Aucun sort à réviser pour le moment. Bravo !')}</p>
-            <button onClick={() => setReviewItems(null)}>{t('back', 'Retour')}</button>
-          </div>
-        )}
-      </div>
+      {/* --- SECTION DU GRIMOIRE VIVANT --- */}
+      <main>
+        <GrimoireVivant />
+      </main>
     </div>
   );
 };

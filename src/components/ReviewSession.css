@@ -1,0 +1,124 @@
+/* Styles for ReviewSession component - assuming a modal-like appearance */
+
+.review-session-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: rgba(0, 0, 0, 0.85); /* Darker overlay for more focus */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000; /* Ensure it's above other content */
+  backdrop-filter: blur(5px); /* Optional: blur background for focus */
+}
+
+.review-card {
+  background-color: #2c2c2c; /* Slightly lighter than pitch black for depth */
+  color: #e0e0e0; /* Light gray text */
+  padding: 2.5rem; /* More padding */
+  border-radius: 12px; /* Softer radius */
+  width: 90%;
+  max-width: 550px; /* Slightly wider */
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.7); /* Stronger shadow for modal effect */
+  border: 1px solid #444; /* Subtle border */
+}
+
+.review-prompt {
+  font-size: 2.5rem; /* Larger for emphasis */
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+  color: #8a2be2; /* Violet magique from GrimoireVivant for consistency */
+  text-shadow: 0 0 5px rgba(138, 43, 226, 0.5); /* Subtle glow */
+}
+
+.review-answer {
+  background-color: #3a3a3a; /* Darker shade for the answer area */
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  min-height: 70px; /* Increased min-height */
+  opacity: 0;
+  transform: translateY(10px); /* Slight downward offset when hidden */
+  transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  display: flex; /* For centering text if needed */
+  justify-content: center;
+  align-items: center;
+}
+
+.review-answer p {
+  margin: 0;
+  font-size: 1.3rem; /* Slightly larger answer text */
+  color: #c7c7c7; /* Lighter text for answer */
+}
+
+.review-answer.visible {
+  opacity: 1;
+  transform: translateY(0); /* Return to original position */
+}
+
+/* General button styling (applied to .reveal-btn, .correct-btn, .incorrect-btn) */
+.reveal-btn,
+.correct-btn,
+.incorrect-btn {
+  padding: 12px 25px; /* Increased padding */
+  font-size: 1.1rem; /* Increased font size */
+  border: none;
+  border-radius: 8px; /* Softer radius */
+  cursor: pointer;
+  margin: 0 0.5rem;
+  transition: all 0.25s ease; /* Transition for all properties */
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  min-width: 120px; /* Ensure buttons have a decent minimum width */
+}
+
+/* Reveal Button specific styles */
+.reveal-btn {
+  background-color: #5a5a5a; /* Neutral dark gray */
+  color: white;
+  border: 2px solid #404040;
+}
+
+.reveal-btn:hover {
+  background-color: #6b6b6b;
+  border-color: #505050;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.response-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem; /* Increased gap */
+  margin-top: 1.5rem;
+}
+
+.correct-btn {
+  background-color: #28a745; /* Green */
+  color: white;
+  border: 2px solid #1e7e34; /* Darker green border */
+}
+
+.correct-btn:hover {
+  background-color: #218838;
+  border-color: #196c2a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.incorrect-btn {
+  background-color: #dc3545; /* Red */
+  color: white;
+  border: 2px solid #b02a37; /* Darker red border */
+}
+
+.incorrect-btn:hover {
+  background-color: #c82333;
+  border-color: #991e2b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}

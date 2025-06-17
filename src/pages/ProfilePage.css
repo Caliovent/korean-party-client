@@ -1,0 +1,128 @@
+/* Basic styling for ProfilePage */
+.profile-page-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--background-color-light); /* Assuming you have CSS variables for colors */
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: var(--text-color-primary); /* Assuming you have CSS variables for colors */
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color); /* Assuming you have CSS variables for colors */
+}
+
+.profile-header h1 {
+  font-size: 2.5rem;
+  color: var(--primary-color); /* Assuming you have CSS variables for colors */
+  margin-bottom: 0.5rem;
+}
+
+.profile-header p {
+  font-size: 1.1rem;
+  color: var(--text-color-secondary); /* Assuming you have CSS variables for colors */
+}
+
+.profile-details {
+  background-color: var(--background-color);
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.profile-details h2 {
+  font-size: 1.8rem;
+  color: var(--accent-color-dark); /* Assuming you have CSS variables for colors */
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--accent-color-dark);
+  padding-bottom: 0.5rem;
+}
+
+.profile-details p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.profile-details strong {
+  color: var(--text-color-emphasis); /* Assuming you have CSS variables for colors */
+}
+
+.profile-page-container button,
+.profile-edit-form button[type="submit"] {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  margin-top: 0.5rem;
+}
+
+.profile-page-container button:hover,
+.profile-edit-form button[type="submit"]:hover {
+  background-color: var(--primary-color-dark); /* Assuming you have a darker shade */
+}
+
+.profile-edit-form {
+  background-color: var(--background-color);
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-top: 1.5rem;
+}
+
+.profile-edit-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.profile-edit-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--text-color-secondary);
+}
+
+.profile-edit-form input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: var(--input-background-color); /* Assuming you have CSS variables for colors */
+  color: var(--text-color-primary);
+}
+
+.error-message {
+  color: var(--error-color); /* Assuming you have CSS variables for colors */
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Styles for GrimoireVivant section (if needed directly in ProfilePage.css) */
+.profile-page-container main {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .profile-page-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .profile-header h1 {
+    font-size: 2rem;
+  }
+
+  .profile-details h2 {
+    font-size: 1.6rem;
+  }
+}
