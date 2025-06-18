@@ -10,11 +10,11 @@ import type { Guild } from '../types/guild'; // Importer le type Guild
 let functions;
 if (import.meta.env.DEV) {
   // For development, use the proxy
-  functions = getFunctions(app, 'us-central1'); // Correct region for functions
+  functions = getFunctions(app, 'europe-west1'); // Correct region for functions
   functions.customDomain = `http://localhost:5173/functions-proxy`; // Vite proxy
 } else {
   // For production, call functions directly in the correct region
-  functions = getFunctions(app, 'us-central1');
+  functions = getFunctions(app, 'europe-west1');
 }
 
 const db = getFirestore(app);

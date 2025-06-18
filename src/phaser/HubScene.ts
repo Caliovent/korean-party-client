@@ -36,6 +36,8 @@ export default class HubScene extends Phaser.Scene {
   // Map to store target positions for other players for interpolation
   private remotePlayerTargets: Map<string, Phaser.Math.Vector2> = new Map();
   private firestoreListenerUnsubscribe?: () => void;
+  private isOverlappingPortal = false;
+  private isOverlappingGuildPanel = false; // Si vous avez aussi un panneau de guilde
 
   constructor() {
     super({ key: "HubScene" });
@@ -168,17 +170,7 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openGuildManagementModal");
     });
 
-    // Add overlap physics for gamePortal
-    this.physics.add.overlap(
-      this.player!,
-      gamePortal,
-      () => {
-        console.log("Player is overlapping with game portal");
-        this.game.events.emit("openGameLobbyModal");
-      },
-      undefined,
-      this,
-    );
+
 
     // Add overlap physics for guildPanel
     this.physics.add.overlap(
@@ -308,6 +300,22 @@ export default class HubScene extends Phaser.Scene {
       this.player.body.velocity.y !== 0
     ) {
       this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+      const isCurrentlyOverlappingPortal = this.physics.overlap(this.player, this.gamePortal);
+
+      // CAS 1: Le joueur ENTRE dans la zone
+      if (isCurrentlyOverlappingPortal && !this.isOverlappingPortal) {
+        // On met le drapeau à true pour ne plus rentrer dans ce 'if'
+        this.isOverlappingPortal = true;
+        console.log("Le joueur COMMENCE la superposition avec le portail.");
+        this.game.events.emit("openGameLobbyModal");
+      }
+      // CAS 2: Le joueur QUITTE la zone
+      else if (!isCurrentlyOverlappingPortal && this.isOverlappingPortal) {
+        // On réinitialise le drapeau pour que la détection puisse se refaire plus tard
+        this.isOverlappingPortal = false;
+        console.log("Le joueur TERMINE la superposition avec le portail.");
+  
+      }
     }
 
     // Other players movement (interpolation)

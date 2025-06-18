@@ -10,10 +10,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/functions-proxy': {
-        target: 'https://us-central1-kacademy-d125a.cloudfunctions.net',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/functions-proxy/, ''),
+        target: 'http://127.0.0.1:5001/kacademy-d125a/europe-west1', // Cible l'émulateur
+        changeOrigin: true, // Nécessaire pour que le proxy fonctionne
+        rewrite: (path) => path.replace(/^\/functions-proxy/, ''), // Retire /functions-proxy de l'URL avant de l'envoyer
       },
     },
   },

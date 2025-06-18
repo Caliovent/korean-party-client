@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, functions } from '../firebaseConfig'; // Added functions
-import { collection, onSnapshot, query, DocumentData } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
 import './GrimoireVivant.css';

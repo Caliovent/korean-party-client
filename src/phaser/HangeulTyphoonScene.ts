@@ -148,9 +148,9 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     // HUD will be above, input field below.
     // Note: Local constants gameAreaWidth, gameAreaHeight, gameAreaX, gameAreaY are still used for drawing.
     // This is acceptable for now as per subtask, but ideally, these would use this.gameAreaWidth etc.
-    const localGameAreaWidth = this.gameAreaWidth; // Use class properties for clarity if preferred
+    let localGameAreaWidth = this.gameAreaWidth; // Use class properties for clarity if preferred
     const localGameAreaHeight = this.gameAreaHeight;
-    const localGameAreaX = this.gameAreaX;
+    let localGameAreaX = this.gameAreaX;
     const localGameAreaY = this.gameAreaY;
 
     this.graphics = this.add.graphics(); // Assign to class property

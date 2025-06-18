@@ -17,7 +17,7 @@ const firebaseConfig = {
 const app: FirebaseApp = initializeApp(firebaseConfig);
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
-const functions: Functions = getFunctions(app); // Initialize Firebase Functions
+const functions: Functions = getFunctions(app, 'europe-west1'); // Initialize Firebase Functions
 // const storage = getStorage(app); // Si vous utilisez Storage
 
 export { app, auth, db, functions /*, storage */ }; // Export functions

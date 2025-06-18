@@ -89,10 +89,10 @@ const ProfilePage: React.FC = () => {
 
     let functions;
     if (import.meta.env.DEV) {
-      functions = getFunctions(app, 'us-central1');
+      functions = getFunctions(app, 'europe-west1');
       functions.customDomain = `http://localhost:5173/functions-proxy`;
     } else {
-      functions = getFunctions(app, 'us-central1');
+      functions = getFunctions(app, 'europe-west1');
     }
     const updateUserProfile = httpsCallable(functions, 'updateUserProfile');
     try {
