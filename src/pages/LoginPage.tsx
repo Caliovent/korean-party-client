@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
       navigate('/hub'); // Redirige vers le hub après connexion
     } catch (signInError: any) {
       // 2. Si la connexion échoue, on vérifie pourquoi
-      if (signInError.code === 'auth/invalid-credential') {
+      if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/user-not-found') {
         console.log("Compte inexistant, tentative de création...");
         try {
           // 3. Le compte n'existe pas, on essaie de le créer
