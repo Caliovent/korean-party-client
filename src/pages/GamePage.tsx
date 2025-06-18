@@ -52,7 +52,7 @@ const GamePage: React.FC = () => {
     const unsubscribe = onSnapshot(gameRef, (doc) => {
       if (doc.exists()) {
         const gameData = doc.data() as Game;
-        setGame(gameData);
+        setGame({ id: doc.id, ...doc.data() } as Game);
 
         if (user) {
           const playerData = gameData.players.find(p => p.id === user.uid);
