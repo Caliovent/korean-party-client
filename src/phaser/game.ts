@@ -17,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     }
   },
   // Initially, you might not have a scene, or you can use a placeholder
-  scene: [HangeulTyphoonScene, MainBoardScene, HubScene] // Example if you have scenes
+  scene: [HubScene, MainBoardScene, HangeulTyphoonScene] // Example if you have scenes
   // scene: undefined // Or handle scene management dynamically
 };
 

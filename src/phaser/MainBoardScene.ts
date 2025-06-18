@@ -79,8 +79,8 @@ export default class MainBoardScene extends Phaser.Scene {
     this.load.image('board_background', '/assets/korean-game-board.png');
     this.load.spritesheet('player_spritesheet', '/assets/players.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('mana_bolt', '/assets/effects/mana_bolt.png');
-    this.load.image('rune_trap_icon', 'assets/effects/rune_trap.png');
-    this.load.image('shield_effect', 'assets/effects/shield_aura.png');
+    this.load.image('rune_trap_icon', '/assets/effects/rune_trap.png');
+    this.load.image('shield_effect', '/assets/effects/shield_aura.png');
 
     // MODIFICATION : On charge les images avec les noms correspondants aux types du backend
     this.load.image('tile_SAFE_ZONE', '/assets/tiles/tile_SAFE_ZONE.png');

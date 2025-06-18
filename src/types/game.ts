@@ -11,12 +11,15 @@ export interface Grimoire {
 }
 
 export interface Player {
-  id:string;
-  name: string;
+  uid:string;
+  displayName: string;
   position: number;
   mana: number;
   grimoires: Grimoire[];
   effects?: { type: 'SHIELDED', duration?: number }[];
+  groundHeight: number; 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  blocks: any[]; // Utilisez un type plus spécifique si vous l'avez
 }
 
 export type GameStatus = "waiting" | "playing" | "finished";

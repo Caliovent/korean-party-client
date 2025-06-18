@@ -1,13 +1,13 @@
 // src/pages/WaitingRoomPage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-import { useAuth } from '../hooks/useAuth';
-import { startGame } from '../services/gameService';
-import type { Game, Player } from '../types/game';
-import './WaitingRoomPage.css';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebaseConfig";
+import { useAuth } from "../hooks/useAuth";
+import { startGame } from "../services/gameService";
+import type { Game, Player } from "../types/game";
+import "./WaitingRoomPage.css";
 
 const WaitingRoomPage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -18,13 +18,13 @@ const WaitingRoomPage: React.FC = () => {
 
   useEffect(() => {
     if (!gameId) return;
-    const gameRef = doc(db, 'games', gameId);
+    const gameRef = doc(db, "games", gameId);
     const unsubscribe = onSnapshot(gameRef, (doc) => {
       if (doc.exists()) {
         setGame({ id: doc.id, ...doc.data() } as Game);
       } else {
         console.error("Game not found, redirecting to lobby.");
-        navigate('/lobby');
+        navigate("/lobby");
       }
     });
     return () => unsubscribe();
@@ -32,7 +32,7 @@ const WaitingRoomPage: React.FC = () => {
 
   useEffect(() => {
     // Redirection automatique quand le statut du jeu passe à 'playing'
-    if (game?.status === 'playing') {
+    if (game?.status === "playing") {
       console.log("Game is starting! Navigating to game page...");
       navigate(`/game/${game.id}`);
     }
@@ -59,18 +59,23 @@ const WaitingRoomPage: React.FC = () => {
         <h3>Joueurs présents ({game.players.length})</h3>
         <ul>
           {game.players.map((player: Player) => (
-            <li key={player.id}>{player.name} {player.id === game.hostId && '(Hôte)'}</li>
+            <li key={player.uid}>
+              {player.displayName} {player.uid === game.hostId && "(Hôte)"}
+            </li>
           ))}
         </ul>
       </div>
       {isHost && (
-        <button onClick={handleStartGame} disabled={isLoading || game.players.length < 1}>
-          {isLoading ? 'Lancement...' : `Démarrer la partie (${game.players.length} joueur(s))`}
+        <button
+          onClick={handleStartGame}
+          disabled={isLoading || game.players.length < 1}
+        >
+          {isLoading
+            ? "Lancement..."
+            : `Démarrer la partie (${game.players.length} joueur(s))`}
         </button>
       )}
-      {!isHost && (
-        <p>En attente que l'hôte lance la partie...</p>
-      )}
+      {!isHost && <p>En attente que l'hôte lance la partie...</p>}
     </div>
   );
 };

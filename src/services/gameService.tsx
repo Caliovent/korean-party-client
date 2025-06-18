@@ -35,10 +35,12 @@ export const createGame = async (gameName: string): Promise<HttpsCallableResult 
 
 export const joinGame = async (gameId: string): Promise<void> => {
   try {
+    console.log(`[CLIENT] Calling 'joinGame' function for game: ${gameId}`);
     const joinGameFunction = httpsCallable(functions, 'joinGame');
     await joinGameFunction({ gameId });
   } catch (error) {
-    console.error("Error calling joinGame function:", error);
+    console.error("ERREUR MAGIQUE DÉTECTÉE DANS JOIN GAME:", error); // Un log pour être sûr
+    throw error; // CETTE LIGNE EST LA CLÉ !
   }
 };
 
@@ -55,6 +57,7 @@ export const startGame = async (gameId: string): Promise<void> => {
 
 export const leaveGame = async (gameId: string): Promise<void> => {
   try {
+    console.log(`[CLIENT] Calling 'leaveGame' function for game: ${gameId}`);
     const leaveGameFunction = httpsCallable(functions, 'leaveGame');
     await leaveGameFunction({ gameId });
   } catch (error) {

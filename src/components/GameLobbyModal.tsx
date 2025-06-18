@@ -22,7 +22,7 @@ interface Game {
   id: string;
   name: string;
   hostId: string;
-  hostPseudo: string;
+  hostdisplayName: string;
   players: string[]; // Assuming players are stored by UID
   status: "waiting" | "in-progress" | "finished";
 }
@@ -72,7 +72,7 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
     // const gameData = {
     //   name: newGameName,
     //   hostId: user.uid,
-    //   hostPseudo: user.displayName || 'Anonymous Mage',
+    //   hostdisplayName: user.displayName || 'Anonymous Mage',
     //   players: [user.uid],
     //   status: 'waiting',
     //   createdAt: serverTimestamp(),
@@ -88,7 +88,7 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
         const gameId = (result.data as { gameId: string }).gameId;
         setNewGameName("");
         onClose(); // Close modal after creating game
-        navigate(`/game/${gameId}`);
+        navigate(`/waiting-room/${gameId}`);
       } else {
         // Handle cases where gameId is not in the result
         console.error(
@@ -112,7 +112,7 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
     // Logic for joining a game (e.g., updating Firestore) would typically be here or in a service
     // For now, it directly navigates. This might need adjustment based on gameService.tsx
     onClose(); // Close modal before navigating
-    navigate(`/game/${gameId}`);
+    navigate(`/waiting-room/${gameId}`);
   };
 
   const deleteGameCallable = httpsCallable(functions, "deleteGame");
@@ -164,7 +164,7 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
               games.map((game) => (
                 <li key={game.id}>
                   <span>
-                    {game.name} ({t("lobby.host_label")}: {game.hostPseudo}) -{" "}
+                    {game.name} ({t("lobby.host_label")}: {game.hostdisplayName}) -{" "}
                     {game.players.length}{" "}
                     {t("lobby.players_label", { count: game.players.length })}
                   </span>

@@ -16,7 +16,7 @@ const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<DocumentData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true); // Separate loading for profile doc
   const [isEditing, setIsEditing] = useState(false);
-  const [newPseudo, setNewPseudo] = useState('');
+  const [newdisplayName, setNewdisplayName] = useState('');
   const [error, setError] = useState(''); // General errors for profile page
 
   // State for guild information
@@ -36,7 +36,7 @@ const ProfilePage: React.FC = () => {
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
             setProfile(doc.data());
-            setNewPseudo(doc.data().pseudo || ''); // Ensure pseudo is not undefined
+            setNewdisplayName(doc.data().displayName || ''); // Ensure displayName is not undefined
         } else {
             setError("Profil non trouvé."); // This error is for the Firestore profile document
         }
@@ -78,11 +78,11 @@ const ProfilePage: React.FC = () => {
     }
   }, [authUser, authUser?.guildId]); // Depend on authUser and specifically guildId
 
-  // Fonction pour gérer la mise à jour du pseudo
-  const handleUpdatePseudo = async (e: React.FormEvent) => {
+  // Fonction pour gérer la mise à jour du displayName
+  const handleUpdatedisplayName = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPseudo.length < 3) {
-      setError("Le pseudo doit contenir au moins 3 caractères.");
+    if (newdisplayName.length < 3) {
+      setError("Le displayName doit contenir au moins 3 caractères.");
       return;
     }
     setError('');
@@ -96,11 +96,11 @@ const ProfilePage: React.FC = () => {
     }
     const updateUserProfile = httpsCallable(functions, 'updateUserProfile');
     try {
-      await updateUserProfile({ pseudo: newPseudo });
+      await updateUserProfile({ displayName: newdisplayName });
       setIsEditing(false); // Ferme le formulaire après succès
     } catch (err: any) {
       console.error("Erreur de mise à jour du profil:", err);
-      setError(err.message || "Impossible de mettre à jour le pseudo.");
+      setError(err.message || "Impossible de mettre à jour le displayName.");
     }
   };
 
@@ -121,7 +121,7 @@ const ProfilePage: React.FC = () => {
       <div className="profile-details">
         <h2>{t('profilePageTitle', 'Mon Profil de Sorcier')}</h2>
         <p><strong>Email:</strong> {profile.email}</p>
-        <p><strong>Pseudo:</strong> {profile.pseudo}</p>
+        <p><strong>displayName:</strong> {profile.displayName}</p>
         <p><strong>Niveau:</strong> {profile.level}</p>
         <p><strong>XP:</strong> {profile.xp}</p>
         {/* Guild Information Display */}
@@ -142,18 +142,18 @@ const ProfilePage: React.FC = () => {
       </div>
 
       <button onClick={() => setIsEditing(!isEditing)}>
-        {isEditing ? t('cancel', 'Annuler') : t('editPseudo', 'Modifier le pseudo')}
+        {isEditing ? t('cancel', 'Annuler') : t('editdisplayName', 'Modifier le displayName')}
       </button>
 
       {isEditing && (
-        <form onSubmit={handleUpdatePseudo} className="profile-edit-form" style={{marginTop: '1.5rem'}}>
+        <form onSubmit={handleUpdatedisplayName} className="profile-edit-form" style={{marginTop: '1.5rem'}}>
           <div className="form-group">
-            <label htmlFor="pseudo">{t('newPseudo', 'Nouveau pseudo')}</label>
+            <label htmlFor="displayName">{t('newdisplayName', 'Nouveau displayName')}</label>
             <input 
               type="text" 
-              id="pseudo"
-              value={newPseudo}
-              onChange={(e) => setNewPseudo(e.target.value)} 
+              id="displayName"
+              value={newdisplayName}
+              onChange={(e) => setNewdisplayName(e.target.value)} 
             />
           </div>
           {error && <p className="error-message">{error}</p>}

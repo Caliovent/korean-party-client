@@ -25,7 +25,7 @@ if (import.meta.env.DEV) {
   connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
 
   // Emulateur Firestore
-  connectFirestoreEmulator(db, 'localhost', 8090);
+  connectFirestoreEmulator(db, 'localhost', 8092);
 
   // Emulateur Functions
   connectFunctionsEmulator(functions, "localhost", 5001);
