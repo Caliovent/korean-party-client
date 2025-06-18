@@ -73,7 +73,9 @@ const LobbyPage: React.FC = () => {
     if (isActionLoading) return;
     setIsActionLoading(true);
     try {
+      console.log("Tentative de rejoindre la partie avec l'ID:", gameId);
         await joinGame(gameId);
+        console.log("Partie rejointe avec succès:", gameId);
         navigate(`/waiting-room/${gameId}`);
     } catch (error) {
         console.error("Erreur pour rejoindre la partie", error);

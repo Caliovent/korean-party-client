@@ -11,7 +11,7 @@ let functions;
 if (import.meta.env.DEV) {
   // For development, use the proxy
   functions = getFunctions(app, 'europe-west1'); // Correct region for functions
-  functions.customDomain = `http://localhost:5173/functions-proxy`; // Vite proxy
+  functions.customDomain = "http://localhost:5173/functions-proxy"; // Vite proxy
 } else {
   // For production, call functions directly in the correct region
   functions = getFunctions(app, 'europe-west1');
@@ -23,7 +23,7 @@ const db = getFirestore(app);
 
 export const createGame = async (gameName: string): Promise<HttpsCallableResult | null> => {
   try {
-    console.log(`[CLIENT] Calling 'createGame' function with name: ${gameName}`);
+    console.log("[CLIENT] Calling 'createGame' function with name: ${gameName}");
     const createGameFunction = httpsCallable(functions, 'createGame');
     const result = await createGameFunction({ gameName });
     return result;
@@ -35,7 +35,7 @@ export const createGame = async (gameName: string): Promise<HttpsCallableResult 
 
 export const joinGame = async (gameId: string): Promise<void> => {
   try {
-    console.log(`[CLIENT] Calling 'joinGame' function for game: ${gameId}`);
+    console.log("[CLIENT] Calling 'joinGame' function for game: ${gameId}");
     const joinGameFunction = httpsCallable(functions, 'joinGame');
     await joinGameFunction({ gameId });
   } catch (error) {
@@ -46,7 +46,7 @@ export const joinGame = async (gameId: string): Promise<void> => {
 
 export const startGame = async (gameId: string): Promise<void> => {
   try {
-    console.log(`[CLIENT] Calling 'startGame' function for game: ${gameId}`);
+    console.log("[CLIENT] Calling 'startGame' function for game: ${gameId}");
     const startGameFunction = httpsCallable(functions, 'startGame');
     await startGameFunction({ gameId });
   } catch (error) {
@@ -57,7 +57,7 @@ export const startGame = async (gameId: string): Promise<void> => {
 
 export const leaveGame = async (gameId: string): Promise<void> => {
   try {
-    console.log(`[CLIENT] Calling 'leaveGame' function for game: ${gameId}`);
+    console.log("[CLIENT] Calling 'leaveGame' function for game: ${gameId}");
     const leaveGameFunction = httpsCallable(functions, 'leaveGame');
     await leaveGameFunction({ gameId });
   } catch (error) {
@@ -73,7 +73,7 @@ export const rollDice = async (gameId: string): Promise<void> => {
   try {
     const rollDiceFunction = httpsCallable(functions, 'rollDice');
     await rollDiceFunction({ gameId });
-    console.log(`Cloud Function 'rollDice' called for game ${gameId}`);
+    console.log("Cloud Function 'rollDice' called for game ${gameId}");
   } catch (error) {
     console.error("Error calling rollDice function:", error);
   }
@@ -87,7 +87,7 @@ export const resolveTileAction = async (gameId: string): Promise<void> => {
   try {
     const resolveTileFunction = httpsCallable(functions, 'resolveTileAction');
     await resolveTileFunction({ gameId });
-    console.log(`Cloud Function 'resolveTileAction' called for game ${gameId}`);
+    console.log("Cloud Function 'resolveTileAction' called for game ${gameId}");
   } catch (error) {
     console.error("Error calling resolveTileAction function:", error);
   }
@@ -104,7 +104,7 @@ export const castSpell = async (gameId: string, spellId: SpellId, targetId: stri
   try {
     const castSpellFunction = httpsCallable(functions, 'castSpell');
     await castSpellFunction({ gameId, spellId, targetId });
-    console.log(`Cloud Function 'castSpell' (${spellId}) called on target ${targetId}`);
+    console.log("Cloud Function 'castSpell' (${spellId}) called on target ${targetId}");
   } catch (error) {
     console.error("Error calling castSpell function:", error);
   }
@@ -137,7 +137,7 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
   try {
     const createGuildFunction = httpsCallable(functions, 'createGuild');
     const result = await createGuildFunction({ name, tag });
-    console.log(`Cloud Function 'createGuild' called successfully with name: ${name}, tag: ${tag}`, result);
+    console.log("Cloud Function 'createGuild' called successfully with name: ${name}, tag: ${tag}", result);
     return result.data; // Functions usually return data in a 'data' property
   } catch (error) {
     console.error("Error calling createGuild function:", error);
@@ -183,7 +183,7 @@ export const leaveGuild = async (): Promise<any> => {
   try {
     const leaveGuildFunction = httpsCallable(functions, 'leaveGuild');
     const result = await leaveGuildFunction(); // No parameters needed for this call
-    console.log(`Cloud Function 'leaveGuild' called successfully`, result);
+    console.log("Cloud Function 'leaveGuild' called successfully", result);
     return result.data; // Functions usually return data in a 'data' property
   } catch (error) {
     console.error("Error calling leaveGuild function:", error);
@@ -201,7 +201,7 @@ export const joinGuild = async (guildId: string): Promise<any> => {
   try {
     const joinGuildFunction = httpsCallable(functions, 'joinGuild');
     const result = await joinGuildFunction({ guildId });
-    console.log(`Cloud Function 'joinGuild' called successfully for guildId: ${guildId}`, result);
+    console.log("Cloud Function 'joinGuild' called successfully for guildId: ${guildId}", result);
     return result.data; // Functions usually return data in a 'data' property
   } catch (error) {
     console.error("Error calling joinGuild function:", error);
