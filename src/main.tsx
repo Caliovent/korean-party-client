@@ -28,7 +28,6 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
-          { path: 'lobby', element: <LobbyPage /> },
           { path: 'hub', element: <HubPage /> }, // + Add HubPage route
           // AJOUT : La nouvelle route pour la salle d'attente
           { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },

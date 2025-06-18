@@ -13,7 +13,7 @@ import {
 import { db, functions } from "../firebaseConfig";
 import { httpsCallable } from "firebase/functions";
 import { useNavigate } from "react-router-dom";
-import { createGame } from "../services/gameService"; // Added import
+import { createGame, joinGame } from "../services/gameService"; // Added import
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import "./GameLobbyModal.css"; // Import the CSS
@@ -33,11 +33,16 @@ interface GameLobbyModalProps {
   onDelete: (gameId: string) => void;
 }
 
-const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClose }) => {
+const GameLobbyModal: React.FC<GameLobbyModalProps> = ({
+  isOpen,
+  onDelete,
+  onClose,
+}) => {
   const { t } = useTranslation();
   const { user } = useAuth(); // Make sure useAuth provides the user object with uid and displayName
   const [games, setGames] = useState<Game[]>([]);
   const [newGameName, setNewGameName] = useState("");
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -108,11 +113,27 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
     }
   };
 
-  const handleJoinGame = (gameId: string) => {
-    // Logic for joining a game (e.g., updating Firestore) would typically be here or in a service
-    // For now, it directly navigates. This might need adjustment based on gameService.tsx
-    onClose(); // Close modal before navigating
-    navigate(`/waiting-room/${gameId}`);
+  const handleJoinGame = async (gameId: string) => {
+    if (isActionLoading) return;
+    setIsActionLoading(true);
+
+    try {
+      // 1. On appelle le service pour réellement rejoindre la partie
+      await joinGame(gameId);
+
+      // 2. On ferme la modale et on navigue vers la salle d'attente
+      onClose();
+      navigate(`/waiting-room/${gameId}`);
+    } catch (error) {
+      console.error("Erreur pour rejoindre la partie :", error);
+      // Ici, vous pourriez utiliser votre système de Toasts pour notifier l'utilisateur
+      // addToast("Impossible de rejoindre la partie.", "error");
+      alert(
+        "Impossible de rejoindre la partie. Vérifiez la console pour les erreurs."
+      );
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const deleteGameCallable = httpsCallable(functions, "deleteGame");
@@ -164,17 +185,21 @@ const GameLobbyModal: React.FC<GameLobbyModalProps> = ({ isOpen, onDelete, onClo
               games.map((game) => (
                 <li key={game.id}>
                   <span>
-                    {game.name} ({t("lobby.host_label")}: {game.hostdisplayName}) -{" "}
-                    {game.players.length}{" "}
+                    {game.name} ({t("lobby.host_label")}: {game.hostdisplayName}
+                    ) - {game.players.length}{" "}
                     {t("lobby.players_label", { count: game.players.length })}
                   </span>
                   <div>
-                    <button onClick={() => handleJoinGame(game.id)}>
-                      {t("lobby.join_button")}
+                    <button
+                      onClick={() => handleJoinGame(game.id)}
+                      disabled={isActionLoading}
+                    >
+                      {isActionLoading ? "..." : t("lobby.join_button")}
                     </button>
+
                     {user && game.hostId === user.uid && (
                       <button
-                        onClick={() => handleDeleteGame(game.id, game.hostId)}
+                        onClick={() => handleDeleteGame(game.id)}
                         style={{ backgroundColor: "#dc3545" }}
                       >
                         {t("lobby.delete_button")}
