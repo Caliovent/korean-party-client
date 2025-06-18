@@ -8,7 +8,6 @@ import App from './App.tsx';
 import HomePage from './pages/HomePage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
-import LobbyPage from './pages/LobbyPage.tsx';
 import WaitingRoomPage from './pages/WaitingRoomPage.tsx'; // Importer la nouvelle page
 import GamePage from './pages/GamePage.tsx';
 import HubPage from './pages/HubPage.tsx'; // + Import HubPage
