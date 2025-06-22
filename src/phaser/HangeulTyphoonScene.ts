@@ -1,4 +1,8 @@
 import Phaser from 'phaser';
+// Assuming gameService will be refactored or provided to the scene.
+// For now, this import is conceptual for the call structure.
+import { sendTyphoonAttackService } from '../services/gameService';
+import type { HangeulTyphoonAttackResponse } from '../types/hangeul';
 
 export default class HangeulTyphoonScene extends Phaser.Scene {
   private sampleHangeul: string[] = ['ㄱ', 'ㄴ', 'ㄷ', 'ㅏ', 'ㅓ', 'ㅗ', '가', '나', '다', '한국', '사랑', '게임'];
@@ -39,6 +43,10 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   private graphics!: Phaser.GameObjects.Graphics;
   private playerGroundLine!: Phaser.GameObjects.Line;
   private initialPlayerBaseGroundY!: number;
+  // For opponent's ground
+  private opponentGroundLine!: Phaser.GameObjects.Line;
+  private initialOpponentBaseGroundY!: number;
+  private opponentGroundY!: number; // Logical Y position of opponent's ground, similar to this.groundY for player
 
   private currentCombo: number = 0;
   private comboText!: Phaser.GameObjects.Text;
@@ -223,18 +231,26 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     // Draw Opponent Area Placeholder (if drawable)
     if (this.opponentGameAreaX > 0) {
-        this.graphics.fillStyle(0x555555, 1);
+        this.graphics.fillStyle(0x555555, 1); // Opponent area background
         this.graphics.fillRect(this.opponentGameAreaX, this.opponentGameAreaY, this.opponentGameAreaWidth, this.opponentGameAreaHeight);
-        this.graphics.lineStyle(1, 0xaaaaaa, 1);
+        this.graphics.lineStyle(1, 0xaaaaaa, 1); // Opponent area border
         this.graphics.strokeRect(this.opponentGameAreaX, this.opponentGameAreaY, this.opponentGameAreaWidth, this.opponentGameAreaHeight);
 
-        const opponentGroundYVal = this.opponentGameAreaY + this.opponentGameAreaHeight;
-        this.graphics.lineStyle(2, 0x777777, 1);
-        this.graphics.beginPath();
-        this.graphics.moveTo(this.opponentGameAreaX, opponentGroundYVal);
-        this.graphics.lineTo(this.opponentGameAreaX + this.opponentGameAreaWidth, opponentGroundYVal);
-        this.graphics.closePath();
-        this.graphics.strokePath();
+        this.initialOpponentBaseGroundY = this.opponentGameAreaY + this.opponentGameAreaHeight;
+        this.opponentGroundY = this.initialOpponentBaseGroundY; // Initialize logical ground
+
+        this.opponentGroundLine = this.add.line(
+            this.opponentGameAreaX,      // x position of the line object itself
+            this.opponentGroundY,        // y position of the line object itself
+            0,                           // startX relative
+            0,                           // startY relative
+            this.opponentGameAreaWidth,  // endX relative
+            0,                           // endY relative
+            0x777777,                    // color (darker grey for opponent)
+            1                            // alpha
+        );
+        this.opponentGroundLine.setOrigin(0, 0);
+        this.opponentGroundLine.setLineWidth(2); // Thinner line for opponent
 
         this.add.text(this.opponentGameAreaX + this.opponentGameAreaWidth / 2, this.opponentGameAreaY - 15, 'Opponent', { fontSize: '12px', color: '#ffffff' }).setOrigin(0.5);
     }
@@ -435,9 +451,16 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
             // Change visual appearance for vulnerability
             block.setBackgroundColor('#FFFFFF'); // Vulnerable block background (e.g., white)
             block.setColor('#000000');         // Text color for vulnerable block (e.g., black)
-            // Optional: Add a small visual effect like a quick flash or scale pulse
-            // this.tweens.add({ targets: block, scaleX: 1.1, scaleY: 1.1, duration: 100, yoyo: true });
-            // // this.sound.play('sfx_block_vulnerable');
+            // Add a small visual effect like a quick flash or scale pulse
+            this.tweens.add({
+              targets: block,
+              scaleX: 1.05, // Slightly less intense scaling
+              scaleY: 1.05,
+              duration: 150, // Slightly longer duration for visibility
+              yoyo: true,
+              ease: 'Power1'
+            });
+            // // this.sound.play('sfx_block_vulnerable'); // Sound effect for vulnerability
             console.log(`Block '${block.getData('hangeulText')}' is now VULNERABLE`);
           }
         }
@@ -563,42 +586,45 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     if (this.isGameOver) return; // Prevent multiple triggers
 
     this.isGameOver = true;
-    console.log("Game Over!"); // For debugging
+    // Stop block spawning & combo timer
+    if (this.blockSpawnTimer) this.blockSpawnTimer.remove(false);
+    if (this.comboTimer) { this.comboTimer.remove(false); this.comboTimer = null; }
 
-    // Stop block spawning
-    if (this.blockSpawnTimer) {
-       this.blockSpawnTimer.remove(false);
-    }
-    if (this.comboTimer) { // Stop combo timer on game over
-      this.comboTimer.remove(false);
-      this.comboTimer = null;
-    }
+    // Stop player input (careful if other keydown listeners exist, this removes all)
+    this.input.keyboard.removeAllListeners('keydown'); // More specific than just off()
 
-    // Stop player input
-    this.input.keyboard.off('keydown'); // Removes all keydown listeners on the keyboard plugin
-
-    // Display Game Over message
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;
-    // // Play game over sound
-    // // this.sound.play('sfx_game_over_typhoon', { volume: 0.8 });
+
+    // Determine if it's a duel and the outcome
+    // This part would be more robust if duel state (winnerId) is passed in.
+    // For now, this internal triggerGameOver is a loss for the current player.
+    // A separate call would be made if the server declares the player a winner.
+    const isDuel = !!this.targetPlayerId; // Simple check if opponent is configured
+    let outcomeMessage = 'GAME OVER';
+    let outcomeStatus: 'victory' | 'defeat' | 'solo_complete' = 'solo_complete';
+
+    if (isDuel) {
+        // This specific call to triggerGameOver (e.g. from riseOwnGround) means current player lost.
+        outcomeMessage = 'DEFEAT!';
+        outcomeStatus = 'defeat';
+        console.log("Duel Lost! (triggered by own ground reaching limit)");
+    } else {
+        console.log("Game Over! (Solo mode)");
+    }
+    // // this.sound.play('sfx_game_over_typhoon'); // Or specific win/loss sounds
+
     this.gameOverText = this.add.text(
-      gameWidth / 2,
-      gameHeight / 2,
-      'GAME OVER',
-      { fontSize: '64px', color: '#ff0000', backgroundColor: '#000000' }
+      gameWidth / 2, gameHeight / 2, outcomeMessage,
+      { fontSize: '64px', color: outcomeStatus === 'defeat' ? '#ff0000' : '#00ff00', backgroundColor: '#000000' }
     ).setOrigin(0.5);
 
-    // Optional: Clear existing blocks or make them stop
-    // this.blocks.clear(true, true); // Clears and destroys all blocks
-
-    // Prepare results
     const results = {
       miniGame: 'HangeulTyphoon',
-      score: this.score,
-      mode: this.currentGameMode, // Include the mode played
-      // isDuel: this.isDuelMode, // If isDuelMode property exists
-      // outcome: this.isDuelMode ? (didCurrentPlayerWin ? 'victory' : 'defeat') : 'solo_complete',
+      score: this.score, // Score is primary for solo, less so for duel outcome
+      mode: this.currentGameMode,
+      isDuel: isDuel,
+      outcome: outcomeStatus,
     };
 
     this.time.delayedCall(2500, () => {
@@ -606,6 +632,55 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
       this.scene.start('MainBoardScene', { fromMiniGame: true, miniGameResults: results });
     });
   }
+
+  // Public method to be called when the duel ends based on authoritative state
+  public forceEndDuel(winnerId: string | null) {
+    if (this.isGameOver) return;
+    this.isGameOver = true;
+
+    if (this.blockSpawnTimer) this.blockSpawnTimer.remove(false);
+    if (this.comboTimer) { this.comboTimer.remove(false); this.comboTimer = null; }
+    this.input.keyboard.removeAllListeners('keydown');
+
+    const gameWidth = this.sys.game.config.width as number;
+    const gameHeight = this.sys.game.config.height as number;
+    let outcomeMessage = 'DUEL ENDED';
+    let outcomeStatus: 'victory' | 'defeat' | 'draw' = 'draw'; // Default to draw if no clear winner
+
+    if (winnerId === this.attackerPlayerId) {
+      outcomeMessage = 'VICTORY!';
+      outcomeStatus = 'victory';
+    } else if (winnerId && winnerId === this.targetPlayerId) {
+      outcomeMessage = 'DEFEAT!';
+      outcomeStatus = 'defeat';
+    } else if (!winnerId) {
+       // Could be a draw or server error, specific message if needed
+       outcomeMessage = "DUEL ENDED"; // Or "DRAW!"
+       outcomeStatus = 'draw';
+    }
+
+    console.log(`Duel ended by server. Winner: ${winnerId || 'None'}. Player is: ${this.attackerPlayerId}. Outcome: ${outcomeStatus}`);
+    // // Play win/loss/draw sound
+
+    this.gameOverText = this.add.text(
+      gameWidth / 2, gameHeight / 2, outcomeMessage,
+      { fontSize: '64px', color: outcomeStatus === 'victory' ? '#00ff00' : (outcomeStatus === 'defeat' ? '#ff0000' : '#ffff00'), backgroundColor: '#000000' }
+    ).setOrigin(0.5);
+
+    const results = {
+      miniGame: 'HangeulTyphoon',
+      score: this.score,
+      mode: this.currentGameMode,
+      isDuel: true,
+      outcome: outcomeStatus,
+    };
+
+    this.time.delayedCall(2500, () => {
+      this.scene.stop('HangeulTyphoonScene');
+      this.scene.start('MainBoardScene', { fromMiniGame: true, miniGameResults: results });
+    });
+  }
+
 
   private updateScoreDisplay() {
     if (this.scoreText) { // Check if scoreText is initialized
@@ -638,48 +713,33 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     console.log("Calling sendTyphoonAttack with payload:", requestPayload);
 
-    // --- MOCKING Cloud Function Call ---
-    this.time.delayedCall(500, () => {
-      let mockResponse;
-      if (attackWord === "fail") {
-        mockResponse = {
-          status: "failure",
-          reason: "NO_VULNERABLE_BLOCK_MATCHED",
-          message: "Mock: Attack failed. Attacker penalized.",
+    // Call the actual service (which will be mocked for now)
+    sendTyphoonAttackService(this.gameId, this.attackerPlayerId, this.targetPlayerId, attackWord)
+      .then((response: HangeulTyphoonAttackResponse) => { // Make sure response is typed
+        this.handleAttackResponse(response);
+      })
+      .catch((error) => {
+        console.error("Error calling sendTyphoonAttackService:", error);
+        // Handle a generic error from the service call itself (e.g., network issue)
+        // This is different from a 'failure' status from the function.
+        // We might want to penalize the attacker here too, or show a generic error.
+        const errorResponse: HangeulTyphoonAttackResponse = {
+          status: 'failure',
+          reason: 'SERVICE_CALL_ERROR', // Or a more specific error code
+          message: 'Error sending attack. Please try again.',
           attackerPlayerId: this.attackerPlayerId,
-          attackerPenaltyGroundRiseAmount: 15
+          attackerPenaltyGroundRiseAmount: 5 // Example minimal penalty for service error
         };
-      } else if (attackWord === "error") {
-          console.error("Mock: Simulating function call error for sendTyphoonAttack");
-          mockResponse = {
-              status: 'failure',
-              reason: 'FUNCTION_CALL_ERROR',
-              message: "Mock: Function call error simulation.",
-              attackerPlayerId: this.attackerPlayerId,
-              attackerPenaltyGroundRiseAmount: 10
-          };
-      }
-      else {
-        mockResponse = {
-          status: "success",
-          message: "Mock: Attack successful. Target's block destroyed.",
-          attackerPlayerId: this.attackerPlayerId,
-          targetPlayerId: this.targetPlayerId,
-          destroyedBlockWord: attackWord,
-          targetGroundRiseAmount: 20
-        };
-      }
-      this.handleAttackResponse(mockResponse);
-    });
-    // --- END MOCKING ---
+        this.handleAttackResponse(errorResponse);
+      });
 
     this.clearAttackInput();
   }
 
-  private handleAttackResponse(response: any) {
+  private handleAttackResponse(response: HangeulTyphoonAttackResponse) { // Typed response
     console.log("Received attack response:", response);
-    if (this.isGameOver && response.status !== 'success') {
-        console.log("Game is over, attack response ignored for penalty/further state change.");
+    if (this.isGameOver && response.status !== 'success' && response.reason !== 'SERVICE_CALL_ERROR') { // Don't ignore service call errors for display
+        console.log("Game is over, attack response ignored for penalty/further state change (unless it's a service error).");
         return;
     }
 
@@ -768,6 +828,68 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   private updateComboDisplay() {
     if (this.comboText) {
       this.comboText.setText(`Combo: ${this.currentCombo}`);
+    }
+  }
+
+  // --- Duel Specific Methods ---
+
+  private updateOpponentGroundVisual(newServerGroundHeight: number) {
+    if (!this.opponentGroundLine || !this.opponentGroundLine.active) { // Check if opponent view is active
+      console.log("Opponent view not active, skipping opponent ground update.");
+      return;
+    }
+    if (this.isGameOver) { // Or perhaps a specific flag for duel over
+        console.log("Duel is over, opponent ground update ignored.");
+        return;
+    }
+
+    const targetY = this.initialOpponentBaseGroundY - newServerGroundHeight;
+    console.log(`Opponent's ground updating. Server height: ${newServerGroundHeight}, Target Y: ${targetY}, Current Visual Y: ${this.opponentGroundLine.y}`);
+
+    this.opponentGroundY = targetY; // Update logical opponent ground Y
+
+    this.tweens.add({
+      targets: this.opponentGroundLine,
+      y: targetY,
+      duration: 300,
+      ease: 'Power2',
+      onComplete: () => {
+        if (this.opponentGroundLine && this.opponentGroundLine.active) {
+          this.opponentGroundLine.y = targetY;
+        }
+      }
+    });
+
+    // Check if opponent's ground reached critical height (conceptual game over for them)
+    // The actual game over logic for duel would be driven by server state.
+    if (targetY <= this.opponentGameAreaY + 20) { // Example critical threshold
+      console.log("Opponent's ground has reached critical height!");
+      // Potentially trigger some visual indication or wait for server to declare winner.
+    }
+  }
+
+  /**
+   * Public method to be called by the parent component (e.g., React) when duel state updates.
+   * It assumes duelPlayerStates contains groundHeight for both players.
+   */
+  public updateDuelPlayersState(
+    // TODO: Define these types properly, perhaps in src/types/hangeul.ts or game.ts
+    // For now, using simple inline objects for structure.
+    playerStates: { [playerId: string]: { groundHeight: number /*, other states like score, blocks? */ } }
+  ) {
+    if (this.isGameOver) return;
+
+    const ownState = playerStates[this.attackerPlayerId];
+    const opponentState = playerStates[this.targetPlayerId];
+
+    if (ownState && typeof ownState.groundHeight === 'number') {
+      // console.log(`Updating own ground from duel state: ${ownState.groundHeight}`);
+      this.updateOwnGroundHeightFromServer(ownState.groundHeight);
+    }
+
+    if (opponentState && typeof opponentState.groundHeight === 'number' && this.opponentGameAreaX > 0) {
+      // console.log(`Updating opponent's ground from duel state: ${opponentState.groundHeight}`);
+      this.updateOpponentGroundVisual(opponentState.groundHeight);
     }
   }
 }

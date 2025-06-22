@@ -1,27 +1,34 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getGuilds, createGuild, joinGuild, getGuildById, leaveGuild } from '../services/gameService'; // Import leaveGuild
-import type { Guild } from '../types/guild';
-import { useAuth } from '../hooks/useAuth'; // Import the useAuth hook
+import { getGuilds, createGuild, joinGuild, getGuildById, leaveGuild } from '../services/gameService';
+import type { Guild, ListedGuild, CreateGuildData, GuildMember } from '../types/guild'; // Updated imports
+import { useAuth } from '../hooks/useAuth';
 
 interface GuildManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+type ActiveTab = 'join' | 'create'; // For the "Sans Guilde" view
+
 const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onClose }) => {
-  const { user, updateUserGuildId } = useAuth(); // Get user data from useAuth
-  const [guilds, setGuilds] = useState<Guild[]>([]);
+  const { user, updateUserGuildId } = useAuth();
+  const [listedGuilds, setListedGuilds] = useState<ListedGuild[]>([]); // Use ListedGuild for the list
   const [loadingGuilds, setLoadingGuilds] = useState<boolean>(true);
   const [guildsError, setGuildsError] = useState<string | null>(null);
 
-  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  // Tab state for "Sans Guilde" view
+  const [activeTab, setActiveTab] = useState<ActiveTab>('join');
+
+  // Create Guild Form States
   const [guildName, setGuildName] = useState<string>('');
   const [guildTag, setGuildTag] = useState<string>('');
+  const [guildDescription, setGuildDescription] = useState<string>(''); // New field
+  const [guildEmblem, setGuildEmblem] = useState<string>('');         // New field (URL or ID)
   const [creatingGuild, setCreatingGuild] = useState<boolean>(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccessMessage, setCreateSuccessMessage] = useState<string | null>(null);
 
-  const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null); // State for loading indicator on specific button
+  const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccessMessage, setJoinSuccessMessage] = useState<string | null>(null);
 
@@ -38,13 +45,13 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
   const fetchGuildsList = useCallback(async () => {
     try {
       setLoadingGuilds(true);
-      const fetchedGuilds = await getGuilds();
-      setGuilds(fetchedGuilds);
+      const fetchedGuilds = await getGuilds(); // Should return ListedGuild[]
+      setListedGuilds(fetchedGuilds);
       setGuildsError(null);
     } catch (err) {
       console.error("Error fetching guilds in component:", err);
       setGuildsError('Failed to fetch guilds.');
-      setGuilds([]);
+      setListedGuilds([]);
     } finally {
       setLoadingGuilds(false);
     }
@@ -52,14 +59,13 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
 
   useEffect(() => {
     if (isOpen) {
-      fetchGuildsList();
-      // Reset create form state when modal opens
-      setShowCreateForm(false);
-      setCreateError(null);
-      setCreateSuccessMessage(null); // Clear create success message
+      // Reset states when modal opens
       setGuildName('');
       setGuildTag('');
-      // Reset join state as well
+      setGuildDescription('');
+      setGuildEmblem('');
+      setCreateError(null);
+      setCreateSuccessMessage(null);
       setJoinError(null);
       setJoinSuccessMessage(null); // Clear join success message
       setJoiningGuildId(null);
@@ -108,25 +114,48 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
 
   const handleCreateGuild = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guildName.trim() || !guildTag.trim()) {
-      setCreateError("Name and Tag cannot be empty.");
+    if (!guildName.trim() || !guildTag.trim() || !guildDescription.trim()) { // Added description check
+      setCreateError("Name, Tag, and Description cannot be empty.");
       return;
     }
+    // Basic validation for emblem (e.g., if it's a URL) - can be expanded
+    if (!guildEmblem.trim()) {
+        setCreateError("Emblem cannot be empty.");
+        return;
+    }
+
     setCreatingGuild(true);
     setCreateError(null);
     setCreateSuccessMessage(null);
+
+    const guildData: CreateGuildData = {
+      name: guildName,
+      tag: guildTag,
+      description: guildDescription,
+      emblem: guildEmblem,
+    };
+
     try {
-      // Ensure user is available and doesn't have a guildId before creating
       if (user && !user.guildId) {
-        await createGuild(guildName, guildTag);
+        // In a real scenario, createGuild would return the new guild's ID or full object.
+        // For now, we'll assume it returns something like { id: newGuildId } or just succeeds.
+        const result = await createGuild(guildData); // Pass full guildData
         setCreateSuccessMessage('Maison créée avec succès !');
-        setShowCreateForm(false);
+
+        // Reset form and switch to join tab or refresh current guild view
         setGuildName('');
         setGuildTag('');
-        fetchGuildsList(); // Refresh guild list
-        // Simulate updating user's guildId locally.
-        // In a real app, this might come from the backend response or a token refresh.
-        updateUserGuildId(`new-guild-id-${Date.now()}`); // Placeholder new guild ID
+        setGuildDescription('');
+        setGuildEmblem('');
+        setActiveTab('join'); // Switch to join tab after creation
+
+        // This is a placeholder. The actual new guild ID would come from the backend.
+        // The backend would also set the user's guildId.
+        // For frontend-only, we simulate this.
+        const newGuildId = result?.id || `mockGuild_${Date.now()}`; // Adjust if createGuild mock returns id
+        updateUserGuildId(newGuildId);
+        // Current guild details will be fetched by the useEffect watching user.guildId
+        // No need to call fetchGuildsList() immediately if view changes to current guild
       } else {
         setCreateError("User already in a guild or user data not loaded.");
       }
@@ -138,7 +167,7 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     }
   };
 
-  const handleJoinGuild = async (guildId: string, guildName: string) => {
+  const handleJoinGuild = async (guildId: string, guildNameDisplayed: string) => { // Renamed guildName to guildNameDisplayed
     setJoiningGuildId(guildId);
     setJoinError(null);
     setJoinSuccessMessage(null);
@@ -147,11 +176,9 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     try {
       if (user && !user.guildId) {
         await joinGuild(guildId);
-        updateUserGuildId(guildId); // Update user's guildId in local auth state
-        setJoinSuccessMessage(`Vous avez rejoint la maison ${guildName} !`);
-        // No need to call fetchGuildsList() here if the view changes entirely
-        // or if the buttons to join/create disappear.
-        // If the list remains visible and should update (e.g. member count), then fetch.
+        updateUserGuildId(guildId);
+        setJoinSuccessMessage(`Vous avez rejoint la maison ${guildNameDisplayed} !`);
+        // Current guild details will be fetched by the useEffect watching user.guildId
       } else {
         setJoinError("You are already in a guild or user data is not available.");
       }
@@ -171,20 +198,18 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     setIsLeavingGuild(true);
     setLeaveGuildError(null);
     setLeaveGuildSuccessMessage(null);
-    // Clear other messages
     setCreateError(null);
     setCreateSuccessMessage(null);
     setJoinError(null);
     setJoinSuccessMessage(null);
 
     try {
-      await leaveGuild(); // Call the service function
-      updateUserGuildId(null); // Update auth state
+      await leaveGuild();
+      updateUserGuildId(null);
       setLeaveGuildSuccessMessage("Vous avez quitté la maison.");
-      setCurrentGuildDetails(null); // Clear current guild details
-      // The modal will re-render due to user.guildId change, showing join/create options.
-      // Fetch the list of guilds again for the updated view.
-      fetchGuildsList();
+      setCurrentGuildDetails(null);
+      setActiveTab('join'); // Go back to join tab after leaving
+      fetchGuildsList(); // Refresh list for the "join" view
     } catch (err: any) {
       console.error("Error leaving guild:", err);
       setLeaveGuildError(err.message || "Erreur en quittant la maison.");
@@ -197,167 +222,176 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
     return null;
   }
 
+  const renderTabs = () => (
+    <div className="tabs-container" style={{ marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+      <button
+        onClick={() => setActiveTab('join')}
+        className={`tab-button ${activeTab === 'join' ? 'active' : ''}`}
+        disabled={!!(user && user.guildId)} // Disable if in a guild
+      >
+        Rejoindre une Maison
+      </button>
+      <button
+        onClick={() => setActiveTab('create')}
+        className={`tab-button ${activeTab === 'create' ? 'active' : ''}`}
+        disabled={!!(user && user.guildId)} // Disable if in a guild
+      >
+        Créer une Maison
+      </button>
+    </div>
+  );
+
+  const renderCreateGuildForm = () => (
+    <form onSubmit={handleCreateGuild} className="guild-create-form" style={{ padding: 'var(--spacing-unit)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
+      <h3>Créer une nouvelle Maison</h3>
+      <div className="form-group">
+        <label htmlFor="guildName">Nom de la Maison:</label>
+        <input id="guildName" type="text" value={guildName} onChange={(e) => setGuildName(e.target.value)} disabled={creatingGuild} />
+      </div>
+      <div className="form-group">
+        <label htmlFor="guildTag">Tag (3-5 chars):</label>
+        <input id="guildTag" type="text" value={guildTag} onChange={(e) => setGuildTag(e.target.value)} disabled={creatingGuild} minLength={3} maxLength={5} />
+      </div>
+      <div className="form-group">
+        <label htmlFor="guildDescription">Description:</label>
+        <textarea id="guildDescription" value={guildDescription} onChange={(e) => setGuildDescription(e.target.value)} disabled={creatingGuild} />
+      </div>
+      <div className="form-group">
+        <label htmlFor="guildEmblem">Emblème (URL ou ID):</label>
+        <input id="guildEmblem" type="text" value={guildEmblem} onChange={(e) => setGuildEmblem(e.target.value)} disabled={creatingGuild} placeholder="e.g., url_to_emblem.png ou dragon_icon_id"/>
+      </div>
+      <div className="form-actions">
+        <button type="submit" disabled={creatingGuild} className="button-base">
+          {creatingGuild ? 'Création en cours...' : 'Soumettre la création'}
+        </button>
+      </div>
+      {createError && <p className="error-message" style={{ marginTop: 'var(--spacing-unit)' }}>{createError}</p>}
+    </form>
+  );
+
+  const renderJoinGuildList = () => (
+    <div className="guild-list-container">
+      <h3>Liste des Maisons</h3>
+      {loadingGuilds && <p>Loading guilds...</p>}
+      {guildsError && <p className="error-message">{guildsError}</p>}
+      {!loadingGuilds && !guildsError && listedGuilds.length > 0 && (
+        <table className="styled-table" style={{ width: '100%' }}>
+          <thead>
+            <tr>
+              <th>Emblème</th>
+              <th>Nom</th>
+              <th>Tag</th>
+              <th>Description</th>
+              <th>Membres</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {listedGuilds.map((guild) => (
+              <tr key={guild.id}>
+                <td>
+                  {guild.emblem ? (
+                    guild.emblem.startsWith('http') ?
+                    <img src={guild.emblem} alt={guild.name} style={{width: '32px', height: '32px', objectFit: 'cover'}}/> :
+                    <span>{guild.emblem}</span>
+                  ): '-'}
+                </td>
+                <td>{guild.name}</td>
+                <td>{guild.tag}</td>
+                <td style={{maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}} title={guild.description}>{guild.description}</td>
+                <td>{guild.memberCount}</td>
+                <td>
+                  <button
+                    onClick={() => handleJoinGuild(guild.id, guild.name)}
+                    disabled={joiningGuildId === guild.id || !!(user && user.guildId)}
+                    className="button-base"
+                  >
+                    {joiningGuildId === guild.id ? 'Joining...' : 'Rejoindre'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {!loadingGuilds && !guildsError && listedGuilds.length === 0 && (
+        <p>Aucune maison n'est actuellement disponible pour rejoindre.</p>
+      )}
+    </div>
+  );
+
   // Determine content based on user's guild status
   const renderContent = () => {
     if (user && user.guildId) {
-      // User is in a guild - Show guild details or management options
-      if (isLoadingGuildDetails) {
-        return <p>Loading your guild details...</p>; // TODO: Style with a loading indicator class
-      }
-      if (guildDetailsError) {
-        return <p className="error-message">Error: {guildDetailsError}</p>;
-      }
+      // User is in a guild - Show guild details
+      if (isLoadingGuildDetails) return <p>Loading your guild details...</p>;
+      if (guildDetailsError) return <p className="error-message">Error: {guildDetailsError}</p>;
+
       if (currentGuildDetails) {
         return (
-          <div className="guild-details-container"> {/* Use a class for styling this section */}
-            <h3>{currentGuildDetails.name} [{currentGuildDetails.tag}]</h3>
-            <h4>Membres ({currentGuildDetails.members.length}):</h4>
+          <div className="guild-details-container">
+            <h3>
+              {currentGuildDetails.emblem && currentGuildDetails.emblem.startsWith('http') ?
+                <img src={currentGuildDetails.emblem} alt="" style={{width: '40px', height: '40px', marginRight: '10px', verticalAlign: 'middle'}}/> :
+                currentGuildDetails.emblem && <span style={{marginRight: '10px'}}>{currentGuildDetails.emblem}</span>}
+              {currentGuildDetails.name} [{currentGuildDetails.tag}]
+            </h3>
+            <p><i>{currentGuildDetails.description}</i></p>
+            <p>Maître de Maison: {currentGuildDetails.members.find(m => m.uid === currentGuildDetails.masterId)?.displayName || currentGuildDetails.masterId}</p>
+            <h4>Membres ({currentGuildDetails.memberCount}):</h4>
             {currentGuildDetails.members && currentGuildDetails.members.length > 0 ? (
-              <ul className="guild-member-list"> {/* Class for member list */}
-                {currentGuildDetails.members.map((member, index) => (
-                  <li key={index}>{typeof member === 'string' ? member : JSON.stringify(member)}</li>
+              <ul className="guild-member-list">
+                {currentGuildDetails.members.map((member) => (
+                  <li key={member.uid}>{member.displayName || member.uid} ({member.role})</li>
                 ))}
               </ul>
             ) : (
-              <p>Cette maison n'a pas encore de membres.</p>
+              <p>Cette maison n'a pas encore de membres (cela ne devrait pas arriver si le compteur est > 0).</p>
             )}
             <button
               onClick={handleLeaveGuild}
               disabled={isLeavingGuild}
-              className="button-base delete-button" // Using base and error/delete button styles
-              style={{ marginTop: 'calc(var(--spacing-unit) * 3)' }}
+              className="button-base delete-button"
+              style={{ marginTop: 'var(--spacing-unit)' }}
             >
               {isLeavingGuild ? 'Départ en cours...' : 'Quitter la Maison'}
             </button>
-            {leaveGuildError && <p className="error-message" style={{ marginTop: 'calc(var(--spacing-unit) * 2)' }}>{leaveGuildError}</p>}
+            {leaveGuildError && <p className="error-message" style={{ marginTop: 'var(--spacing-unit)' }}>{leaveGuildError}</p>}
           </div>
         );
       }
-      if (joinSuccessMessage && !isLoadingGuildDetails && !guildDetailsError) {
-         return (
-            <div>
-                <p className="success-message">{joinSuccessMessage}</p> {/* Use success class */}
-                <p>Les détails de votre maison sont en cours de chargement ou un problème est survenu.</p>
-            </div>
-         );
+      // If successfully joined but details are still loading or failed
+      if (joinSuccessMessage && !isLoadingGuildDetails) {
+        return (
+          <div>
+            <p className="success-message">{joinSuccessMessage}</p>
+            <p>Chargement des détails de votre nouvelle maison...</p>
+          </div>
+        );
       }
-      return <p>Vous êtes membre d'une maison, mais ses détails n'ont pu être chargés. Elle a peut-être été dissoute.</p>;
+      return <p>Vous êtes membre d'une maison, mais ses détails n'ont pu être chargés.</p>;
     }
 
-    // User is NOT in a guild - Show options to create or join
+    // User is NOT in a guild - Show options to create or join with tabs
     return (
       <>
-        {/* Guild Creation Button - only if not showing form and no guild */}
-        {!showCreateForm && (
-           <button
-             onClick={() => {
-               setShowCreateForm(true);
-               setCreateError(null);
-               setCreateSuccessMessage(null);
-               setJoinError(null);
-               setJoinSuccessMessage(null);
-             }}
-             className="button-base" // Use base button style
-             style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}
-           >
-             Créer une Maison
-           </button>
-        )}
+        {renderTabs()}
+        {createSuccessMessage && <p className="success-message" style={{ marginBottom: 'var(--spacing-unit)' }}>{createSuccessMessage}</p>}
+        {joinError && <p className="error-message" style={{ marginBottom: 'var(--spacing-unit)' }}>{joinError}</p>}
+        {leaveGuildSuccessMessage && <p className="success-message" style={{ marginBottom: 'var(--spacing-unit)' }}>{leaveGuildSuccessMessage}</p>}
 
-        {/* Guild Creation Form */}
-        {showCreateForm && (
-          // Apply form-container styling if available, or style inline with variables
-          <form onSubmit={handleCreateGuild} className="guild-create-form" style={{ marginBottom: 'calc(var(--spacing-unit) * 4)', padding: 'calc(var(--spacing-unit) * 3)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
-            <h3>Créer une nouvelle Maison</h3>
-            <div className="form-group">
-              <label htmlFor="guildName">Nom de la Maison:</label>
-              <input
-                id="guildName"
-                type="text"
-                value={guildName}
-                onChange={(e) => setGuildName(e.target.value)}
-                disabled={creatingGuild}
-                // Inputs will inherit styles from .form-group input in App.css or global input styles
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="guildTag">Tag de la Maison (3-5 chars):</label>
-              <input
-                id="guildTag"
-                type="text"
-                value={guildTag}
-                onChange={(e) => setGuildTag(e.target.value)}
-                disabled={creatingGuild}
-                minLength={3}
-                maxLength={5}
-              />
-            </div>
-            <div className="form-actions"> {/* Wrapper for buttons */}
-              <button type="submit" disabled={creatingGuild} className="button-base">
-                {creatingGuild ? 'Création en cours...' : 'Soumettre la création'}
-              </button>
-              <button type="button" onClick={() => setShowCreateForm(false)} disabled={creatingGuild} className="button-base button-secondary">
-                Annuler
-              </button>
-            </div>
-            {createError && <p className="error-message" style={{ marginTop: 'calc(var(--spacing-unit) * 2)' }}>{createError}</p>}
-          </form>
-        )}
-        {createSuccessMessage && <p className="success-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{createSuccessMessage}</p>}
-        {joinError && <p className="error-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{joinError}</p>}
-        {leaveGuildSuccessMessage && <p className="success-message" style={{ marginBottom: 'calc(var(--spacing-unit) * 3)' }}>{leaveGuildSuccessMessage}</p>}
-
-        {!showCreateForm && (
-          <div className="guild-list-container"> {/* Class for styling this section */}
-            <h3>Liste des Maisons</h3>
-            {loadingGuilds && <p>Loading guilds...</p>}
-            {guildsError && <p className="error-message">{guildsError}</p>}
-            {!loadingGuilds && !guildsError && guilds.length > 0 && (
-              <table className="styled-table" style={{ width: '100%'}}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Tag</th>
-                    <th>Members</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guilds.map((guild) => (
-                    <tr key={guild.id}>
-                      <td>{guild.name}</td>
-                      <td>{guild.tag}</td>
-                      <td>{guild.members.length}</td>
-                      <td>
-                        <button
-                          onClick={() => handleJoinGuild(guild.id, guild.name)}
-                          disabled={joiningGuildId === guild.id || !!(user && user.guildId)}
-                          className="button-base" // Use base button style
-                        >
-                          {joiningGuildId === guild.id ? 'Joining...' : 'Rejoindre'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {!loadingGuilds && !guildsError && guilds.length === 0 && (
-              <p>Aucune maison n'est actuellement disponible pour rejoindre.</p>
-            )}
-          </div>
-        )}
+        {activeTab === 'create' && renderCreateGuildForm()}
+        {activeTab === 'join' && renderJoinGuildList()}
       </>
     );
   };
 
   return (
-    // Use .modal-overlay and .modal-content classes similar to GameLobbyModal.css
     <div className="modal-overlay">
-      <div className="modal-content" style={{width: '600px'}}> {/* Added width here, can be a specific class if needed */}
-        <h2>Guild Management</h2>
+      <div className="modal-content" style={{width: '800px', maxHeight: '90vh', overflowY: 'auto'}}>
+        <h2>Gestion des Maisons</h2>
         {renderContent()}
-        <button onClick={onClose} className="button-base button-secondary" style={{ marginTop: 'calc(var(--spacing-unit) * 4)' }}>Close</button>
+        <button onClick={onClose} className="button-base button-secondary" style={{ marginTop: 'var(--spacing-unit)' }}>Fermer</button>
       </div>
     </div>
   );

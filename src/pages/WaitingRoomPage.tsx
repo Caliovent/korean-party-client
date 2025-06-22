@@ -60,7 +60,8 @@ const WaitingRoomPage: React.FC = () => {
         <ul>
           {game.players.map((player: Player) => (
             <li key={player.uid}>
-              {player.displayName} {player.uid === game.hostId && "(Hôte)"}
+              {player.guildTag && `[${player.guildTag}] `}{player.displayName}
+              {player.uid === game.hostId && " (Hôte)"}
             </li>
           ))}
         </ul>

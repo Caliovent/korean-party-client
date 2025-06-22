@@ -66,6 +66,13 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
 
   return (
     <div className="player-hud">
+      {/* Added Player Name and Guild Tag Display */}
+      <div className="hud-item hud-player-info">
+        <h3>Joueur</h3>
+        <p>
+          {player.displayName} {player.guildTag && `[${player.guildTag}]`}
+        </p>
+      </div>
       <div className="hud-item hud-mana"> {/* Added hud-item class for consistency if needed */}
         <h3>Mana</h3>
         <div className="mana-display-container"> {/* Wrapper for positioning floating texts */}

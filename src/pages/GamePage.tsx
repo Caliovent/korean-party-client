@@ -77,22 +77,32 @@ const GamePage: React.FC = () => {
   }, [gameId, user, navigate]); // +navigate
 
   useEffect(() => {
-    if (game?.lastEventCard && game.lastEventCard !== currentEvent) { // Play sound only when a new event card appears
-      setCurrentEvent(game.lastEventCard);
-      soundService.playSound('action_event_card'); // Sound for new event card
-      // Clear any existing timer
-      if (eventTimerRef.current) {
-        clearTimeout(eventTimerRef.current);
+    if (game?.lastEventCard) {
+      // Check if it's genuinely a new card or different from the currently displayed one.
+      // This comparison avoids re-setting the state and re-triggering sound/timer if the parent `game` object reference changes
+      // but the actual `lastEventCard` data remains identical to what's already being shown.
+      if (!currentEvent ||
+          currentEvent.titleKey !== game.lastEventCard.titleKey ||
+          currentEvent.descriptionKey !== game.lastEventCard.descriptionKey ||
+          currentEvent.GfxUrl !== game.lastEventCard.GfxUrl) {
+
+        setCurrentEvent(game.lastEventCard);
+        soundService.playSound('action_event_card');
+
+        if (eventTimerRef.current) {
+          clearTimeout(eventTimerRef.current);
+        }
+        eventTimerRef.current = setTimeout(() => {
+          setCurrentEvent(null);
+        }, 7000); // 7 seconds
       }
-      // Set a new timer
-      eventTimerRef.current = setTimeout(() => {
-        setCurrentEvent(null); // Hide modal after timeout
-      }, 7000); // 7 seconds
     } else {
-      // If lastEventCard becomes null from Firestore (e.g., another event replaced it or backend cleared it)
-      setCurrentEvent(null);
-      if (eventTimerRef.current) {
-        clearTimeout(eventTimerRef.current);
+      // lastEventCard is null in Firestore, so ensure modal is hidden.
+      if (currentEvent !== null) { // Only update if it's not already null
+        setCurrentEvent(null);
+        if (eventTimerRef.current) {
+          clearTimeout(eventTimerRef.current);
+        }
       }
     }
 
@@ -102,7 +112,7 @@ const GamePage: React.FC = () => {
         clearTimeout(eventTimerRef.current);
       }
     };
-  }, [game?.lastEventCard]); // Effect runs when game.lastEventCard changes
+  }, [game?.lastEventCard, currentEvent]); // currentEvent is needed because it's used in the condition
 
   const handleCloseEventModal = () => {
     soundService.playSound('ui_modal_close');
@@ -209,6 +219,7 @@ const GamePage: React.FC = () => {
           onSelectSpell={handleSelectSpell}
           isCastingSpell={isCastingSpell}
           castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+          isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
         />
       )}
       <PhaserGame
