@@ -145,6 +145,67 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
   }
 };
 
+// --- Hangeul Typhoon Mini-Game Service ---
+import type { HangeulTyphoonAttackResponse } from '../types/hangeul'; // Import response type
+
+/**
+ * Simulates calling the sendTyphoonAttack Cloud Function.
+ * @param gameId The ID of the game/duel.
+ * @param attackerPlayerId The ID of the attacking player.
+ * @param targetPlayerId The ID of the target player.
+ * @param attackWord The word used in the attack.
+ * @returns A promise that resolves to a HangeulTyphoonAttackResponse.
+ */
+export const sendTyphoonAttackService = async (
+  gameId: string,
+  attackerPlayerId: string,
+  targetPlayerId: string,
+  attackWord: string
+): Promise<HangeulTyphoonAttackResponse> => {
+  console.log(`[Mock Service] sendTyphoonAttackService called: gameId=${gameId}, attacker=${attackerPlayerId}, target=${targetPlayerId}, word=${attackWord}`);
+
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Mock logic based on attackWord for testing different scenarios
+  if (attackWord === "fail_vulnerable") { // Simulate attack on a non-vulnerable or non-existent block
+    return {
+      status: "failure",
+      reason: "NO_VULNERABLE_BLOCK_MATCHED",
+      message: "Mock: Attack failed. No vulnerable block matched your word.",
+      attackerPlayerId: attackerPlayerId,
+      attackerPenaltyGroundRiseAmount: 15
+    };
+  } else if (attackWord === "fail_word") { // Simulate attack with a word that doesn't exist on any block
+    return {
+      status: "failure",
+      reason: "BLOCK_NOT_FOUND",
+      message: "Mock: Attack failed. The word does not exist on any of opponent's blocks.",
+      attackerPlayerId: attackerPlayerId,
+      attackerPenaltyGroundRiseAmount: 10
+    };
+  } else if (attackWord === "error_server") { // Simulate a server-side or function call error
+    // This would typically be caught by the .catch() in the scene,
+    // but if the function itself returns a structured error:
+    return {
+        status: 'failure',
+        reason: 'INTERNAL_SERVER_ERROR', // Or a more specific error code
+        message: "Mock: Simulated internal server error in function.",
+        attackerPlayerId: attackerPlayerId,
+        attackerPenaltyGroundRiseAmount: 5 // Minimal penalty for such errors
+    };
+  } else { // Simulate a successful attack
+    return {
+      status: "success",
+      message: "Mock: Attack successful! Target's block destroyed.",
+      attackerPlayerId: attackerPlayerId,
+      targetPlayerId: targetPlayerId,
+      destroyedBlockWord: attackWord,
+      targetGroundRiseAmount: 20 // Example amount
+    };
+  }
+};
+
 /**
  * Fetches a specific guild by its ID from Firestore.
  * @param guildId The ID of the guild to fetch.
