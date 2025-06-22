@@ -11,7 +11,45 @@
 .grimoire-controls {
   margin-bottom: 2rem;
   text-align: center;
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column; /* Stack controls vertically */
+  align-items: center; /* Center items horizontally */
+  gap: 1.5rem; /* Space between control groups */
 }
+
+.filter-sort-controls {
+  display: flex;
+  gap: 1rem; /* Space between individual controls */
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: rgba(255, 255, 255, 0.05); /* Slightly transparent background */
+  border-radius: 6px;
+  flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+  justify-content: center; /* Center controls if they wrap */
+}
+
+.filter-sort-controls label {
+  margin-right: 0.5rem;
+  color: #c0c0c0; /* Lighter label color */
+  font-size: 0.95rem;
+}
+
+.filter-sort-controls select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #555; /* Darker border */
+  background-color: #333; /* Dark background for select */
+  color: #e0e0e0; /* Light text in select */
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.filter-sort-controls select:focus {
+  outline: none;
+  border-color: #8a2be2; /* Highlight with theme color */
+  box-shadow: 0 0 5px rgba(138, 43, 226, 0.5); /* Glow effect */
+}
+
 
 .review-button {
   padding: 12px 24px;
