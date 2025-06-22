@@ -1,13 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'; // + useState
+import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import HubScene from '../phaser/HubScene'; // Assuming HubScene will be created in src/phaser/
-import GameLobbyModal from '../components/GameLobbyModal'; // + Import modal
-import soundService from '../services/soundService'; // Import soundService
+import HubScene from '../phaser/HubScene';
+import GameLobbyModal from '../components/GameLobbyModal';
+import GuildManagementModal from '../components/GuildManagementModal'; // Import GuildModal
+import soundService from '../services/soundService';
 
 const HubPage: React.FC = () => {
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
-  const [isGameLobbyModalOpen, setIsGameLobbyModalOpen] = useState(false); // + Modal state
+  const [isGameLobbyModalOpen, setIsGameLobbyModalOpen] = useState(false);
+  const [isGuildModalOpen, setIsGuildModalOpen] = useState(false); // State for GuildModal
 
   useEffect(() => {
     if (gameRef.current && !phaserGameRef.current) {
@@ -38,11 +40,16 @@ const HubPage: React.FC = () => {
       phaserGameRef.current.events.on('openGameLobbyModal', () => {
         setIsGameLobbyModalOpen(true);
       });
+      // Listener for Phaser scene to open guild modal
+      phaserGameRef.current.events.on('openGuildManagementModal', () => {
+        setIsGuildModalOpen(true);
+      });
     }
 
     return () => {
       if (phaserGameRef.current) {
-        phaserGameRef.current.events.off('openGameLobbyModal'); // Clean up listener
+        phaserGameRef.current.events.off('openGameLobbyModal');
+        phaserGameRef.current.events.off('openGuildManagementModal'); // Clean up guild listener
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
       }
@@ -67,6 +74,10 @@ const HubPage: React.FC = () => {
       <GameLobbyModal
         isOpen={isGameLobbyModalOpen}
         onClose={() => setIsGameLobbyModalOpen(false)}
+      />
+      <GuildManagementModal
+        isOpen={isGuildModalOpen}
+        onClose={() => setIsGuildModalOpen(false)}
       />
     </div>
   );

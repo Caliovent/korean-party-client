@@ -13,6 +13,8 @@ export interface Grimoire {
 export interface Player {
   uid:string;
   displayName: string;
+  guildId?: string; // Optional: ID of the guild the player belongs to
+  guildTag?: string; // Optional: Denormalized guild tag for quick display
   position: number;
   mana: number;
   grimoires: Grimoire[];
