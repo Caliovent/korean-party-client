@@ -25,6 +25,17 @@ export interface Player {
 export type GameStatus = "waiting" | "playing" | "finished";
 export type TurnState = "AWAITING_ROLL" | "MOVING" | "RESOLVING_TILE";
 
+export interface BoardTile {
+  type: string; // e.g., 'food', 'travel', 'library', 'EVENT'
+  trap?: {
+    ownerId: string; // Player UID who set the trap
+    spellId: SpellId; // e.g., 'DOKKAEBI_MISCHIEF' or 'TRAP_RUNE'
+    effect: 'MANA_LOSS' | 'PUSH_BACK' | string; // Type of effect
+    // Potentially other details like damage amount if not implicit from spellId
+  } | null;
+  // other tile properties like special visual state?
+}
+
 export interface Game {
   id: string;
   name: string;
@@ -34,7 +45,7 @@ export interface Game {
   currentPlayerId: string;
   currentTurn: number;
   turnState: TurnState;
-  board: { type: string; trap?: 'RUNE_TRAP' | string; }[];
+  board: BoardTile[]; // Changed from { type: string; trap?: 'RUNE_TRAP' | string; }[]
   lastDiceRoll: number | null;
   lastEventCard: { titleKey: string, descriptionKey: string, GfxUrl: string } | null;
   lastSpellCast: {

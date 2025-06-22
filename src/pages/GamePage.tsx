@@ -219,6 +219,7 @@ const GamePage: React.FC = () => {
           onSelectSpell={handleSelectSpell}
           isCastingSpell={isCastingSpell}
           castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+          isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
         />
       )}
       <PhaserGame
