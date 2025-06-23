@@ -1,0 +1,99 @@
+/* src/components/HallOfFame.css */
+
+.hall-of-fame {
+  padding: var(--spacing-unit-md, 16px); /* Utiliser des variables globales si disponibles */
+  background-color: var(--background-color-light, #f9f9f9);
+  border-radius: var(--border-radius-lg, 8px);
+  color: var(--text-color, #333);
+}
+
+.hall-of-fame h2 {
+  font-size: var(--font-size-xl, 1.5rem);
+  color: var(--text-color-emphasis, #111);
+  margin-top: 0;
+  margin-bottom: var(--spacing-unit-md, 16px);
+  padding-bottom: var(--spacing-unit-sm, 8px);
+  border-bottom: 1px solid var(--border-color, #eee);
+}
+
+/* Section des statistiques */
+.hof-stats-section {
+  margin-bottom: var(--spacing-unit-lg, 24px);
+}
+
+.hof-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-unit-md, 16px);
+}
+
+.hof-stat-item {
+  background-color: var(--background-color-white, #fff);
+  padding: var(--spacing-unit-md, 16px);
+  border-radius: var(--border-radius-md, 6px);
+  box-shadow: var(--box-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hof-stat-label {
+  font-size: var(--font-size-sm, 0.9rem);
+  color: var(--text-color-muted, #666);
+  margin-bottom: var(--spacing-unit-xs, 4px);
+}
+
+.hof-stat-value {
+  font-size: var(--font-size-lg, 1.25rem);
+  font-weight: bold;
+  color: var(--primary-color, #007bff);
+}
+
+/* Section des Hauts Faits */
+.hof-achievements-section {
+  /* Styles similaires si nécessaire ou spécifiques */
+}
+
+.hof-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Pour des icônes/blasons */
+  gap: var(--spacing-unit-md, 16px);
+  align-items: start; /* Aligner les items en haut */
+}
+
+.hof-achievement-item {
+  background-color: var(--background-color-white, #fff);
+  padding: var(--spacing-unit-sm, 8px);
+  border-radius: var(--border-radius-md, 6px);
+  box-shadow: var(--box-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 100px; /* Pour une taille consistante si noms en dessous */
+  justify-content: center; /* Centrer le contenu si l'icône est petite */
+}
+
+.hof-achievement-icon {
+  width: 64px; /* Taille de l'icône */
+  height: 64px;
+  margin-bottom: var(--spacing-unit-sm, 8px);
+  object-fit: contain; /* S'assurer que l'icône s'affiche bien */
+}
+
+.hof-achievement-name-fallback {
+  font-size: var(--font-size-sm, 0.8rem);
+  font-weight: bold;
+}
+
+.hof-achievement-name { /* Si on affiche le nom sous l'icône */
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-color-muted, #666);
+  margin-top: var(--spacing-unit-xs, 4px);
+}
+
+.hof-achievements-section p { /* Message "Aucun haut fait" */
+  font-style: italic;
+  color: var(--text-color-muted, #666);
+}

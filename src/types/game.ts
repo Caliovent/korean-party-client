@@ -67,3 +67,19 @@ export interface SpellMasteryData {
   failedCasts: number; // Number of times the spell failed (e.g., due to lack of mana, target out of range)
   // Optional: could add lastUsedTimestamp, specific spell stats, etc.
 }
+
+export interface Quest {
+  id: string;
+  titleKey: string; // Clé pour i18n
+  descriptionKey: string; // Clé pour i18n
+  progress: number;
+  target: number;
+  isCompleted: boolean;
+  type: 'daily' | 'weekly' | 'main' | 'event'; // Type de quête
+  rewards?: { experience?: number; items?: string[]; spells?: SpellId[] };
+  // Potentiellement d'autres champs comme :
+  // relatedSpellId?: SpellId; // Si la quête est liée à un sort spécifique
+  // relatedAction?: 'castSpell' | 'visitLocation' | 'collectItem'; // Type d'action pour la quête
+  // locationId?: string; // Si la quête est de visiter un lieu
+  // itemId?: string; // Si la quête est de collecter un objet
+}

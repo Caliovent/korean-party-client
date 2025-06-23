@@ -1,0 +1,128 @@
+/* src/components/QuestLogModal.css */
+/* Inspiré de GameLobbyModal.css et EventCardModal.css, utilisant les variables globales */
+
+.quest-log-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: color-mix(in srgb, var(--dark-bg-color, #000000) 70%, transparent);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050; /* Assurer qu'il est au-dessus d'autres éléments comme le HUD du joueur si nécessaire */
+}
+
+.quest-log-modal-content {
+  background-color: var(--light-bg-color);
+  color: var(--text-color);
+  padding: calc(var(--spacing-unit) * 3); /* Ajusté pour un padding un peu moins grand que GameLobby */
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-xl); /* Un peu plus prononcé pour se détacher */
+  width: 90%;
+  max-width: 600px; /* Un peu plus large pour le journal de quêtes */
+  max-height: 85vh;
+  overflow-y: auto; /* Permettre le scroll si le contenu est trop long */
+  position: relative;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column; /* Pour que le header et le body s'empilent bien */
+}
+
+.quest-log-modal-content .modal-header { /* Cibler spécifiquement pour éviter les conflits si les classes sont globales */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: calc(var(--spacing-unit) * 2);
+  margin-bottom: calc(var(--spacing-unit) * 2); /* Réduit un peu l'espace avant le corps */
+}
+
+.quest-log-modal-content .modal-header h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--text-color-emphasis); /* Utiliser une couleur de texte accentuée pour le titre */
+}
+
+.quest-log-modal-content .modal-close-button {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl); /* Plus grand pour être plus cliquable */
+  color: var(--text-color);
+  cursor: pointer;
+  padding: var(--spacing-unit);
+  line-height: 1;
+}
+
+.quest-log-modal-content .modal-close-button:hover {
+  color: var(--primary-color);
+}
+
+.quest-log-modal-content .modal-body {
+  flex-grow: 1; /* Permet au corps de prendre l'espace restant */
+  overflow-y: auto; /* Si le contenu du QuestLog lui-même devient scrollable */
+}
+
+/* Styles spécifiques pour le contenu de QuestLog à l'intérieur du modal si nécessaire */
+.quest-log-modal-content .quest-log .quest-log-tabs {
+  margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.quest-log-modal-content .quest-log h2 { /* Titres "Quêtes Actives" / "Quêtes Terminées" */
+  font-size: var(--font-size-lg);
+  margin-top: 0; /* Le header du modal a déjà un titre */
+  margin-bottom: calc(var(--spacing-unit) * 1.5);
+  color: var(--text-color);
+}
+
+.quest-log-modal-content .quest-log ul {
+  list-style-type: none;
+  padding-left: 0; /* Pas de padding à gauche pour la liste */
+}
+
+.quest-log-modal-content .quest-log li {
+  background-color: var(--background-color); /* Un fond légèrement différent pour chaque item */
+  padding: calc(var(--spacing-unit) * 1.5);
+  margin-bottom: var(--spacing-unit);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color-light);
+}
+
+.quest-log-modal-content .quest-log li h3 {
+  font-size: var(--font-size-md);
+  margin-top: 0;
+  margin-bottom: calc(var(--spacing-unit) * 0.5);
+  color: var(--text-color-emphasis);
+}
+
+.quest-log-modal-content .quest-log li p {
+  font-size: var(--font-size-sm);
+  margin-bottom: 0;
+  color: var(--text-color-muted);
+}
+
+/* Style pour la barre de progression si ajoutée plus tard */
+/* .quest-log-modal-content .quest-log .progress-bar { ... } */
+
+/* Style pour les onglets actifs dans QuestLog (s'il n'est pas déjà global) */
+.quest-log-modal-content .quest-log .active-tab {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border-bottom-color: transparent; /* Ou un style différent pour l'onglet actif */
+}
+
+.quest-log-modal-content .quest-log button { /* Style de base pour les boutons d'onglet */
+  padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 2);
+  margin-right: var(--spacing-unit);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  background-color: var(--light-bg-color);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+}
+
+.quest-log-modal-content .quest-log button:hover:not(.active-tab) {
+  background-color: var(--background-color);
+}
