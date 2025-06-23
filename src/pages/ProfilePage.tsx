@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Ajout de useRef
 import { useTranslation } from 'react-i18next';
 import { auth, db, app } from '../firebaseConfig'; // Added app
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
@@ -6,12 +6,18 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from '../hooks/useAuth'; // Import useAuth
 import { getGuildById } from '../services/gameService'; // Import getGuildById
 import GrimoireVivant from '../components/GrimoireVivant'; // Import GrimoireVivant
+import HallOfFame from '../components/HallOfFame'; // Importer HallOfFame
+import { useToast } from '../contexts/ToastContext'; // Importer useToast
+import { getAchievementDefinition } from '../data/achievementDefinitions'; // Importer pour les détails des HF
 import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
 // --- COMPOSANT PRINCIPAL DE LA PAGE DE PROFIL ---
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
   const { user: authUser, loading: authLoading } = useAuth(); // Use useAuth hook
+  const { addToast } = useToast(); // Hook pour les toasts
+
+  const previousAchievementsRef = useRef<string[] | undefined>(undefined);
 
   const [profile, setProfile] = useState<DocumentData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true); // Separate loading for profile doc
@@ -77,6 +83,50 @@ const ProfilePage: React.FC = () => {
       setGuildNameError(null);
     }
   }, [authUser, authUser?.guildId]); // Depend on authUser and specifically guildId
+
+  // Effet pour détecter les nouveaux hauts faits débloqués
+  useEffect(() => {
+    if (authUser && authUser.unlockedAchievements) {
+      const currentAchievements = authUser.unlockedAchievements;
+      const previousAchievements = previousAchievementsRef.current;
+
+      // Si c'est la première fois après l'initialisation de la page que l'on voit des achievements,
+      // on les stocke comme "vus" sans déclencher de toast pour eux.
+      if (previousAchievements === undefined) {
+        previousAchievementsRef.current = [...currentAchievements];
+        return;
+      }
+
+      // Maintenant, previousAchievements est défini (il a été initialisé au cycle précédent ou au montage).
+      // On compare pour trouver les réellement nouveaux.
+      if (currentAchievements.length > previousAchievements.length) {
+        const newAchievements = currentAchievements.filter(achId => !previousAchievements.includes(achId));
+
+        if (newAchievements.length > 0) {
+          newAchievements.forEach(achId => {
+            const definition = getAchievementDefinition(achId);
+            if (definition) {
+              addToast({
+                id: `ach_${achId}`,
+                type: 'success',
+                title: t('hall_of_fame.achievement_unlocked_title') || 'Haut Fait Débloqué !',
+                message: t(definition.nameKey),
+                duration: 7000,
+              });
+            }
+          });
+        }
+      }
+      // Toujours mettre à jour la référence avec la liste actuelle pour la prochaine comparaison.
+      previousAchievementsRef.current = [...currentAchievements];
+
+    } else if (authUser && (!authUser.unlockedAchievements || authUser.unlockedAchievements.length === 0)) {
+      // Si l'utilisateur est chargé mais n'a pas d'achievements (ou une liste vide)
+      previousAchievementsRef.current = []; // Marquer comme vide pour la prochaine comparaison
+    }
+    // Si authUser est null, previousAchievementsRef reste undefined, ce qui est géré au prochain chargement d'authUser.
+  }, [authUser, authUser?.unlockedAchievements, addToast, t]);
+
 
   // Fonction pour gérer la mise à jour du displayName
   const handleUpdatedisplayName = async (e: React.FormEvent) => {
@@ -165,6 +215,15 @@ const ProfilePage: React.FC = () => {
       <main>
         <GrimoireVivant />
       </main>
+
+      {/* --- SECTION STATS ET HAUTS FAITS --- */}
+      <section className="hall-of-fame-section profile-section">
+        <h2>{t('profilePage.hallOfFameTitle', 'Mon Palmarès')}</h2>
+        <HallOfFame
+          stats={authUser.stats}
+          unlockedAchievements={authUser.unlockedAchievements}
+        />
+      </section>
     </div>
   );
 };
