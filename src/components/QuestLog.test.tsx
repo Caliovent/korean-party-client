@@ -12,40 +12,24 @@ vi.mock('../firebaseConfig', () => ({
   auth: vi.fn(),
 }));
 
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  orderBy: vi.fn(),
-  onSnapshot: vi.fn((query, callback) => {
-    // Simuler une réponse vide par défaut ou une réponse spécifique si nécessaire pour la configuration
-    const mockSnapshot = {
-      empty: true,
-      docs: [],
-      forEach: (cb: (doc: any) => void) => {},
-    };
-    callback(mockSnapshot);
-    return vi.fn(); // Retourne une fonction de désinscription (unsubscribe)
-  }),
-  doc: vi.fn(),
-  getDoc: vi.fn(),
-  setDoc: vi.fn(),
-  updateDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-  serverTimestamp: vi.fn(),
-  arrayUnion: vi.fn(),
-  arrayRemove: vi.fn(),
+// Importer les fonctions réelles pour que Vitest puisse les suivre et les mocker
+// Nous n'avons plus besoin de les importer directement ici si vi.mock les remplace globalement.
+
+import * as questService from '../services/questService';
+
+// Mock le service de quêtes
+vi.mock('../services/questService', () => ({
+  subscribeToActiveQuests: vi.fn(),
+  subscribeToCompletedQuests: vi.fn(),
 }));
 
-import { onSnapshot as firestoreOnSnapshot } from 'firebase/firestore'; // Importer l'original pour que Vitest puisse le mocker
+// Pas besoin de mocker firebase/firestore directement de manière complexe maintenant
 
-// Récupérer la version mockée de onSnapshot
-const mockOnSnapshot = firestoreOnSnapshot as ReturnType<typeof vi.fn>;
 
 describe('<QuestLog />', () => {
-  const mockQuests: Quest[] = [
+  const mockActiveQuests: Quest[] = [
     {
-      id: 'quest1',
+      id: 'activeQuest1',
       titleKey: 'quest_food_mastery_title', // "Maîtriser 5 sorts de nourriture"
       descriptionKey: 'quest_food_mastery_desc',
       progress: 2,
@@ -54,7 +38,7 @@ describe('<QuestLog />', () => {
       type: 'daily',
     },
     {
-      id: 'quest2',
+      id: 'activeQuest2',
       titleKey: 'quest_keyboard_dojo_title', // "Visiter le Dojo du Clavier"
       descriptionKey: 'quest_keyboard_dojo_desc',
       progress: 0,
@@ -64,8 +48,19 @@ describe('<QuestLog />', () => {
     },
   ];
 
-  // Mock pour i18next avant chaque test.
-  // Note: vi.mock est automatiquement "hoisté". Pour le faire fonctionner dans beforeEach ou par test,
+  const mockCompletedQuests: Quest[] = [
+    {
+      id: 'completedQuest1',
+      titleKey: 'quest_tutorial_completed_title', // "Terminer le tutoriel"
+      descriptionKey: 'quest_tutorial_completed_desc',
+      progress: 1,
+      target: 1,
+      isCompleted: true,
+      type: 'main',
+    },
+  ];
+
+  // Mock pour i18next global pour ce describe block
   // il faut une approche différente, souvent en important le module et en modifiant son comportement.
   // Pour la simplicité ici, nous allons le mocker une fois pour tous les tests du describe block.
   // Si une configuration par test est nécessaire, il faudra envisager `vi.doMock` ou `vi.spyOn` sur les exports du module.
@@ -79,6 +74,16 @@ describe('<QuestLog />', () => {
         if (key === 'quest_keyboard_dojo_title') return 'Visiter le Dojo du Clavier';
         if (key === 'quest_tutorial_completed_title') return 'Terminer le tutoriel';
         if (key === 'quests_completed_tab_label') return 'Terminées';
+        if (key === 'quests_active_tab_label') return 'Actives';
+        if (key === 'active_quests_title') return 'Quêtes Actives';
+        if (key === 'completed_quests_title') return 'Quêtes Terminées';
+        if (key === 'quest_progress_label') return 'Progrès';
+        if (key === 'no_active_quests') return 'Aucune quête active pour le moment.';
+        if (key === 'no_completed_quests') return 'Aucune quête terminée pour le moment.';
+        if (key === 'loading_quests_message') return 'Chargement du journal de quêtes...';
+        if (key === 'quests_not_logged_in') return 'Veuillez vous connecter pour voir vos quêtes.';
+        if (key === 'quest_log_modal_title') return 'Journal de Quêtes';
+        if (key === 'close_button_label') return 'Fermer';
         return key;
       },
     }),
@@ -88,89 +93,69 @@ describe('<QuestLog />', () => {
     vi.clearAllMocks(); // Utiliser vi.clearAllMocks() pour Vitest
   });
 
-  it('devrait afficher correctement la liste des quêtes actives avec leur progression', () => {
-    // Arrange: Configurer onSnapshot pour retourner les quêtes actives
-    // Assurez-vous que mockOnSnapshot est bien la version mockée et non l'originale
-    (mockOnSnapshot as ReturnType<typeof vi.fn>).mockImplementation((query: any, callback: any) => {
-      const mockSnapshot = {
-        empty: false,
-        docs: mockQuests
-          .filter(q => !q.isCompleted)
-          .map(quest => ({
-            id: quest.id,
-            data: () => quest,
-          })),
-        forEach: (cb: (doc: any) => void) => { // Simulation de forEach pour les snapshots
-          mockQuests.filter(q => !q.isCompleted).forEach(quest => cb({ id: quest.id, data: () => quest }));
-        },
-      };
-      callback(mockSnapshot);
-      return jest.fn(); // Unsubscribe function
-    });
+  // Mock de useAuth
+  vi.mock('../hooks/useAuth', () => ({
+    useAuth: () => ({
+      user: { uid: 'test-user-id' }, // Simuler un utilisateur connecté
+      loading: false,
+    }),
+  }));
 
-    // Act
-    render(<QuestLog />);
+  beforeEach(() => {
+    // Réinitialiser les implémentations de mock avant chaque test si nécessaire
+    // ou configurer une implémentation par défaut ici.
+    vi.clearAllMocks(); // Efface tous les mocks, y compris ceux du service
 
-    // Assert (doit échouer car QuestLog retourne null)
-    expect(screen.getByText('Maîtriser 5 sorts de nourriture')).toBeInTheDocument();
-    expect(screen.getByText('Progrès : 2 / 5')).toBeInTheDocument();
-    expect(screen.getByText('Visiter le Dojo du Clavier')).toBeInTheDocument();
-    expect(screen.getByText('Progrès : 0 / 1')).toBeInTheDocument();
+    // Configurer le mock de subscribeToActiveQuests
+    (questService.subscribeToActiveQuests as ReturnType<typeof vi.fn>).mockImplementation(
+      (userId: string, onUpdate: (quests: Quest[]) => void, onError: (error: Error) => void) => {
+        // Appeler immédiatement onUpdate avec les données mockées
+        // Le composant mettra à jour son état et setLoadingActiveQuests à false
+        onUpdate(mockActiveQuests);
+        return vi.fn(); // Retourner une fonction de désinscription mockée
+      }
+    );
+
+    // Configurer le mock de subscribeToCompletedQuests
+    (questService.subscribeToCompletedQuests as ReturnType<typeof vi.fn>).mockImplementation(
+      (userId: string, onUpdate: (quests: Quest[]) => void, onError: (error: Error) => void) => {
+        onUpdate(mockCompletedQuests);
+        return vi.fn(); // Retourner une fonction de désinscription mockée
+      }
+    );
   });
 
-  it('devrait afficher les quêtes terminées après avoir cliqué sur l\'onglet correspondant', () => {
-    // Arrange: Données pour quêtes actives et une quête terminée
-    const mockAllQuests: Quest[] = [
-      ...mockQuests, // Quêtes actives définies plus haut
-      {
-        id: 'quest3',
-        titleKey: 'quest_tutorial_completed_title', // "Terminer le tutoriel"
-        descriptionKey: 'quest_tutorial_completed_desc',
-        progress: 1,
-        target: 1,
-        isCompleted: true,
-        type: 'main',
-      },
-    ];
-
-    // Le mock de react-i18next est maintenant global pour le describe block.
-    // Plus besoin de le redéfinir ici.
-
-    // Configurer onSnapshot pour retourner initialement les quêtes actives
-    // Il sera re-configuré ou le composant devra gérer le filtrage interne basé sur un état après clic
-    (mockOnSnapshot as ReturnType<typeof vi.fn>).mockImplementation((query: any, callback: any) => {
-      const mockSnapshot = {
-        empty: false,
-        docs: mockAllQuests.map(quest => ({ // Fournir toutes les quêtes au composant
-          id: quest.id,
-          data: () => quest,
-        })),
-        forEach: (cb: (doc: any) => void) => {
-            mockAllQuests.forEach(quest => cb({ id: quest.id, data: () => quest }));
-        },
-      };
-      callback(mockSnapshot);
-      return jest.fn();
-    });
-
-    // Act
+  // Les tests devraient maintenant utiliser ces mocks de service
+  it('devrait afficher correctement la liste des quêtes actives par défaut', async () => {
     render(<QuestLog />);
 
-    // Simuler un clic sur un futur bouton/onglet "Terminées"
-    // Ce bouton n'existe pas encore, donc le test échouera ici (ou au getByText suivant)
+    // Attendre que les données soient chargées et que les éléments apparaissent
+    expect(await screen.findByText('Maîtriser 5 sorts de nourriture')).toBeInTheDocument();
+    expect(screen.getByText('Progrès : 2 / 5')).toBeInTheDocument();
+    expect(await screen.findByText('Visiter le Dojo du Clavier')).toBeInTheDocument();
+    expect(screen.getByText('Progrès : 0 / 1')).toBeInTheDocument();
+
+    // S'assurer que les quêtes complétées ne sont pas visibles initialement
+    expect(screen.queryByText('Terminer le tutoriel')).not.toBeInTheDocument();
+  });
+
+  it('devrait afficher les quêtes terminées après avoir cliqué sur l\'onglet correspondant', async () => {
+    render(<QuestLog />);
+
+    // Attendre que l'onglet "Actives" soit chargé
+    expect(await screen.findByText('Maîtriser 5 sorts de nourriture')).toBeInTheDocument();
+
+    // Cliquer sur l'onglet "Terminées"
+    // La clé i18n pour "Terminées" est 'quests_completed_tab_label'
+    // Le mock de i18n retourne "Terminées" pour cette clé.
     fireEvent.click(screen.getByText('Terminées'));
 
-    // Assert (doit échouer)
-    expect(screen.getByText('Terminer le tutoriel')).toBeInTheDocument();
+    // Vérifier que la quête terminée est visible
+    expect(await screen.findByText(/Terminer le tutoriel.*✅/)).toBeInTheDocument();
+
     // Vérifier que les quêtes actives ne sont plus visibles
     expect(screen.queryByText('Maîtriser 5 sorts de nourriture')).not.toBeInTheDocument();
     expect(screen.queryByText('Visiter le Dojo du Clavier')).not.toBeInTheDocument();
-    // Vérifier la présence d'un indicateur visuel (ex: une classe CSS ou un symbole)
-    // Pour cela, on pourrait chercher un élément ayant un rôle ou un testId spécifique
-    // ou vérifier si l'élément de la quête terminée contient le symbole ✅.
-    // Cette assertion dépendra de l'implémentation.
-    // Exemple simple : le texte de la quête terminée contient une coche.
-    expect(screen.getByText(/Terminer le tutoriel.*✅/)).toBeInTheDocument();
   });
 });
 

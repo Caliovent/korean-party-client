@@ -2,14 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import HubScene from '../phaser/HubScene';
 import GameLobbyModal from '../components/GameLobbyModal';
-import GuildManagementModal from '../components/GuildManagementModal'; // Import GuildModal
+import GuildManagementModal from '../components/GuildManagementModal';
+import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
 import soundService from '../services/soundService';
+import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
 
 const HubPage: React.FC = () => {
+  const { t } = useTranslation(); // Hook de traduction
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const [isGameLobbyModalOpen, setIsGameLobbyModalOpen] = useState(false);
-  const [isGuildModalOpen, setIsGuildModalOpen] = useState(false); // State for GuildModal
+  const [isGuildModalOpen, setIsGuildModalOpen] = useState(false);
+  const [isQuestLogModalOpen, setIsQuestLogModalOpen] = useState(false); // État pour le modal de quêtes
 
   useEffect(() => {
     if (gameRef.current && !phaserGameRef.current) {
@@ -69,8 +73,24 @@ const HubPage: React.FC = () => {
   }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
 
   return (
-    <div className="hub-page-container" style={{ position: 'relative' }}> {/* Added for potential stacking context if needed */}
-      <div ref={gameRef} id="phaser-hub-container" />
+    <div className="hub-page-container" style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Bouton pour ouvrir le journal de quêtes */}
+      <button
+        onClick={() => setIsQuestLogModalOpen(true)}
+        className="button-base" // Utiliser une classe de bouton existante ou créer une nouvelle
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          zIndex: 100, // Pour être au-dessus du canvas Phaser mais en dessous des modaux
+          padding: '10px 15px' // Style rapide
+        }}
+      >
+        {t('hub_open_quest_log_button') || 'Journal de Quêtes'}
+      </button>
+
+      <div ref={gameRef} id="phaser-hub-container" style={{ flexGrow: 1, width: '100%' }} />
+
       <GameLobbyModal
         isOpen={isGameLobbyModalOpen}
         onClose={() => setIsGameLobbyModalOpen(false)}
@@ -78,6 +98,10 @@ const HubPage: React.FC = () => {
       <GuildManagementModal
         isOpen={isGuildModalOpen}
         onClose={() => setIsGuildModalOpen(false)}
+      />
+      <QuestLogModal
+        isOpen={isQuestLogModalOpen}
+        onClose={() => setIsQuestLogModalOpen(false)}
       />
     </div>
   );
