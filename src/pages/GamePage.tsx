@@ -18,6 +18,7 @@ import Spellbook from "../components/Spellbook";
 import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
 import EventCardModal from '../components/EventCardModal'; // Import the modal
 import OpponentTurnIndicator from '../components/OpponentTurnIndicator'; // Import OpponentTurnIndicator
+import FocusModeButton from '../components/FocusModeButton'; // Import FocusModeButton
 
 
 const GamePage: React.FC = () => {
@@ -35,6 +36,7 @@ const GamePage: React.FC = () => {
   const eventTimerRef = useRef<NodeJS.Timeout | null>(null);
   const playerControlsRef = useRef<HTMLDivElement>(null); // Ref for player controls (Spellbook and GameControls)
   const opponentIndicatorRef = useRef<HTMLDivElement>(null); // Ref for OpponentTurnIndicator
+  const [isFocusMode, setIsFocusMode] = useState(false); // State for Focus Mode
 
   // Effect for game background music
   useEffect(() => {
@@ -216,49 +218,51 @@ const GamePage: React.FC = () => {
   // Le rendu normal du jeu si la partie n'est pas terminée
   return (
     <div>
-      <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
-      <PlayerHUD player={currentPlayer} />
-      <CSSTransition
-        nodeRef={playerControlsRef}
-        in={isMyTurn && game.turnState === 'AWAITING_ROLL' && !!currentPlayer}
-        timeout={300}
-        classNames="player-controls-transition"
-        unmountOnExit
-      >
-        <div ref={playerControlsRef}> {/* Wrapper div for the ref */}
-          {/* Conditional rendering inside to ensure components are only mounted when truly needed,
-              even though CSSTransition handles visibility. This can be an extra precaution or
-              help if components have heavy mount logic, though unmountOnExit should suffice.
-              For now, we'll keep the original conditional rendering logic inside the transition.
-          */}
-          {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
-            <>
-              <Spellbook
-                player={currentPlayer}
-                selectedSpellId={selectedSpellId}
-                onSelectSpell={handleSelectSpell}
-                isCastingSpell={isCastingSpell}
-                castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
-                isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
-              />
-              <GameControls game={game} />
-            </>
-          )}
-        </div>
-      </CSSTransition>
-      <CSSTransition
-        nodeRef={opponentIndicatorRef}
-        in={!isMyTurn && game.status === 'playing'}
-        timeout={300}
-        classNames="opponent-indicator-transition"
-        unmountOnExit
-      >
-        <div ref={opponentIndicatorRef}> {/* Wrapper div for the ref */}
-          {!isMyTurn && game.status === 'playing' && (
-            <OpponentTurnIndicator playerName={activePlayerName} />
-          )}
-        </div>
-      </CSSTransition>
+      <FocusModeButton isFocus={isFocusMode} onClick={() => setIsFocusMode(!isFocusMode)} />
+
+      {!isFocusMode && (
+        <>
+          <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
+          <PlayerHUD player={currentPlayer} />
+          <CSSTransition
+            nodeRef={playerControlsRef}
+            in={isMyTurn && game.turnState === 'AWAITING_ROLL' && !!currentPlayer}
+            timeout={300}
+            classNames="player-controls-transition"
+            unmountOnExit
+          >
+            <div ref={playerControlsRef}> {/* Wrapper div for the ref */}
+              {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
+                <>
+                  <Spellbook
+                    player={currentPlayer}
+                    selectedSpellId={selectedSpellId}
+                    onSelectSpell={handleSelectSpell}
+                    isCastingSpell={isCastingSpell}
+                    castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+                    isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
+                  />
+                  <GameControls game={game} />
+                </>
+              )}
+            </div>
+          </CSSTransition>
+          <CSSTransition
+            nodeRef={opponentIndicatorRef}
+            in={!isMyTurn && game.status === 'playing'}
+            timeout={300}
+            classNames="opponent-indicator-transition"
+            unmountOnExit
+          >
+            <div ref={opponentIndicatorRef}> {/* Wrapper div for the ref */}
+              {!isMyTurn && game.status === 'playing' && (
+                <OpponentTurnIndicator playerName={activePlayerName} />
+              )}
+            </div>
+          </CSSTransition>
+        </>
+      )}
+
       <PhaserGame
         game={game}
         selectedSpellId={selectedSpellId}
