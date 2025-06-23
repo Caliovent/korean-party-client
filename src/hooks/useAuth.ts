@@ -2,11 +2,25 @@ import { useState, useEffect } from 'react';
 import { auth } from '../firebaseConfig'; // Assuming firebaseConfig is correctly set up
 import type { User } from 'firebase/auth';
 
+// Statistics structure
+export interface PlayerStats {
+  gamesPlayed: number;
+  // gamesWon: number; // gamesWon can be inferred or specifically tracked
+  spellsCast: number;
+  manaSpent: number;
+  duelsWon: number;
+  questsCompleted: number;
+  runesReviewed: number; // From SRS reviews
+  // Potentially add more specific stats like wordsLearnedByCategory, etc.
+}
+
 // Placeholder for user profile data structure
 // In a real app, this would likely come from Firestore (e.g., a 'users' collection
 // where each document has a 'guildId' field) or from Firebase Auth custom claims.
 interface UserProfile extends User {
   guildId?: string | null; // Stores the ID of the guild the user belongs to, if any.
+  stats?: PlayerStats; // Player statistics
+  unlockedAchievements?: string[]; // Array of achievement IDs
 }
 
 /**
@@ -67,6 +81,16 @@ export const useAuth = () => {
           // To test guild creation, set guildId to null initially:
           // guildId: null,
           guildId: 'some-existing-guild-id', // To test user already in a guild
+          // Mock initial stats and achievements
+          stats: {
+            gamesPlayed: 5,
+            spellsCast: 120,
+            manaSpent: 450,
+            duelsWon: 2,
+            questsCompleted: 3,
+            runesReviewed: 50,
+          },
+          unlockedAchievements: ['ACH_FIRST_SPELL_CAST'], // Example achievement
         };
         setUser(mockUserProfile);
         setLoading(false); // Mock sets loading false here
