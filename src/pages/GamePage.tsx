@@ -213,21 +213,23 @@ const GamePage: React.FC = () => {
       <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
       <PlayerHUD player={currentPlayer} />
       {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
-        <Spellbook
-          player={currentPlayer}
-          selectedSpellId={selectedSpellId}
-          onSelectSpell={handleSelectSpell}
-          isCastingSpell={isCastingSpell}
-          castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
-          isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
-        />
+        <>
+          <Spellbook
+            player={currentPlayer}
+            selectedSpellId={selectedSpellId}
+            onSelectSpell={handleSelectSpell}
+            isCastingSpell={isCastingSpell}
+            castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+            isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
+          />
+          <GameControls game={game} />
+        </>
       )}
       <PhaserGame
         game={game}
         selectedSpellId={selectedSpellId}
         onTargetSelected={handleTargetSelected}
       />
-      <GameControls game={game} />
     </div>
   );
 };
