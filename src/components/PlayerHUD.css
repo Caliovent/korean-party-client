@@ -1,26 +1,28 @@
 /* src/components/PlayerHUD.css */
 
+/* Default styles (Desktop) */
 .player-hud {
   position: absolute;
   bottom: calc(var(--spacing-unit) * 4); /* 20px */
   left: calc(var(--spacing-unit) * 4); /* 20px */
-  background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 70%, transparent); /* rgba(0,0,0,0.7) */
-  color: var(--game-primary-text); /* white */
+  background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 70%, transparent);
+  color: var(--game-primary-text);
   padding: calc(var(--spacing-unit) * 3); /* 15px */
   border-radius: var(--border-radius-lg); /* 10px */
-  border: 2px solid var(--game-accent-color); /* #a445ed */
-  font-family: var(--font-family-sans-serif); /* Arial */
+  border: 2px solid var(--game-accent-color);
+  font-family: var(--font-family-sans-serif);
   z-index: 100;
-  min-width: 250px; /* Keep min-width */
+  min-width: 250px;
   box-shadow: var(--box-shadow-lg);
+  transition: all 0.3s ease-in-out; /* For smooth transitions if properties change */
 }
 
 .player-hud h3 {
   margin-top: 0;
-  color: var(--accent-color); /* #ffc107 */
-  border-bottom: 1px solid var(--accent-color); /* #ffc107 */
+  color: var(--accent-color);
+  border-bottom: 1px solid var(--accent-color);
   padding-bottom: var(--spacing-unit); /* 5px */
-  font-size: var(--font-size-lg); /* Ensure consistent heading sizes */
+  font-size: var(--font-size-lg);
 }
 
 .player-hud ul {
@@ -34,55 +36,159 @@
   font-size: var(--font-size-sm);
 }
 
-.hud-mana {
-  /* hud-mana itself doesn't need position:relative if mana-display-container handles it */
-}
-
 .mana-display-container {
-  position: relative; /* Crucial for positioning floating texts */
-  display: inline-block; /* Or block, centers the floating text if p is centered */
-  text-align: center; /* Ensure p content is centered for floating text alignment */
+  position: relative;
+  display: inline-block;
+  text-align: center;
 }
 
-.hud-mana p { /* Styling for the mana value itself */
-    font-size: 1.8em; /* Keep larger or use var(--font-size-xl) or similar */
-    font-weight: bold;
-    color: var(--primary-color); /* #4dd0e1, using standard primary (blue) for mana */
-    text-align: center;
-    margin: var(--spacing-unit) 0; /* 5px */
+.hud-mana p {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-align: center;
+  margin: var(--spacing-unit) 0; /* 5px */
 }
 
 .floating-text {
   position: absolute;
   left: 50%;
-  /* transform: translateX(-50%); Will be part of the animation */
-  font-size: var(--font-size-lg); /* Larger font for impact */
+  font-size: var(--font-size-lg);
   font-weight: bold;
-  opacity: 0; /* Start transparent, animation handles fade in */
+  opacity: 0;
   animation: floatAndFade 2s ease-out forwards;
-  pointer-events: none; /* So they don't interfere with clicks */
-  white-space: nowrap; /* Prevent text from wrapping */
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .floating-text.gain {
-  color: var(--success-color); /* Green for gains */
+  color: var(--success-color);
 }
 
 .floating-text.loss {
-  color: var(--error-color); /* Red for losses */
+  color: var(--error-color);
 }
 
 @keyframes floatAndFade {
   0% {
     opacity: 1;
-    transform: translate(-50%, 0); /* Start at original position (adjusted by 'top' style) */
+    transform: translate(-50%, 0);
   }
-  20% { /* Stay visible for a bit longer */
+  20% {
     opacity: 1;
     transform: translate(-50%, -10px);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -70px); /* Float upwards by total 70px (additional 60 from the 20% mark) */
+    transform: translate(-50%, -70px);
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .player-hud { /* Base for mobile, will be overridden by compact/expanded */
+    min-width: auto; /* Override desktop min-width */
+    width: 100%;
+    left: 0;
+    bottom: auto; /* Remove bottom positioning */
+    top: 0; /* Position at the top */
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); /* Rounded corners at bottom */
+    border-width: 0 2px 2px 2px; /* Adjust border for top placement */
+    box-shadow: var(--box-shadow-md); /* Slightly smaller shadow for mobile */
+  }
+
+  .player-hud.mobile-compact-view {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: var(--spacing-unit); /* 5px, smaller padding for compact view */
+    height: auto; /* Adjust height as needed, or let content define it */
+    cursor: pointer;
+    background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 85%, transparent); /* Slightly more opaque */
+  }
+
+  .player-hud.mobile-compact-view .hud-item {
+    margin: 0 var(--spacing-unit); /* 5px */
+    font-size: var(--font-size-xs); /* Smaller font for compact items */
+  }
+
+  .player-hud.mobile-compact-view h3,
+  .player-hud.mobile-compact-view ul,
+  .player-hud.mobile-compact-view .hud-player-info p:not(:first-child), /* Hide extra player info */
+  .player-hud.mobile-compact-view .mana-display-container .floating-text, /* Hide floating text in compact */
+  .player-hud.mobile-compact-view .hud-grimoires li { /* Hide grimoire details */
+    display: none;
+  }
+
+  .player-hud.mobile-compact-view .hud-player-name-compact span,
+  .player-hud.mobile-compact-view .hud-mana-compact span,
+  .player-hud.mobile-compact-view .hud-grimoires-count-compact span {
+    font-size: var(--font-size-sm); /* Readable size for key info */
+    color: var(--game-primary-text);
+  }
+   .player-hud.mobile-compact-view .hud-mana-compact .mana-display-container p { /* Mana value in compact */
+    font-size: var(--font-size-sm); /* Smaller mana value */
+    margin: 0;
+  }
+
+
+  .player-hud.mobile-expanded-view {
+    position: fixed; /* Overlay the whole screen */
+    top: 0;
+    left: 0;
+    width: 100vw; /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+    padding: calc(var(--spacing-unit) * 4); /* 20px, more padding for expanded view */
+    border-radius: 0; /* No border radius for full screen */
+    border-width: 0; /* No border for full screen */
+    background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 95%, transparent); /* Even more opaque */
+    z-index: 1000; /* Ensure it's above other elements */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content */
+    justify-content: flex-start; /* Align to top */
+    box-sizing: border-box;
+  }
+
+  .player-hud.mobile-expanded-view .hud-header-mobile {
+    width: 100%;
+    text-align: center;
+    padding: var(--spacing-unit) 0 calc(var(--spacing-unit) * 3); /* 15px bottom padding */
+    cursor: pointer;
+    color: var(--accent-color);
+    font-size: var(--font-size-md);
+    border-bottom: 1px solid var(--accent-color);
+    margin-bottom: var(--spacing-unit) * 2;
+  }
+
+  .player-hud.mobile-expanded-view .hud-header-mobile h4 {
+    margin: 0;
+  }
+
+  .player-hud.mobile-expanded-view .hud-item {
+    width: 90%; /* Limit width of items within the full screen view */
+    margin-bottom: calc(var(--spacing-unit) * 3); /* 15px */
+  }
+
+  .player-hud.mobile-expanded-view h3 {
+    font-size: var(--font-size-xl); /* Larger headings for expanded mobile */
+  }
+  .player-hud.mobile-expanded-view li,
+  .player-hud.mobile-expanded-view p {
+    font-size: var(--font-size-md); /* Larger text for readability */
+  }
+
+  .player-hud.mobile-expanded-view .hud-mana p { /* Mana value in expanded mobile */
+    font-size: 2em; /* Larger mana value */
+  }
+
+  /* Hide desktop-specific elements or restructure if necessary */
+  .player-hud.mobile-expanded-view .hud-player-info,
+  .player-hud.mobile-expanded-view .hud-mana,
+  .player-hud.mobile-expanded-view .hud-grimoires {
+    background-color: color-mix(in srgb, var(--game-primary-bg, #2a2a2a) 80%, transparent);
+    padding: var(--spacing-unit) * 2;
+    border-radius: var(--border-radius-md);
   }
 }
