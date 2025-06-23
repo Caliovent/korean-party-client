@@ -1,0 +1,16 @@
+.opponent-turn-indicator {
+  position: absolute;
+  bottom: calc(var(--spacing-unit) * 4); /* 20px, same as GameControls */
+  right: calc(var(--spacing-unit) * 4); /* 20px, same as GameControls */
+  background-color: color-mix(in srgb, var(--game-dark-bg, #1c1c1c) 70%, transparent); /* Dark, slightly transparent, same as GameControls */
+  padding: calc(var(--spacing-unit) * 3); /* 15px -> 24px, same as GameControls */
+  border-radius: var(--border-radius-lg); /* 10px -> 8px, same as GameControls */
+  border: 2px solid var(--game-accent-color); /* Use game's accent, same as GameControls */
+  z-index: 100; /* Same as GameControls */
+  color: var(--game-primary-text); /* white -> game's primary text, same as GameControls */
+  min-width: 200px; /* Same as GameControls */
+  text-align: center; /* Same as GameControls */
+  box-shadow: var(--box-shadow-lg); /* Same as GameControls */
+  font-size: var(--font-size-base); /* Consistent font size */
+  font-style: italic; /* To differentiate from active controls */
+}
