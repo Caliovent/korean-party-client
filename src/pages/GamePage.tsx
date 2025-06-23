@@ -16,6 +16,7 @@ import Spellbook from "../components/Spellbook";
 // import type { SpellId } from '../data/spells'; // Importer le type SpellId - Already imported above
 import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
 import EventCardModal from '../components/EventCardModal'; // Import the modal
+import OpponentTurnIndicator from '../components/OpponentTurnIndicator'; // Import OpponentTurnIndicator
 
 
 const GamePage: React.FC = () => {
@@ -205,6 +206,8 @@ const GamePage: React.FC = () => {
   }
 
   const isMyTurn = user ? game.currentPlayerId === user.uid : false;
+  const activePlayer = game.players.find(p => p.id === game.currentPlayerId);
+  const activePlayerName = activePlayer ? activePlayer.name : 'Adversaire inconnu';
 
 
   // Le rendu normal du jeu si la partie n'est pas terminée
@@ -213,21 +216,26 @@ const GamePage: React.FC = () => {
       <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
       <PlayerHUD player={currentPlayer} />
       {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
-        <Spellbook
-          player={currentPlayer}
-          selectedSpellId={selectedSpellId}
-          onSelectSpell={handleSelectSpell}
-          isCastingSpell={isCastingSpell}
-          castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
-          isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
-        />
+        <>
+          <Spellbook
+            player={currentPlayer}
+            selectedSpellId={selectedSpellId}
+            onSelectSpell={handleSelectSpell}
+            isCastingSpell={isCastingSpell}
+            castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+            isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
+          />
+          <GameControls game={game} />
+        </>
+      )}
+      {!isMyTurn && game.status === 'playing' && (
+        <OpponentTurnIndicator playerName={activePlayerName} />
       )}
       <PhaserGame
         game={game}
         selectedSpellId={selectedSpellId}
         onTargetSelected={handleTargetSelected}
       />
-      <GameControls game={game} />
     </div>
   );
 };
