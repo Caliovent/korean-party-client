@@ -6,6 +6,7 @@ import GameLobbyModal from '../components/GameLobbyModal';
 import GuildManagementModal from '../components/GuildManagementModal';
 import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
 import DailyChallengeModal from '../components/DailyChallengeModal'; // Importer la modale du défi quotidien
+import ShopModal from '../components/ShopModal'; // Importer la modale de la boutique
 import soundService from '../services/soundService';
 import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
 
@@ -17,6 +18,7 @@ const HubPage: React.FC = () => {
   const [isGuildModalOpen, setIsGuildModalOpen] = useState(false);
   const [isQuestLogModalOpen, setIsQuestLogModalOpen] = useState(false); // État pour le modal de quêtes
   const [isDailyChallengeModalOpen, setIsDailyChallengeModalOpen] = useState(false);
+  const [isShopModalOpen, setIsShopModalOpen] = useState(false); // État pour la modale de la boutique
   const [currentChallenge, setCurrentChallenge] = useState({
     title: "Défi de l'Interprète",
     objective: "Atteignez un combo de 15 dans le Défi de l'Interprète",
@@ -64,6 +66,11 @@ const HubPage: React.FC = () => {
         soundService.playSound('ui_modal_open');
         setIsDailyChallengeModalOpen(true);
       });
+      // Listener for Phaser scene to open shop modal
+      phaserGameRef.current.events.on('openShopModal', () => {
+        soundService.playSound('ui_modal_open'); // Utiliser un son générique pour l'ouverture de modale
+        setIsShopModalOpen(true);
+      });
     }
 
     return () => {
@@ -71,6 +78,7 @@ const HubPage: React.FC = () => {
         phaserGameRef.current.events.off('openGameLobbyModal');
         phaserGameRef.current.events.off('openGuildManagementModal'); // Clean up guild listener
         phaserGameRef.current.events.off('openDailyChallengeModal'); // Clean up daily challenge listener
+        phaserGameRef.current.events.off('openShopModal'); // Clean up shop listener
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
       }
@@ -119,6 +127,13 @@ const HubPage: React.FC = () => {
       <QuestLogModal
         isOpen={isQuestLogModalOpen}
         onClose={() => setIsQuestLogModalOpen(false)}
+      />
+      <ShopModal
+        isOpen={isShopModalOpen}
+        onClose={() => {
+          soundService.playSound('ui_modal_close'); // Utiliser un son générique pour la fermeture
+          setIsShopModalOpen(false);
+        }}
       />
       <DailyChallengeModal
         isOpen={isDailyChallengeModalOpen}

@@ -59,6 +59,7 @@ export default class HubScene extends Phaser.Scene {
     this.load.image("game_portal", "assets/game_portal.jpeg"); // Placeholder for portal/NPC
     this.load.image("guild_panel", "assets/guild_panel.jpeg"); // Placeholder for guild panel
     this.load.image("daily_challenge_board", "assets/game_portal.jpeg"); // Placeholder for daily challenge board (using game_portal asset for now)
+    this.load.image("shop_sign", "assets/game_portal.jpeg"); // Placeholder for shop sign (using game_portal asset for now)
     this.load.image("transparent", "assets/effects/transparent.png");
   }
 
@@ -187,18 +188,36 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openDailyChallengeModal");
     });
 
+    // Add Shop Sign (Maître Kim's Shop)
+    const shopSign = this.triggerZones.create(
+      this.cameras.main.width / 2 + 150, // Example position
+      this.cameras.main.height - 100, // Example position (bottom-ish)
+      "shop_sign"
+    )
+    .setScale(0.1) // Adjust scale as needed
+    .setInteractive()
+    .refreshBody();
 
-    // Add overlap physics for guildPanel
+    shopSign.on("pointerdown", () => {
+      console.log("Shop sign clicked");
+      this.game.events.emit("openShopModal");
+    });
+
+    // Add overlap physics for guildPanel (example, if you want overlap for it too)
+    // For now, let's keep it consistent with click for all new elements for simplicity
+    // If overlap is desired for the shop, it can be added similarly:
+    /*
     this.physics.add.overlap(
       this.player!,
-      guildPanel,
+      shopSign,
       () => {
-        console.log("Player is overlapping with guild panel");
-        this.game.events.emit("openGuildManagementModal");
+        console.log("Player is overlapping with shop sign");
+        this.game.events.emit("openShopModal");
       },
       undefined,
-      this,
+      this
     );
+    */
 
     // Handle scene shutdown to remove player from Firestore
     this.events.on("shutdown", this.shutdown, this);
