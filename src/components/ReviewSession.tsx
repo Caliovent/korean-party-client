@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import type { SpellMasteryData } from '../types/game'; // Ensure this path is correct
-import { functions } from '../firebaseConfig'; // Assuming 'functions' is exported from firebaseConfig
+import React, { useState, useEffect } from 'react';
+import type { SpellMasteryData } from '../types/game';
+import { functions } from '../firebaseConfig';
 import { httpsCallable } from 'firebase/functions';
 import './ReviewSession.css';
+import { addToSyncQueue } from '../services/dbService'; // Import addToSyncQueue
+import { useAuth } from '../hooks/useAuth'; // Import useAuth to get current user ID
+import { useToasts } from '../contexts/ToastContext'; // Import useToasts
 
 interface ReviewSessionProps {
   reviewItems: SpellMasteryData[];
@@ -12,29 +15,73 @@ interface ReviewSessionProps {
 const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd }) => {
   const [currentItemIndex, setCurrentItemIndex] = useState<number>(0);
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const { user } = useAuth(); // Get user for user.uid
+  const { addToast } = useToasts();
 
-  // It's good practice to ensure functions is initialized before using it.
-  // Depending on your firebaseConfig setup, it might already be initialized.
-  // If not, you might need: const functions = getFunctions(app); or similar.
-  const updateReviewItem = httpsCallable(functions, 'updateReviewItem');
+  const updateReviewItemCallable = httpsCallable(functions, 'updateReviewItem');
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const currentItem = reviewItems[currentItemIndex];
 
   const handleResponse = async (isCorrect: boolean) => {
-    if (!currentItem) return; // Should not happen if component is rendered
+    if (!currentItem || !user) {
+      addToast({ type: 'error', message: 'Erreur: Item ou utilisateur non défini.' });
+      return;
+    }
 
     // DEV NOTE: Trigger sound effect here: playSound('review-response')
     console.log(`Response for ${currentItem.spellId}: ${isCorrect ? 'Correct' : 'Incorrect'}`);
 
-    try {
-      await updateReviewItem({
-        itemId: currentItem.spellId, // Assuming 'spellId' is the correct ID for the backend
-        isCorrect
-      });
-      console.log(`Review item ${currentItem.spellId} updated.`);
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour de l'item:", error);
-      // Optionally, provide user feedback here
+    if (isOffline) {
+      console.log(`Mode hors-ligne: Ajout de la réponse pour ${currentItem.spellId} à la file de synchronisation.`);
+      try {
+        await addToSyncQueue({
+          itemId: currentItem.spellId,
+          isCorrect,
+          userId: user.uid, // Pass userId
+        });
+        addToast({ type: 'info', message: `Progrès sauvegardé localement pour ${currentItem.word || currentItem.spellId}.` });
+      } catch (error) {
+        console.error("Erreur lors de l'ajout à la file de synchronisation:", error);
+        addToast({ type: 'error', message: "Échec de la sauvegarde locale du progrès." });
+      }
+    } else {
+      console.log(`Mode en ligne: Mise à jour de ${currentItem.spellId} sur le serveur.`);
+      try {
+        await updateReviewItemCallable({
+          itemId: currentItem.spellId,
+          isCorrect
+        });
+        console.log(`Review item ${currentItem.spellId} updated on server.`);
+        addToast({ type: 'success', message: `Progrès synchronisé pour ${currentItem.word || currentItem.spellId}.` });
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour de l'item (en ligne):", error);
+        addToast({ type: 'warning', message: `Échec de la synchronisation pour ${currentItem.word || currentItem.spellId}. Sauvegardé localement.` });
+        // Fallback: add to sync queue if online update fails
+        try {
+          await addToSyncQueue({
+            itemId: currentItem.spellId,
+            isCorrect,
+            userId: user.uid,
+          });
+        } catch (syncError) {
+          console.error("Erreur lors de l'ajout à la file de synchronisation (fallback):", syncError);
+          addToast({ type: 'error', message: "Échec critique: Impossible de sauvegarder le progrès." });
+        }
+      }
     }
 
     setIsRevealed(false);

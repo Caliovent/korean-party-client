@@ -1,27 +1,99 @@
-import { useEffect, useState, useRef } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'; // + useNavigate
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
 import Phaser from 'phaser';
-import GuildManagementModal from './components/GuildManagementModal'; // Import the modal
-import { game } from './phaser/game'; // Assuming 'game' is your Phaser game instance
-import { auth } from './firebaseConfig';
+import GuildManagementModal from './components/GuildManagementModal';
+import { game } from './phaser/game';
+import { auth, functions } from './firebaseConfig'; // Import functions
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions'; // Import httpsCallable
 import './App.css';
-import ToastContainer from './components/ToastNotification'; // Import ToastContainer
-import { useToasts } from './contexts/ToastContext'; // Import useToasts
-import soundService, { SOUND_DEFINITIONS } from './services/soundService'; // Adjust path if needed
+import ToastContainer from './components/ToastNotification';
+import { useToasts } from './contexts/ToastContext';
+import soundService, { SOUND_DEFINITIONS } from './services/soundService';
+import { getSyncQueueItems, deleteFromSyncQueue, SyncQueueItem } from './services/dbService'; // Import IndexedDB sync functions
 
 function App() {
   const { t, i18n } = useTranslation();
-  const { toasts, dismissToast } = useToasts(); // Get toasts and dismiss function
+  const { toasts, dismissToast, addToast } = useToasts(); // addToast from useToasts
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGuildModalOpen, setIsGuildModalOpen] = useState(false); // State for modal visibility
-  const location = useLocation(); // Hook pour obtenir la page actuelle
-  const navigate = useNavigate(); // + useNavigate
-  const gameInstanceRef = useRef<Phaser.Game | null>(null); // Ref to hold the game instance
+  const [isGuildModalOpen, setIsGuildModalOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const gameInstanceRef = useRef<Phaser.Game | null>(null);
   const mainNodeRef = useRef<HTMLElement>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Define updateReviewItemCallable here as it's used by the sync service
+  const updateReviewItemCallable = httpsCallable(functions, 'updateReviewItem');
+
+  const processSyncQueue = useCallback(async (currentUser: User) => {
+    if (!currentUser || !currentUser.uid) {
+      console.log("Sync: User not available, skipping queue processing.");
+      return;
+    }
+    if (isSyncing) {
+      console.log("Sync: Already in progress, skipping.");
+      return;
+    }
+    if (!navigator.onLine) {
+      console.log("Sync: Offline, skipping queue processing.");
+      return;
+    }
+
+    setIsSyncing(true);
+    addToast({ type: 'info', message: 'Synchronisation du progrès hors-ligne en cours...' });
+    console.log(`Sync: Processing sync queue for user ${currentUser.uid}`);
+
+    try {
+      const itemsToSync = await getSyncQueueItems(currentUser.uid);
+      if (itemsToSync.length === 0) {
+        console.log("Sync: Queue is empty.");
+        addToast({ type: 'info', message: 'Aucun progrès local à synchroniser.' });
+        setIsSyncing(false);
+        return;
+      }
+
+      console.log(`Sync: Found ${itemsToSync.length} items to sync.`);
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (const item of itemsToSync) {
+        try {
+          await updateReviewItemCallable({ itemId: item.itemId, isCorrect: item.isCorrect });
+          await deleteFromSyncQueue(item.id!); // id will be defined for items from DB
+          successCount++;
+          console.log(`Sync: Item ${item.itemId} (ID: ${item.id}) synced and removed from queue.`);
+        } catch (error) {
+          failureCount++;
+          console.error(`Sync: Failed to sync item ${item.itemId} (ID: ${item.id}). Error:`, error);
+          // Item remains in queue for next attempt
+        }
+      }
+
+      if (successCount > 0) {
+        addToast({ type: 'success', message: `${successCount} élément(s) de progrès synchronisé(s) avec succès.` });
+      }
+      if (failureCount > 0) {
+        addToast({ type: 'warning', message: `${failureCount} élément(s) n'ont pas pu être synchronisés. Ils seront réessayés plus tard.` });
+      } else if (successCount === 0 && failureCount === 0 && itemsToSync.length > 0) {
+        // This case should ideally not happen if itemsToSync.length > 0
+        addToast({ type: 'info', message: 'File de synchronisation traitée, aucun changement majeur.' });
+      }
+       // TODO: Consider triggering a refresh of runesToReviewCount in GrimoireVivant
+       // This might require a global state or event bus, or simply rely on the next Firestore snapshot.
+
+    } catch (error) {
+      console.error("Sync: Error processing sync queue:", error);
+      addToast({ type: 'error', message: 'Erreur majeure lors de la synchronisation du progrès local.' });
+    } finally {
+      setIsSyncing(false);
+      console.log("Sync: Queue processing finished.");
+    }
+  }, [addToast, updateReviewItemCallable, isSyncing]); // Added updateReviewItemCallable and isSyncing
+
 
   useEffect(() => {
     // Initialize Phaser game instance
@@ -40,27 +112,48 @@ function App() {
       currentGameInstance.events.on('openGuildManagementModal', handleOpenGuildModal);
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
       if (currentUser && !currentUser.isAnonymous) {
         if (location.pathname === '/' || location.pathname === '/login') {
           navigate('/hub');
         }
+        // Attempt to sync when user logs in and is online
+        if (navigator.onLine) {
+          processSyncQueue(currentUser);
+        }
       } else if (currentUser && currentUser.isAnonymous) {
+        // Handle anonymous user login, typically no user-specific data to sync from a previous session
         if (location.pathname === '/' || location.pathname === '/login') {
           navigate('/hub');
         }
       }
     });
 
+    // Listen for online event to trigger sync
+    const handleOnline = () => {
+      addToast({ type: 'info', message: 'Connexion internet rétablie.' });
+      if (user && !user.isAnonymous) { // Ensure user is logged in
+        processSyncQueue(user);
+      }
+    };
+    const handleOffline = () => {
+      addToast({ type: 'warning', message: 'Connexion internet perdue. Le progrès sera sauvegardé localement.' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
-      unsubscribe();
+      unsubscribeAuth();
       if (currentGameInstance) {
         currentGameInstance.events.off('openGuildManagementModal', handleOpenGuildModal);
       }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, processSyncQueue, user, addToast]); // Added processSyncQueue, user, addToast
 
   useEffect(() => {
     // Preload all sounds
