@@ -7,6 +7,7 @@ import GuildManagementModal from '../components/GuildManagementModal';
 import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
 import DailyChallengeModal from '../components/DailyChallengeModal'; // Importer la modale du défi quotidien
 import ShopModal from '../components/ShopModal'; // Importer la modale de la boutique
+import StreakIndicator from '../components/StreakIndicator'; // Importer le StreakIndicator
 import soundService from '../services/soundService';
 import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
 
@@ -99,6 +100,11 @@ const HubPage: React.FC = () => {
 
   return (
     <div className="hub-page-container" style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Indicateur de Série */}
+      <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 100 }}>
+        <StreakIndicator streakCount={5} nextReward="💎 x10" />
+      </div>
+
       {/* Bouton pour ouvrir le journal de quêtes */}
       <button
         onClick={() => setIsQuestLogModalOpen(true)}
