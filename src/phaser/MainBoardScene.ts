@@ -323,6 +323,42 @@ export default class MainBoardScene extends Phaser.Scene {
     const oldState = this.gameState;
     this.gameState = newState;
 
+    // --- Gestion du changement de joueur pour le zoom et pan ---
+    if (oldState && oldState.currentPlayerId !== newState.currentPlayerId && newState.currentPlayerId) {
+      const newPlayerSprite = this.playerSprites[newState.currentPlayerId];
+
+      if (newPlayerSprite) {
+        console.log(`[Phaser] Player changed from ${oldState.currentPlayerId} to ${newState.currentPlayerId}.`);
+
+        // Étape 1: Zoom Out pour revenir à la vue d'ensemble
+        this.cameras.main.zoomTo(1, 1000, 'Power2', false, (cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+          if (progress === 1) { // Ensure zoom out is complete
+            console.log('[Phaser] Zoom out complete. Now zooming in on new player.');
+            // Étape 2: Zoom In et Pan sur le nouveau joueur
+            this.cameras.main.zoomTo(1.8, 1000, 'Power2');
+            this.cameras.main.pan(newPlayerSprite.x, newPlayerSprite.y, 1000, 'Power2');
+          }
+        });
+      } else {
+        console.warn(`[Phaser] New current player ${newState.currentPlayerId} has no sprite for camera focus.`);
+        // Si le nouveau joueur n'a pas de sprite, on s'assure au moins de revenir à une vue d'ensemble.
+        // Cela peut arriver si le sprite n'est pas encore initialisé, bien que cela soit peu probable avec la logique actuelle.
+        this.cameras.main.zoomTo(1, 1000, 'Power2');
+      }
+    } else if (!oldState && newState.currentPlayerId) {
+      // Cas du tout premier joueur au début de la partie (pas de oldState.currentPlayerId)
+      // On veut quand même zoomer sur ce premier joueur.
+      const newPlayerSprite = this.playerSprites[newState.currentPlayerId];
+      if (newPlayerSprite) {
+        console.log(`[Phaser] First player ${newState.currentPlayerId}. Zooming in.`);
+        this.cameras.main.zoomTo(1.8, 1000, 'Power2');
+        this.cameras.main.pan(newPlayerSprite.x, newPlayerSprite.y, 1000, 'Power2');
+      } else {
+        console.warn(`[Phaser] First current player ${newState.currentPlayerId} has no sprite for camera focus.`);
+      }
+    }
+    // --- Fin de la gestion du changement de joueur ---
+
     if (!this.boardIsDrawn && this.gameState.players && this.gameState.players.length > 0 && this.gameState.board) {
       console.log('[Phaser] Drawing board for the first time.');
       this.drawBoard(this.gameState.board); // Pass the board layout
