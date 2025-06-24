@@ -58,6 +58,7 @@ export default class HubScene extends Phaser.Scene {
     this.load.image("other_player_avatar", "assets/player_32.png"); // Can be a different asset or tinted
     this.load.image("game_portal", "assets/game_portal.jpeg"); // Placeholder for portal/NPC
     this.load.image("guild_panel", "assets/guild_panel.jpeg"); // Placeholder for guild panel
+    this.load.image("daily_challenge_board", "assets/game_portal.jpeg"); // Placeholder for daily challenge board (using game_portal asset for now)
     this.load.image("transparent", "assets/effects/transparent.png");
   }
 
@@ -170,6 +171,21 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openGuildManagementModal");
     });
 
+    // Add Daily Challenge Board
+    const dailyChallengeBoard = this.triggerZones
+      .create(
+        this.cameras.main.width / 2, // Centered horizontally
+        100, // Positioned towards the top
+        "daily_challenge_board",
+      )
+      .setScale(0.1) // Adjust scale as needed
+      .setInteractive()
+      .refreshBody();
+
+    dailyChallengeBoard.on("pointerdown", () => {
+      console.log("Daily challenge board clicked");
+      this.game.events.emit("openDailyChallengeModal");
+    });
 
 
     // Add overlap physics for guildPanel

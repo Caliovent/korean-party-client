@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import HubScene from '../phaser/HubScene';
+import HangeulTyphoonScene from '../phaser/HangeulTyphoonScene'; // Importer la scène de jeu
 import GameLobbyModal from '../components/GameLobbyModal';
 import GuildManagementModal from '../components/GuildManagementModal';
 import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
+import DailyChallengeModal from '../components/DailyChallengeModal'; // Importer la modale du défi quotidien
 import soundService from '../services/soundService';
 import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
 
@@ -14,6 +16,14 @@ const HubPage: React.FC = () => {
   const [isGameLobbyModalOpen, setIsGameLobbyModalOpen] = useState(false);
   const [isGuildModalOpen, setIsGuildModalOpen] = useState(false);
   const [isQuestLogModalOpen, setIsQuestLogModalOpen] = useState(false); // État pour le modal de quêtes
+  const [isDailyChallengeModalOpen, setIsDailyChallengeModalOpen] = useState(false);
+  const [currentChallenge, setCurrentChallenge] = useState({
+    title: "Défi de l'Interprète",
+    objective: "Atteignez un combo de 15 dans le Défi de l'Interprète",
+    reward: "50 Mana + 1 Potion de Clarté",
+    sceneKey: 'HangeulTyphoonScene', // Exemple de clé de scène
+    challengeParams: { gameMode: 'defiDeLInterprete', challengeType: 'combo', challengeTarget: 15 } // Paramètres du défi
+  });
 
   useEffect(() => {
     if (gameRef.current && !phaserGameRef.current) {
@@ -29,7 +39,7 @@ const HubPage: React.FC = () => {
           width: '100%',
           height: '100%'
         },
-        scene: [HubScene], // Add HubScene here
+        scene: [HubScene, HangeulTyphoonScene], // Add HubScene and HangeulTyphoonScene
         physics: {
           default: 'arcade',
           arcade: {
@@ -48,12 +58,19 @@ const HubPage: React.FC = () => {
       phaserGameRef.current.events.on('openGuildManagementModal', () => {
         setIsGuildModalOpen(true);
       });
+      // Listener for Phaser scene to open daily challenge modal
+      phaserGameRef.current.events.on('openDailyChallengeModal', () => {
+        // TODO: Potentiellement charger les détails du défi ici si nécessaire
+        soundService.playSound('ui_modal_open');
+        setIsDailyChallengeModalOpen(true);
+      });
     }
 
     return () => {
       if (phaserGameRef.current) {
         phaserGameRef.current.events.off('openGameLobbyModal');
         phaserGameRef.current.events.off('openGuildManagementModal'); // Clean up guild listener
+        phaserGameRef.current.events.off('openDailyChallengeModal'); // Clean up daily challenge listener
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
       }
@@ -102,6 +119,43 @@ const HubPage: React.FC = () => {
       <QuestLogModal
         isOpen={isQuestLogModalOpen}
         onClose={() => setIsQuestLogModalOpen(false)}
+      />
+      <DailyChallengeModal
+        isOpen={isDailyChallengeModalOpen}
+        onClose={() => {
+          soundService.playSound('ui_modal_close');
+          setIsDailyChallengeModalOpen(false);
+        }}
+        onLaunch={() => {
+          soundService.playSound('ui_click_match'); // Son pour lancer un défi/match
+          soundService.playSound('ui_click_match'); // Son pour lancer un défi/match
+          setIsDailyChallengeModalOpen(false);
+
+          console.log(`Lancement du défi: ${currentChallenge.title} vers la scène ${currentChallenge.sceneKey} avec params`, currentChallenge.challengeParams);
+
+          if (phaserGameRef.current) {
+            // Arrêter la musique du Hub avant de changer de scène
+            soundService.stopSound('music_hub');
+
+            // Vérifier si la scène Hub est active et l'arrêter
+            if (phaserGameRef.current.scene.isActive('HubScene')) {
+              phaserGameRef.current.scene.stop('HubScene');
+              console.log("HubScene arrêtée.");
+            }
+
+            // Démarrer la scène du défi
+            // Important: Assurez-vous que HangeulTyphoonScene (ou toute autre scène de jeu)
+            // est ajoutée à la configuration du jeu Phaser si ce n'est pas déjà le cas,
+            // sinon getScene échouera et start ne fonctionnera pas comme prévu.
+            // Cela se fait généralement là où `new Phaser.Game(config)` est appelé.
+            // Pour l'instant, on suppose qu'elle est disponible.
+            phaserGameRef.current.scene.start(currentChallenge.sceneKey, currentChallenge.challengeParams);
+            console.log(`Scène ${currentChallenge.sceneKey} démarrée avec les paramètres:`, currentChallenge.challengeParams);
+          } else {
+            console.error("Référence au jeu Phaser non disponible. Impossible de lancer le défi.");
+          }
+        }}
+        challenge={currentChallenge}
       />
     </div>
   );
