@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getGuilds, createGuild, joinGuild, getGuildById, leaveGuild } from '../services/gameService';
-import type { Guild, ListedGuild, CreateGuildData, GuildMember } from '../types/guild'; // Updated imports
+import type { Guild, ListedGuild, CreateGuildData } from '../types/guild'; // Updated imports
 import { useAuth } from '../hooks/useAuth';
 
 interface GuildManagementModalProps {
@@ -139,7 +139,7 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
       if (user && !user.guildId) {
         // In a real scenario, createGuild would return the new guild's ID or full object.
         // For now, we'll assume it returns something like { id: newGuildId } or just succeeds.
-        const result = await createGuild(guildData); // Pass full guildData
+        const result = await createGuild(guildData.name, guildTag); // Pass guildData and tag as required
         setCreateSuccessMessage('Maison créée avec succès !');
 
         // Reset form and switch to join tab or refresh current guild view
@@ -159,9 +159,9 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
       } else {
         setCreateError("User already in a guild or user data not loaded.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating guild:", err);
-      setCreateError(err.message || 'Erreur lors de la création.');
+      setCreateError((err as Error).message || 'Erreur lors de la création.');
     } finally {
       setCreatingGuild(false);
     }
@@ -182,9 +182,9 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
       } else {
         setJoinError("You are already in a guild or user data is not available.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error joining guild:", err);
-      setJoinError(err.message || "Impossible de rejoindre cette maison.");
+      setJoinError((err as Error).message || "Impossible de rejoindre cette maison.");
     } finally {
       setJoiningGuildId(null);
     }
@@ -210,9 +210,9 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
       setCurrentGuildDetails(null);
       setActiveTab('join'); // Go back to join tab after leaving
       fetchGuildsList(); // Refresh list for the "join" view
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error leaving guild:", err);
-      setLeaveGuildError(err.message || "Erreur en quittant la maison.");
+      setLeaveGuildError((err as Error).message || "Erreur en quittant la maison.");
     } finally {
       setIsLeavingGuild(false);
     }

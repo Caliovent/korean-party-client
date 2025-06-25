@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { SpellMasteryData } from '../types/game';
 
 const DB_NAME = 'KoreanPartyDB';
@@ -38,7 +38,7 @@ const initDB = () => {
     return dbPromise;
   }
   dbPromise = openDB<KoreanPartyDBSchema>(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion, newVersion, transaction) {
+    upgrade(db, oldVersion, newVersion) {
       console.log(`Upgrading DB from version ${oldVersion} to ${newVersion}`);
       if (!db.objectStoreNames.contains(REVIEW_ITEMS_STORE)) {
         db.createObjectStore(REVIEW_ITEMS_STORE, { keyPath: 'spellId' });
@@ -71,9 +71,7 @@ export const saveReviewItems = async (items: SpellMasteryData[], userId: string)
   await store.clear(); // Clear old items before saving new ones for the current user context
   const timestamp = Date.now();
   const operations = items.map(item => {
-    // Assurer que nextReviewDate est un nombre si présent
-    const nextReviewDate = item.nextReviewDate instanceof Date ? item.nextReviewDate.getTime() : item.nextReviewDate;
-    return store.put({ ...item, nextReviewDate, timestamp });
+    return store.put({ ...item, timestamp });
   });
   await Promise.all(operations);
   await tx.done;
@@ -90,7 +88,12 @@ export const getStoredReviewItems = async (userId: string): Promise<SpellMastery
   const db = await initDB();
   const items = await db.getAll(REVIEW_ITEMS_STORE);
   console.log(`Retrieved ${items.length} review items from IndexedDB.`);
-  return items.map(({ timestamp, ...item }) => item as SpellMasteryData); // Exclude timestamp
+  return items.map(item => {
+    // Exclude timestamp
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { timestamp, ...rest } = item;
+    return rest as SpellMasteryData;
+  });
 };
 
 
