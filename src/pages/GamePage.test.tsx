@@ -295,20 +295,20 @@ describe('GamePage', () => {
     // 1. Arrange: Initial state check (Player A, 100 Mana)
     // PlayerHUD displays mana. Wait for it to appear with initial mana.
     // 1. Arrange: Initial state check (Player A, 100 Mana)
-    // Wait for the "Mana" heading first. This also confirms PlayerHUD is at least partially rendered.
+    // Wait for the "Mana" heading to ensure PlayerHUD is rendered.
     const manaHeading = await screen.findByRole('heading', { name: /Mana/i, level: 3 });
-    // Then, find the mana value within the PlayerHUD's mana section.
-    const manaSection = manaHeading.closest('.hud-item.hud-mana');
-    expect(manaSection).toBeInTheDocument(); // Ensure the section is found
+    const manaSection = manaHeading.closest('.hud-item.hud-mana'); // This gets <div class="hud-item hud-mana">
+    expect(manaSection).toBeInTheDocument();
 
     if (manaSection) {
-      // Expect "100" to be within this section.
-      // Use waitFor to handle potential async updates to the mana value within the section
-      await vi.waitFor(async () => { // vi.waitFor as it's vitest
-        // Ensure the text "100" is eventually present. findByText is appropriate here.
-        expect(await within(manaSection).findByText(/^100$/)).toBeInTheDocument();
+      // Use waitFor to check the textContent of the specific p tag
+      await vi.waitFor(() => {
+        const manaParagraph = manaSection.querySelector('div.mana-display-container > p');
+        expect(manaParagraph).not.toBeNull();
+        expect(manaParagraph?.textContent).toBe('100');
       });
     } else {
+      // This case should ideally not be reached if findByRole for heading succeeded and DOM is as expected.
       throw new Error("Could not find the mana section in PlayerHUD for initial mana check");
     }
 
@@ -368,19 +368,21 @@ describe('GamePage', () => {
     // expect(mockedCastSpell).toHaveBeenCalledWith('test-game-1', 'PUSH_BACK', 'player-2'); // Example target
 
     // 5. Assert: Vérifier que le PlayerHUD s'est mis à jour
-    // Wait for the text "85" to appear in the document, within the updated mana section.
-    // It's important to use findByText for asynchronous updates.
-    // Re-query the mana section to ensure we're looking at the latest state.
-    const updatedManaHeading = await screen.findByRole('heading', { name: /Mana/i, level: 3 }, { timeout: 3000 });
+    // Wait for the "Mana" heading again to get the updated section.
+    // It's possible the component re-renders, so re-acquiring the section is safer.
+    const updatedManaHeading = await screen.findByRole('heading', { name: /Mana/i, level: 3 });
     const updatedManaSection = updatedManaHeading.closest('.hud-item.hud-mana');
     expect(updatedManaSection).toBeInTheDocument();
 
     if (updatedManaSection) {
-      // Use waitFor to handle potential async updates to the mana value
-      await vi.waitFor(async () => {
-        expect(await within(updatedManaSection).findByText(/^85$/)).toBeInTheDocument(); // Exact match for "85"
+      // Use waitFor to check the textContent of the specific p tag for the updated value
+      await vi.waitFor(() => {
+        const manaParagraph = updatedManaSection.querySelector('div.mana-display-container > p');
+        expect(manaParagraph).not.toBeNull();
+        expect(manaParagraph?.textContent).toBe('85');
       });
     } else {
+      // This case should ideally not be reached.
       throw new Error("Could not find the mana section in PlayerHUD for updated mana check");
     }
   });
