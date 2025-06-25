@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'; // Ajout de useRef
 import { useTranslation } from 'react-i18next';
-import { auth, db, app } from '../firebaseConfig'; // Added app
+import { db, app } from '../firebaseConfig'; // Added app
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from '../hooks/useAuth'; // Import useAuth
 import { getGuildById } from '../services/gameService'; // Import getGuildById
 import GrimoireVivant from '../components/GrimoireVivant'; // Import GrimoireVivant
 import HallOfFame from '../components/HallOfFame'; // Importer HallOfFame
-import { useToast } from '../contexts/ToastContext'; // Importer useToast
+import { useToasts } from '../contexts/ToastContext'; // Importer useToast
 import { getAchievementDefinition } from '../data/achievementDefinitions'; // Importer pour les détails des HF
 import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
@@ -15,7 +15,7 @@ import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
   const { user: authUser, loading: authLoading } = useAuth(); // Use useAuth hook
-  const { addToast } = useToast(); // Hook pour les toasts
+  const { addToast } = useToasts(); // Hook pour les toasts
 
   const previousAchievementsRef = useRef<string[] | undefined>(undefined);
 
@@ -106,13 +106,11 @@ const ProfilePage: React.FC = () => {
           newAchievements.forEach(achId => {
             const definition = getAchievementDefinition(achId);
             if (definition) {
-              addToast({
-                id: `ach_${achId}`,
-                type: 'success',
-                title: t('hall_of_fame.achievement_unlocked_title') || 'Haut Fait Débloqué !',
-                message: t(definition.nameKey),
-                duration: 7000,
-              });
+              addToast(
+                (t('hall_of_fame.achievement_unlocked_title') || 'Haut Fait Débloqué !') + ': ' + t(definition.nameKey),
+                'success',
+                7000
+              );
             }
           });
         }
@@ -148,9 +146,9 @@ const ProfilePage: React.FC = () => {
     try {
       await updateUserProfile({ displayName: newdisplayName });
       setIsEditing(false); // Ferme le formulaire après succès
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur de mise à jour du profil:", err);
-      setError(err.message || "Impossible de mettre à jour le displayName.");
+      setError((err as Error).message || "Impossible de mettre à jour le displayName.");
     }
   };
 

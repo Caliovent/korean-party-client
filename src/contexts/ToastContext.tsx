@@ -1,26 +1,18 @@
 // src/contexts/ToastContext.tsx
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, {  useState, useCallback, type ReactNode, useEffect } from 'react';
 import { type ToastMessage } from '../components/ToastNotification'; // Assuming path is correct
 
-interface ToastContextType {
+export interface ToastContextType {
   addToast: (message: string, type: ToastMessage['type'], duration?: number) => void;
   dismissToast: (id: string) => void;
   toasts: ToastMessage[];
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export const useToasts = (): ToastContextType => { // Explicit return type
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToasts must be used within a ToastProvider');
-  }
-  return context;
-};
-
 interface ToastProviderProps {
   children: ReactNode;
 }
+
+import { ToastContext } from './ToastContext'; // Import from new file
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);

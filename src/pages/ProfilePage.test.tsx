@@ -1,11 +1,11 @@
-import React from 'react';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import ProfilePage from './ProfilePage';
-import { AuthContextType, useAuth } from '../hooks/useAuth'; // Importer le type et le hook
-import { ToastContextType, useToast } from '../contexts/ToastContext'; // Importer le type et le hook
-import { achievementDefinitions, getAchievementDefinition } from '../data/achievementDefinitions';
+import { useAuth } from '../hooks/useAuth'; // Importer le hook uniquement
+import type { ToastContextType } from '../contexts/ToastContext'; // Importer uniquement le type
+import { useToasts } from '../contexts/ToastContext';
+import { getAchievementDefinition } from '../data/achievementDefinitions';
 
 // Mock partiel de useAuth
 vi.mock('../hooks/useAuth', async (importOriginal) => {
@@ -21,7 +21,7 @@ vi.mock('../contexts/ToastContext', async (importOriginal) => {
   const actual = await importOriginal() as { ToastContextType: unknown, useToast: () => Partial<ToastContextType> };
   return {
     ...actual,
-    useToast: vi.fn(), // Mocker la fonction useToast
+    useToasts: vi.fn(), // Mocker la fonction useToast
   };
 });
 
@@ -83,7 +83,7 @@ vi.mock('../services/gameService', () => ({
 
 describe('<ProfilePage /> - Toast Notifications for Achievements', () => {
   let mockUseAuth: ReturnType<typeof vi.fn>;
-  let mockUseToast: ReturnType<typeof vi.fn>;
+  let mockUseToasts: ReturnType<typeof vi.fn>;
   let mockAddToast: ReturnType<typeof vi.fn>;
 
   const initialUserNoAchievements = {
@@ -108,8 +108,8 @@ describe('<ProfilePage /> - Toast Notifications for Achievements', () => {
     vi.clearAllMocks();
 
     mockAddToast = vi.fn();
-    mockUseToast = useToast as ReturnType<typeof vi.fn>;
-    mockUseToast.mockReturnValue({ addToast: mockAddToast, toasts: [] });
+    mockUseToasts = useToasts as ReturnType<typeof vi.fn>;
+    mockUseToasts.mockReturnValue({ addToast: mockAddToast, toasts: [] });
 
     mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
     // Configuration initiale de useAuth
