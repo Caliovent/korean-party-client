@@ -294,13 +294,23 @@ describe('GamePage', () => {
 
     // 1. Arrange: Initial state check (Player A, 100 Mana)
     // PlayerHUD displays mana. Wait for it to appear with initial mana.
-    // The text will be "Mana: 100 / Max: 100" or similar, so we find by part of it.
-    expect(await screen.findByText(/100/)).toBeInTheDocument();
-    // More specific check for mana value if PlayerHUD formats it uniquely
-    // For example, if there's an element with testid 'player-mana'
-    // const manaDisplay = await screen.findByTestId('player-mana');
-    // expect(manaDisplay).toHaveTextContent('100');
-    // For now, a general check for "100" in the document should suffice after PlayerHUD loads.
+    // 1. Arrange: Initial state check (Player A, 100 Mana)
+    // Wait for the "Mana" heading first. This also confirms PlayerHUD is at least partially rendered.
+    const manaHeading = await screen.findByRole('heading', { name: /Mana/i, level: 3 });
+    // Then, find the mana value within the PlayerHUD's mana section.
+    const manaSection = manaHeading.closest('.hud-item.hud-mana');
+    expect(manaSection).toBeInTheDocument(); // Ensure the section is found
+
+    if (manaSection) {
+      // Expect "100" to be within this section.
+      // Use waitFor to handle potential async updates to the mana value within the section
+      await vi.waitFor(async () => { // vi.waitFor as it's vitest
+        // Ensure the text "100" is eventually present. findByText is appropriate here.
+        expect(await within(manaSection).findByText(/^100$/)).toBeInTheDocument();
+      });
+    } else {
+      throw new Error("Could not find the mana section in PlayerHUD for initial mana check");
+    }
 
     // 2. Act 1: Simuler un clic sur le sort "Repousser" (PUSH_BACK)
     // Assuming PUSH_BACK is a targeted spell. Find its definition.
@@ -358,15 +368,21 @@ describe('GamePage', () => {
     // expect(mockedCastSpell).toHaveBeenCalledWith('test-game-1', 'PUSH_BACK', 'player-2'); // Example target
 
     // 5. Assert: Vérifier que le PlayerHUD s'est mis à jour
-    // Wait for the text "85" to appear in the document.
+    // Wait for the text "85" to appear in the document, within the updated mana section.
     // It's important to use findByText for asynchronous updates.
-    const manaElement = await screen.findByText(/85/, {}, { timeout: 3000 });
-    expect(manaElement).toBeInTheDocument();
+    // Re-query the mana section to ensure we're looking at the latest state.
+    const updatedManaHeading = await screen.findByRole('heading', { name: /Mana/i, level: 3 }, { timeout: 3000 });
+    const updatedManaSection = updatedManaHeading.closest('.hud-item.hud-mana');
+    expect(updatedManaSection).toBeInTheDocument();
 
-    // Optional: More specific check if PlayerHUD has a specific structure for mana
-    // e.g., if mana is always displayed as "Mana: VALUE / MAX_VALUE"
-    // const playerHUD = screen.getByTestId('player-hud'); // Assuming PlayerHUD has a testid
-    // expect(within(playerHUD).getByText(/85/)).toBeInTheDocument();
+    if (updatedManaSection) {
+      // Use waitFor to handle potential async updates to the mana value
+      await vi.waitFor(async () => {
+        expect(await within(updatedManaSection).findByText(/^85$/)).toBeInTheDocument(); // Exact match for "85"
+      });
+    } else {
+      throw new Error("Could not find the mana section in PlayerHUD for updated mana check");
+    }
   });
 
   it('Le Tour Passe à un Autre Joueur: les contrôles de jeu se mettent à jour', async () => {
