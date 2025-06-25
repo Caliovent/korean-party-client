@@ -27,7 +27,11 @@
   },
   "spellbook": {
     "title": "Spellbook",
-    "cast_button": "Cast"
+    "cast_button": "Cast",
+    "cancel_button": "Cancel",
+    "casting_button": "Casting...",
+    "targeting_mode_active": "Targeting Mode Active for:",
+    "targeting_button": "Targeting..."
   },
   "spells": {
     "push_back": {
@@ -37,9 +41,32 @@
     "mana_drain": {
       "name": "Mana Drain",
       "description": "Steals 10 Mana points from another player."
+    },
+    "trap_rune": {
+      "name": "Runic Trap",
+      "description": "Places a trap on a tile. The next player to land on it suffers an effect."
+    },
+    "mana_shield": {
+      "name": "Mana Shield",
+      "description": "Surrounds you with a protective barrier that absorbs the next negative spell."
+    },
+    "astral_swap": {
+      "name": "Astral Swap",
+      "description": "Swap positions with another player on the board."
+    },
+    "memory_fog": {
+      "name": "Memory Fog",
+      "description": "Protects you from the next negative spell cast against you."
+    },
+    "karmic_swap": {
+      "name": "Karmic Swap",
+      "description": "Swap your position on the board with another player."
+    },
+    "dokkaebi_mischief": {
+      "name": "Dokkaebi's Mischief",
+      "description": "Place an invisible trap on a tile. The next player to stop there loses 15 Mana."
     }
   },
-  "cancel_button": "Cancel",
   "victory": {
     "title": "Victory!",
     "announcement": "Congratulations to",

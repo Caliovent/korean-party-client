@@ -348,6 +348,12 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
             ) : (
               <p>Cette maison n'a pas encore de membres (cela ne devrait pas arriver si le compteur est > 0).</p>
             )}
+
+            {/* Espace réservé pour le futur tableau d'affichage */}
+            <div className="guild-notice-board-placeholder" style={{ marginTop: 'var(--spacing-unit)', marginBottom: 'var(--spacing-unit)', padding: 'var(--spacing-unit)', border: '1px dashed #ccc', minHeight: '50px', borderRadius: 'var(--border-radius)' }}>
+              <p style={{textAlign: 'center', color: '#888', margin: 0}}>Tableau d'affichage (Prochainement)</p>
+            </div>
+
             <button
               onClick={handleLeaveGuild}
               disabled={isLeavingGuild}

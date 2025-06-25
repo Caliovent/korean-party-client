@@ -15,85 +15,175 @@ interface PlayerHUDProps {
   player: Player | null;
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const prevManaRef = useRef<number | undefined>(undefined);
-  // textTopPosition is used to cycle through a few vertical slots for new texts
-  // to prevent them from perfectly overlapping if mana changes rapidly.
   const [textTopPositionKey, setTextTopPositionKey] = useState(0);
 
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [isExpandedOnMobile, setIsExpandedOnMobile] = useState(false);
+
   useEffect(() => {
-    // Initialize prevManaRef on first render or when player object itself changes (e.g. new game)
+    const handleResize = () => {
+      const newIsMobileView = window.innerWidth <= MOBILE_BREAKPOINT;
+      if (newIsMobileView !== isMobileView) {
+        setIsMobileView(newIsMobileView);
+        // If we switch from desktop to mobile, ensure HUD is compact by default
+        if (newIsMobileView) {
+          setIsExpandedOnMobile(false);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Initial check in case the component mounts after the initial window width check
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileView]);
+
+  useEffect(() => {
     if (player) {
       prevManaRef.current = player.mana;
-      // Reset top position key for a new player or if player becomes null then valid again
       setTextTopPositionKey(0);
     } else {
       prevManaRef.current = undefined;
     }
-  }, [player]); // Watch the whole player object for this initialization logic
+  }, [player]);
 
   useEffect(() => {
     if (player && prevManaRef.current !== undefined && player.mana !== prevManaRef.current) {
       const diff = player.mana - prevManaRef.current;
       if (diff !== 0) {
         const newText: FloatingText = {
-          id: Date.now(), // Simple unique ID
+          id: Date.now(),
           text: `${diff > 0 ? '+' : ''}${diff}`,
           type: diff > 0 ? 'gain' : 'loss',
-          // Cycle through 3 vertical slots (0px, 20px, 40px offset from the base 'top' in CSS)
           top: (textTopPositionKey % 3) * 20,
         };
         setFloatingTexts(currentTexts => [...currentTexts, newText]);
         setTextTopPositionKey(prevKey => prevKey + 1);
-
-        // Remove the text after animation (e.g., 2 seconds)
         setTimeout(() => {
           setFloatingTexts(currentTexts => currentTexts.filter(ft => ft.id !== newText.id));
         }, 2000);
       }
     }
-    // Update prevManaRef after processing potential changes
     if (player) {
       prevManaRef.current = player.mana;
     }
-  }, [player?.mana]); // Rerun effect if player.mana changes (player itself is for initialization)
+  }, [player?.mana, player, textTopPositionKey]);
 
 
   if (!player) {
     return null;
   }
 
-  return (
-    <div className="player-hud">
-      <div className="hud-item hud-mana"> {/* Added hud-item class for consistency if needed */}
-        <h3>Mana</h3>
-        <div className="mana-display-container"> {/* Wrapper for positioning floating texts */}
-          <p>{player.mana}</p>
-          {floatingTexts.map(ft => (
-            <span
-              key={ft.id}
-              className={`floating-text ${ft.type}`}
-              style={{ top: `-${ft.top}px` }} // Position above the mana value, adjusted by 'top'
-            >
-              {ft.text}
-            </span>
+  const toggleExpandedView = () => {
+    if (isMobileView) {
+      setIsExpandedOnMobile(!isExpandedOnMobile);
+    }
+  };
+
+  let hudClasses = "player-hud";
+  if (isMobileView) {
+    hudClasses += isExpandedOnMobile ? " mobile-expanded-view" : " mobile-compact-view";
+  }
+
+  // Content for mana display including floating texts
+  const ManaDisplay = () => (
+    <div className="mana-display-container">
+      <p>{player.mana}</p>
+      {floatingTexts.map(ft => (
+        <span
+          key={ft.id}
+          className={`floating-text ${ft.type}`}
+          style={{ top: `-${ft.top}px` }}
+        >
+          {ft.text}
+        </span>
+      ))}
+    </div>
+  );
+
+  // Content for Grimoires
+  const GrimoiresList = () => (
+    <>
+      <h3>Grimoires</h3>
+      {player.grimoires && player.grimoires.length > 0 ? (
+        <ul>
+          {player.grimoires.map(grimoire => (
+            <li key={grimoire.id}>
+              {grimoire.name}: {grimoire.progress} / {grimoire.target}
+            </li>
           ))}
+        </ul>
+      ) : (
+        <p>No grimoires</p>
+      )}
+    </>
+  );
+
+
+  if (isMobileView) {
+    if (!isExpandedOnMobile) {
+      // Mobile Compact View
+      return (
+        <div className={hudClasses} onClick={toggleExpandedView}>
+          <div className="hud-item hud-player-name-compact">
+            <span>{player.displayName} {player.guildTag && `[${player.guildTag}]`}</span>
+          </div>
+          <div className="hud-item hud-mana-compact">
+            <span>Mana: {player.mana}</span> {/* Floating text might be too much here, simplified */}
+          </div>
+          <div className="hud-item hud-grimoires-count-compact">
+            <span>Grimoires: {player.grimoires?.length || 0}</span>
+          </div>
         </div>
+      );
+    } else {
+      // Mobile Expanded View (similar to desktop but will be styled differently by CSS)
+      return (
+        <div className={hudClasses}>
+          <div className="hud-header-mobile" onClick={toggleExpandedView}>
+            <h4>{player.displayName} - Appuyez pour réduire</h4>
+            {/* Or use a close button icon */}
+          </div>
+          <div className="hud-item hud-player-info">
+            <h3>Joueur</h3>
+            <p>
+              {player.displayName} {player.guildTag && `[${player.guildTag}]`}
+            </p>
+          </div>
+          <div className="hud-item hud-mana">
+            <h3>Mana</h3>
+            <ManaDisplay />
+          </div>
+          <div className="hud-item hud-grimoires">
+            <GrimoiresList />
+          </div>
+          {/* Add other HUD elements like fragments if they exist in Player type */}
+        </div>
+      );
+    }
+  }
+
+  // Desktop View (default)
+  return (
+    <div className={hudClasses}>
+      <div className="hud-item hud-player-info">
+        <h3>Joueur</h3>
+        <p>
+          {player.displayName} {player.guildTag && `[${player.guildTag}]`}
+        </p>
       </div>
-      <div className="hud-item hud-grimoires"> {/* Added hud-item class */}
-        <h3>Grimoires</h3>
-        {player.grimoires && player.grimoires.length > 0 ? (
-          <ul>
-            {player.grimoires.map(grimoire => (
-              <li key={grimoire.id}>
-                {grimoire.name}: {grimoire.progress} / {grimoire.target}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No grimoires</p> /* Handle empty grimoires array */
-        )}
+      <div className="hud-item hud-mana">
+        <h3>Mana</h3>
+        <ManaDisplay />
+      </div>
+      <div className="hud-item hud-grimoires">
+        <GrimoiresList />
       </div>
       {/* Add other HUD elements like fragments if they exist in Player type */}
     </div>

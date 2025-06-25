@@ -1,0 +1,70 @@
+.streak-indicator {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: #2a2a3e; /* Couleur de fond sombre thématique */
+  border-radius: 8px;
+  color: #e0e0e0; /* Couleur de texte claire */
+  font-family: 'Arial', sans-serif; /* Police générique pour l'exemple */
+  border: 1px solid #4a4a5e;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  margin: 5px; /* Marge pour le positionnement */
+}
+
+.streak-icon {
+  font-size: 1.5em; /* Taille de l'icône flamme */
+  margin-right: 8px;
+  animation: pulse-flame 2s infinite ease-in-out; /* Animation de la flamme */
+}
+
+.streak-count {
+  font-size: 1em;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.streak-validated {
+  font-size: 1em;
+  margin-left: 8px;
+  color: #4CAF50; /* Vert pour la validation */
+}
+
+.streak-next-reward {
+  font-size: 0.8em;
+  color: #b0b0b0; /* Couleur de texte légèrement atténuée */
+  margin-left: auto; /* Pousse la récompense vers la droite */
+  padding-left: 10px;
+  border-left: 1px solid #4a4a5e; /* Séparateur visuel */
+  /* Masquer par défaut, afficher au survol du parent */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  white-space: nowrap; /* Empêche le texte de passer à la ligne */
+}
+
+.streak-indicator:hover .streak-next-reward {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Animation pour l'icône de flamme */
+@keyframes pulse-flame {
+  0% {
+    transform: scale(1);
+    text-shadow: 0 0 5px #ffcc00, 0 0 10px #ffcc00;
+  }
+  50% {
+    transform: scale(1.1);
+    text-shadow: 0 0 10px #ff9900, 0 0 20px #ff9900;
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 5px #ffcc00, 0 0 10px #ffcc00;
+  }
+}
+
+/* Style pour le survol pour améliorer l'interactivité (optionnel) */
+.streak-indicator:hover {
+  border-color: #7a7a9e;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}

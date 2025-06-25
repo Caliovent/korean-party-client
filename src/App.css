@@ -462,6 +462,46 @@ button.secondary:active:not(:disabled), .logout-button:active:not(:disabled) {
   /* width: 100%; */ /* If using position: absolute, ensure width is maintained */
 }
 
+/* Player Controls (Spellbook & GameControls) Transition Styles */
+.player-controls-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.player-controls-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+.player-controls-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.player-controls-transition-exit-active {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 300ms ease-in, transform 300ms ease-in;
+}
+
+/* Opponent Indicator Transition Styles */
+.opponent-indicator-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.opponent-indicator-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+.opponent-indicator-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.opponent-indicator-transition-exit-active {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 300ms ease-in, transform 300ms ease-in;
+}
+
 /* Success Message Styles */
 .success-message {
   color: var(--success-color);

@@ -1,20 +1,68 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, functions } from '../firebaseConfig'; // Added functions
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
 import './GrimoireVivant.css';
-import ReviewSession from './ReviewSession'; // Import ReviewSession
-import { httpsCallable } from 'firebase/functions'; // Import httpsCallable
+import ReviewSession from './ReviewSession';
+import { httpsCallable } from 'firebase/functions';
+import { saveReviewItems, getStoredReviewItems, clearReviewItems } from '../services/dbService'; // Import IndexedDB functions
+import { useToasts } from '../contexts/ToastContext'; // Import useToasts
 
 const GrimoireVivant: React.FC = () => {
   const [runes, setRunes] = useState<SpellMasteryData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [runesToReviewCount, setRunesToReviewCount] = useState<number>(0);
   const { user } = useAuth();
+  const { addToast } = useToasts();
 
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewItems, setReviewItems] = useState<SpellMasteryData[]>([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  const getReviewItemsCallable = httpsCallable(functions, 'getReviewItems');
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      addToast({ type: 'info', message: 'Vous êtes de nouveau en ligne.' });
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      addToast({ type: 'warning', message: 'Vous êtes actuellement hors-ligne.' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [addToast]);
+
+  const fetchAndStoreReviewItems = useCallback(async () => {
+    if (!user || !navigator.onLine) return;
+
+    console.log("Attempting to fetch review items from server for pre-loading...");
+    try {
+      const result = await getReviewItemsCallable();
+      const items = result.data as SpellMasteryData[];
+      if (items && items.length > 0) {
+        await saveReviewItems(items, user.uid);
+        console.log(`${items.length} review items pre-loaded and stored locally.`);
+        addToast({ type: 'success', message: 'Données de révision pré-chargées pour utilisation hors-ligne.' });
+      } else {
+        // S'il n'y a pas d'items à réviser en ligne, on vide aussi le cache local
+        // pour éviter d'utiliser des données obsolètes en mode hors-ligne.
+        await clearReviewItems();
+        console.log("No review items to pre-load. Local cache cleared.");
+      }
+    } catch (error) {
+      console.error("Failed to fetch or store review items:", error);
+      addToast({ type: 'error', message: 'Erreur lors du pré-chargement des données de révision.' });
+    }
+  }, [user, getReviewItemsCallable, addToast]);
 
   // Sorting and Filtering States
   const [sortBy, setSortBy] = useState<string>('word-asc'); // 'word-asc', 'word-desc', 'mastery-asc', 'mastery-desc'
@@ -32,14 +80,13 @@ const GrimoireVivant: React.FC = () => {
     const spellMasteryRef = collection(db, `playerLearningProfiles/${user.uid}/spellMasteryStatus`);
     const q = query(spellMasteryRef);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => { // Make async for pre-loading
       const fetchedRunes: SpellMasteryData[] = [];
       let reviewCount = 0;
       const now = Date.now();
 
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<SpellMasteryData, 'spellId'> & { nextReviewDate?: number | { seconds: number, nanoseconds: number }, word?: string };
-
         const rune: SpellMasteryData = {
           spellId: doc.id,
           masteryLevel: data.masteryLevel || 0,
@@ -52,9 +99,7 @@ const GrimoireVivant: React.FC = () => {
           }),
           ...(data.word && { word: data.word }),
         };
-
         fetchedRunes.push(rune);
-
         if (rune.nextReviewDate && rune.nextReviewDate <= now) {
           reviewCount++;
         }
@@ -63,13 +108,40 @@ const GrimoireVivant: React.FC = () => {
       setRunes(fetchedRunes);
       setRunesToReviewCount(reviewCount);
       setIsLoading(false);
+
+      // Pre-load review items if online and there are items to review
+      if (navigator.onLine && reviewCount > 0) {
+        await fetchAndStoreReviewItems();
+      } else if (navigator.onLine && reviewCount === 0) {
+        // If online and no items to review, clear local cache
+        await clearReviewItems();
+        console.log("Online and no items to review, cleared local review items cache.");
+      }
+
     }, (error) => {
       console.error("Error fetching spell mastery data:", error);
       setIsLoading(false);
+      addToast({ type: 'error', message: 'Erreur de connexion au Grimoire.' });
     });
 
+    // Initial check for offline data if user is already offline
+    if (!navigator.onLine && user) {
+      console.log("App started offline. Attempting to load review items from local storage.");
+      getStoredReviewItems(user.uid).then(storedItems => {
+        if (storedItems.length > 0) {
+          // We don't set reviewItems here, but we can update the count if needed
+          // For now, the main `runesToReviewCount` comes from Firestore snapshot or is 0 if offline at start
+          // This logic might need refinement based on how `runesToReviewCount` should behave offline.
+          // The button will be enabled if `runesToReviewCount > 0` (from Firestore cache)
+          // OR if `storedItems.length > 0` when we try to start the review.
+          console.log(`Found ${storedItems.length} items in local storage.`);
+        }
+      });
+    }
+
+
     return () => unsubscribe();
-  }, [user]);
+  }, [user, fetchAndStoreReviewItems, addToast]); // Added fetchAndStoreReviewItems and addToast
 
   const processedRunes = useMemo(() => {
     let filteredAndSortedRunes = [...runes];
@@ -103,29 +175,55 @@ const GrimoireVivant: React.FC = () => {
   }, [runes, sortBy, filterMastery]);
 
   const handleStartReview = async () => {
+    if (!user) {
+      addToast({ type: 'error', message: 'Utilisateur non connecté.' });
+      return;
+    }
     console.log("Lancement de la session de révision...");
     // DEV NOTE: Trigger sound effect here: playSound('forge-start')
     alert("playSound('forge-start')"); // Placeholder for sound
 
-    try {
-      const result = await getReviewItems();
-      // Ensure correct typing for result.data. Adjust if your Cloud Function returns a different structure.
-      const items = result.data as SpellMasteryData[];
+    if (navigator.onLine) {
+      console.log("Mode en ligne: récupération des runes depuis le serveur.");
+      try {
+        const result = await getReviewItemsCallable();
+        const items = result.data as SpellMasteryData[];
 
-      if (items && items.length > 0) {
-        setReviewItems(items);
-        setIsReviewing(true);
-      } else {
-        // Consider using a more integrated notification system if available
-        alert("Toutes vos runes sont déjà solides ! Aucune révision nécessaire pour le moment.");
-        console.log("Aucune rune à réviser.");
+        if (items && items.length > 0) {
+          setReviewItems(items);
+          setIsReviewing(true);
+          // Also save to local storage for potential offline use during the session or next time
+          await saveReviewItems(items, user.uid);
+        } else {
+          addToast({ type: 'info', message: "Toutes vos runes sont déjà solides ! Aucune révision nécessaire." });
+          console.log("Aucune rune à réviser.");
+          await clearReviewItems(); // Clear local cache if no items online
+        }
+      } catch (error) {
+        console.error("Impossible de récupérer les runes à réviser (en ligne):", error);
+        addToast({ type: 'error', message: "Erreur lors de la préparation de la forge. Tentative avec les données locales." });
+        // Fallback to local data if online fetch fails
+        await loadItemsFromLocalDB();
       }
-    } catch (error) {
-      console.error("Impossible de récupérer les runes à réviser:", error);
-      // Potentially show a user-facing error message here
-      alert("Erreur lors de la préparation de la forge des runes. Veuillez réessayer.");
+    } else {
+      console.log("Mode hors-ligne: récupération des runes depuis IndexedDB.");
+      await loadItemsFromLocalDB();
     }
   };
+
+  const loadItemsFromLocalDB = async () => {
+    if (!user) return;
+    const storedItems = await getStoredReviewItems(user.uid);
+    if (storedItems && storedItems.length > 0) {
+      setReviewItems(storedItems);
+      setIsReviewing(true);
+      addToast({ type: 'info', message: 'Session de révision lancée avec les données hors-ligne.' });
+    } else {
+      addToast({ type: 'info', message: "Aucune rune n'est disponible pour révision hors-ligne. Connectez-vous pour les télécharger." });
+      console.log("Aucune rune à réviser stockée localement.");
+    }
+  };
+
 
   if (isLoading) {
     return <p>Gravure des runes en cours...</p>;

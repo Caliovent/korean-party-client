@@ -20,7 +20,11 @@
   },
   "spellbook": {
     "title": "Grimoire de Sorts",
-    "cast_button": "Lancer"
+    "cast_button": "Lancer",
+    "cancel_button": "Annuler",
+    "casting_button": "Incantation...",
+    "targeting_mode_active": "Mode Ciblage Actif pour:",
+    "targeting_button": "Ciblage..."
   },
   "spells": {
     "push_back": {
@@ -42,9 +46,20 @@
     "astral_swap": {
       "name": "Échange Astral",
       "description": "Échangez de position avec un autre joueur sur le plateau."
+    },
+    "memory_fog": {
+      "name": "Brouillard Mnémonique",
+      "description": "Vous protège du prochain sort négatif lancé contre vous."
+    },
+    "karmic_swap": {
+      "name": "Échange Karmique",
+      "description": "Échangez votre position sur le plateau avec un autre joueur."
+    },
+    "dokkaebi_mischief": {
+      "name": "Malice du Dokkaebi",
+      "description": "Placez un piège invisible sur une case. Le prochain joueur à s'y arrêter perd 15 Mana."
     }
   },
-  "cancel_button": "Annuler",
   "victory": {
     "title": "Victoire !",
     "announcement": "Félicitations à",
