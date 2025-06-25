@@ -4,26 +4,35 @@ import { vi } from 'vitest';
 import ProfilePage from './ProfilePage';
 import { useAuth } from '../hooks/useAuth'; // Importer le hook uniquement
 import type { ToastContextType } from '../contexts/ToastContext'; // Importer uniquement le type
-import { useToasts } from '../contexts/ToastContext';
+import { useToasts } from '../contexts/useToasts';
 import { getAchievementDefinition } from '../data/achievementDefinitions';
+
+import type { UserProfile } from '../hooks/useAuth'; // Import UserProfile for typing mocks
 
 // Mock partiel de useAuth
 vi.mock('../hooks/useAuth', async (importOriginal) => {
-  const actual = await importOriginal() as { AuthContextType: unknown, useAuth: () => Partial<AuthContextType> };
+  const actualModule = await importOriginal() as typeof import('../hooks/useAuth');
   return {
-    ...actual, // Conserver les autres exports si nécessaire (comme AuthProvider)
-    useAuth: vi.fn(), // Mocker la fonction useAuth
+    ...actualModule, // Spread all original exports
+    useAuth: vi.fn(), // Mock only the useAuth function
   };
 });
 
-// Mock partiel de ToastContext
-vi.mock('../contexts/ToastContext', async (importOriginal) => {
-  const actual = await importOriginal() as { ToastContextType: unknown, useToast: () => Partial<ToastContextType> };
-  return {
-    ...actual,
-    useToasts: vi.fn(), // Mocker la fonction useToast
-  };
-});
+// Define a type for the mock implementation of useAuth based on its actual return type
+type MockUseAuth = {
+  user: UserProfile | null;
+  loading: boolean;
+  updateUserGuildId: ReturnType<typeof vi.fn>;
+};
+
+// Mock for useToasts hook
+vi.mock('../contexts/useToasts', () => ({
+  useToasts: vi.fn(),
+}));
+
+// Mock for ToastContextType (if needed directly, though useToasts mock is primary)
+// We still need ToastContextType for the `mockUseToasts.mockReturnValue`
+// The import `import type { ToastContextType } from '../contexts/ToastContext'` should still work.
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -44,7 +53,6 @@ vi.mock('react-i18next', () => ({
 // Si on ne veut pas tester la logique de onSnapshot pour le profil ici, on doit le mocker.
 // Pour ce test, on se concentre sur les toasts, donc on peut simplifier.
 vi.mock('../firebaseConfig', () => ({
-  db: {},
   auth: {},
   app: {},
   functions: {},
