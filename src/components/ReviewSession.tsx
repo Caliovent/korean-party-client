@@ -43,6 +43,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
     }
 
     // DEV NOTE: Trigger sound effect here: playSound('review-response')
+    alert(`playSound('review-response-${isCorrect ? 'correct' : 'incorrect'}')`); // Placeholder for sound
     console.log(`Response for ${currentItem.spellId}: ${isCorrect ? 'Correct' : 'Incorrect'}`);
 
     if (isOffline) {
@@ -90,6 +91,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
       setCurrentItemIndex(currentItemIndex + 1);
     } else {
       // DEV NOTE: Trigger sound effect here: playSound('session-complete')
+      alert("playSound('session-complete')"); // Placeholder for sound
       console.log("Session terminée!");
       onSessionEnd();
     }

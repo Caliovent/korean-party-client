@@ -172,8 +172,6 @@ const ProfilePage: React.FC = () => {
         <h2>{t('profilePageTitle', 'Mon Profil de Sorcier')}</h2>
         <p><strong>Email:</strong> {profile.email}</p>
         <p><strong>displayName:</strong> {profile.displayName}</p>
-        <p><strong>Niveau:</strong> {profile.level}</p>
-        <p><strong>XP:</strong> {profile.xp}</p>
         {/* Guild Information Display */}
         {authUser.guildId && (
           isLoadingGuildName ? (

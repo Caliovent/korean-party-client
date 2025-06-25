@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { db, functions } from '../firebaseConfig';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { db, functions } from '../firebaseConfig'; // Added functions
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
@@ -64,6 +64,12 @@ const GrimoireVivant: React.FC = () => {
     }
   }, [user, getReviewItemsCallable, addToast]);
 
+  // Sorting and Filtering States
+  const [sortBy, setSortBy] = useState<string>('word-asc'); // 'word-asc', 'word-desc', 'mastery-asc', 'mastery-desc'
+  const [filterMastery, setFilterMastery] = useState<string>('all'); // 'all', '0', '1', '2', '3', '4'
+
+  // Initialize Firebase function callable
+  const getReviewItems = httpsCallable(functions, 'getReviewItems');
 
   useEffect(() => {
     if (!user) {
@@ -137,6 +143,37 @@ const GrimoireVivant: React.FC = () => {
     return () => unsubscribe();
   }, [user, fetchAndStoreReviewItems, addToast]); // Added fetchAndStoreReviewItems and addToast
 
+  const processedRunes = useMemo(() => {
+    let filteredAndSortedRunes = [...runes];
+
+    // Filtering
+    if (filterMastery !== 'all') {
+      filteredAndSortedRunes = filteredAndSortedRunes.filter(
+        (rune) => rune.masteryLevel === parseInt(filterMastery, 10)
+      );
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case 'word-asc':
+        filteredAndSortedRunes.sort((a, b) => (a.word || a.spellId).localeCompare(b.word || b.spellId));
+        break;
+      case 'word-desc':
+        filteredAndSortedRunes.sort((a, b) => (b.word || b.spellId).localeCompare(a.word || a.spellId));
+        break;
+      case 'mastery-asc':
+        filteredAndSortedRunes.sort((a, b) => a.masteryLevel - b.masteryLevel);
+        break;
+      case 'mastery-desc':
+        filteredAndSortedRunes.sort((a, b) => b.masteryLevel - a.masteryLevel);
+        break;
+      default:
+        break;
+    }
+
+    return filteredAndSortedRunes;
+  }, [runes, sortBy, filterMastery]);
+
   const handleStartReview = async () => {
     if (!user) {
       addToast({ type: 'error', message: 'Utilisateur non connecté.' });
@@ -144,6 +181,7 @@ const GrimoireVivant: React.FC = () => {
     }
     console.log("Lancement de la session de révision...");
     // DEV NOTE: Trigger sound effect here: playSound('forge-start')
+    alert("playSound('forge-start')"); // Placeholder for sound
 
     if (navigator.onLine) {
       console.log("Mode en ligne: récupération des runes depuis le serveur.");
@@ -197,9 +235,8 @@ const GrimoireVivant: React.FC = () => {
         reviewItems={reviewItems}
         onSessionEnd={() => {
           setIsReviewing(false);
-          // Optionally, refresh rune counts or data here if review affects it immediately
-          // For example, by re-fetching or adjusting runesToReviewCount based on the review.
-          // For now, just closing the session.
+          // The onSnapshot listener for spellMasteryStatus should automatically update the runes
+          // and runesToReviewCount when changes are made by the ReviewSession.
           console.log("Session de révision terminée, retour au Grimoire.");
         }}
       />
@@ -209,7 +246,25 @@ const GrimoireVivant: React.FC = () => {
   return (
     <div className="grimoire-container">
       <div className="grimoire-controls">
-        {/* TODO: Ajouter des filtres et tris ici */}
+        <div className="filter-sort-controls">
+          <label htmlFor="sort-by">Trier par :</label>
+          <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="word-asc">Nom (A-Z)</option>
+            <option value="word-desc">Nom (Z-A)</option>
+            <option value="mastery-asc">Maîtrise (Croissant)</option>
+            <option value="mastery-desc">Maîtrise (Décroissant)</option>
+          </select>
+
+          <label htmlFor="filter-mastery">Filtrer par Maîtrise :</label>
+          <select id="filter-mastery" value={filterMastery} onChange={(e) => setFilterMastery(e.target.value)}>
+            <option value="all">Tous les Niveaux</option>
+            <option value="0">Niveau 0 (Découverte)</option>
+            <option value="1">Niveau 1 (Découverte)</option>
+            <option value="2">Niveau 2 (Apprentissage)</option>
+            <option value="3">Niveau 3 (Maîtrise)</option>
+            <option value="4">Niveau 4 (Gravure)</option>
+          </select>
+        </div>
         <button
           className="review-button"
           onClick={handleStartReview}
@@ -219,12 +274,15 @@ const GrimoireVivant: React.FC = () => {
         </button>
       </div>
       <div className="runes-grid">
-        {runes.map((rune) => (
+        {processedRunes.map((rune) => (
           <div key={rune.spellId} className={`rune-item mastery-${rune.masteryLevel}`}>
             <span className="rune-word">{rune.word || rune.spellId}</span>
             <span className="rune-mastery-label">Maîtrise Nv. {rune.masteryLevel}</span>
           </div>
         ))}
+        {processedRunes.length === 0 && runes.length > 0 && !isLoading && (
+          <p>Aucune rune ne correspond à vos critères de filtre actuels.</p>
+        )}
         {runes.length === 0 && !isLoading && (
           <p>Aucune rune n'a encore été apprise. Explorez le monde pour en découvrir !</p>
         )}
