@@ -346,7 +346,7 @@ const GuildManagementModal: React.FC<GuildManagementModalProps> = ({ isOpen, onC
                 ))}
               </ul>
             ) : (
-              <p>Cette maison n'a pas encore de membres (cela ne devrait pas arriver si le compteur est > 0).</p>
+              <p>Cette maison n'a pas encore de membres (cela ne devrait pas arriver si le compteur est &gt; 0).</p>
             )}
             <button
               onClick={handleLeaveGuild}
