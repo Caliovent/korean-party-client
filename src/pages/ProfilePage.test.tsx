@@ -2,16 +2,16 @@ import { render, act, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import ProfilePage from './ProfilePage';
-import { useAuth } from '../hooks/useAuth'; // Importer le hook uniquement
-import type { ToastContextType } from '../contexts/ToastContext'; // Importer uniquement le type
+import { useAuth } from '../hooks/useAuth.ts'; // Importer le hook uniquement
+import type { ToastContextType } from '../contexts/ToastContext.tsx'; // Importer uniquement le type
 import { useToasts } from '../contexts/useToasts';
 import { getAchievementDefinition } from '../data/achievementDefinitions';
 
-import type { UserProfile } from '../hooks/useAuth'; // Import UserProfile for typing mocks
+import type { UserProfile } from '../hooks/useAuth.ts'; // Import UserProfile for typing mocks
 
 // Mock partiel de useAuth
-vi.mock('../hooks/useAuth', async (importOriginal) => {
-  const actualModule = await importOriginal() as typeof import('../hooks/useAuth');
+vi.mock('../hooks/useAuth.ts', async (importOriginal) => {
+  const actualModule = await importOriginal() as typeof import('../hooks/useAuth.ts');
   return {
     ...actualModule, // Spread all original exports
     useAuth: vi.fn(), // Mock only the useAuth function
@@ -69,7 +69,7 @@ vi.mock('firebase/firestore', () => ({
     }
     return vi.fn(); // unsubscribe
   }),
-  collection: vi.fn((db, path) => ({ // Ajouter mock pour collection
+  collection: vi.fn((_db, path) => ({ // Ajouter mock pour collection
     path: path, // pour aider au debug si besoin
     // Si GrimoireVivant utilise query().onSnapshot(), il faudra l'ajouter ici.
     // Pour l'instant, on suppose que le onSnapshot mocké ci-dessus est suffisant
