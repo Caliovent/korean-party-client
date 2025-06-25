@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth'; // Import useAuth
 import { getGuildById } from '../services/gameService'; // Import getGuildById
 import GrimoireVivant from '../components/GrimoireVivant'; // Import GrimoireVivant
 import HallOfFame from '../components/HallOfFame'; // Importer HallOfFame
-import { useToasts } from '../contexts/ToastContext'; // Importer useToast
+import { useToasts } from '../contexts/useToasts'; // Importer useToast
 import { getAchievementDefinition } from '../data/achievementDefinitions'; // Importer pour les détails des HF
 import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
