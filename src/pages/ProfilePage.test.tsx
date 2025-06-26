@@ -51,6 +51,7 @@ vi.mock('../firebaseConfig', () => ({
   auth: {},
   app: {},
   functions: {},
+  db: {}, // Add db property to the mock
 }));
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
@@ -134,45 +135,39 @@ describe('<ProfilePage /> - Toast Notifications for Achievements', () => {
     const achDef = getAchievementDefinition('ACH_FIRST_SPELL_CAST');
     expect(achDef).not.toBeUndefined();
     if (achDef) {
-      expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Haut Fait Débloqué !',
-        message: 'first_spell_cast_name', // Corrigé: basé sur la nameKey et le mock t()
-      }));
+      // Corrected based on actual t() mock output from test logs
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Haut Fait Débloqué !: first_spell_cast_name',
+        'success',
+        7000
+      );
     }
   });
 
   test('devrait afficher un toast pour chaque nouvel achievement lors d\'une mise à jour multiple', async () => {
-    // Test simplifié : commence sans achievement, puis passe à deux.
-    // Le test précédent était un peu confus dans sa structure.
     mockUseAuth.mockReturnValue({ user: initialUserNoAchievements, loading: false, updateUserGuildId: vi.fn() });
     const { rerender } = render(<ProfilePage />);
-    mockAddToast.mockClear(); // S'assurer qu'aucun toast n'a été appelé par le render initial si jamais
+    mockAddToast.mockClear();
 
-    // Simuler la mise à jour avec deux achievements
     mockUseAuth.mockReturnValue({ user: userWithTwoAchievements, loading: false, updateUserGuildId: vi.fn() });
     rerender(<ProfilePage />);
 
     await waitFor(() => {
-      // On s'attend à deux toasts, un pour chaque nouvel achievement
       expect(mockAddToast).toHaveBeenCalledTimes(2);
     });
 
-    const achDef1 = getAchievementDefinition('ACH_FIRST_SPELL_CAST');
-    const achDef2 = getAchievementDefinition('ACH_FIRST_GAME_PLAYED');
-
-    expect(achDef1).not.toBeUndefined();
-    expect(achDef2).not.toBeUndefined();
-
-    if (achDef1) {
-      expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'first_spell_cast_name',
-      }));
-    }
-    if (achDef2) {
-      expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'first_game_played_name',
-      }));
-    }
+    // Check for ACH_FIRST_SPELL_CAST
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Haut Fait Débloqué !: first_spell_cast_name', // Corrected
+      'success',
+      7000
+    );
+    // Check for ACH_FIRST_GAME_PLAYED
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Haut Fait Débloqué !: first_game_played_name', // Corrected
+      'success',
+      7000
+    );
   });
 
 
@@ -194,12 +189,15 @@ describe('<ProfilePage /> - Toast Notifications for Achievements', () => {
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledTimes(1); // Un toast pour le NOUVEL achievement
     });
-    const achDefNew = getAchievementDefinition('ACH_FIRST_GAME_PLAYED'); // C'est le nouveau dans userWithTwoAchievements
+    const achDefNew = getAchievementDefinition('ACH_FIRST_GAME_PLAYED');
     expect(achDefNew).not.toBeUndefined();
     if (achDefNew) {
-      expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'first_game_played_name',
-      }));
+      // Corrected based on actual t() mock output from test logs
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Haut Fait Débloqué !: first_game_played_name',
+        'success',
+        7000
+      );
     }
     mockAddToast.mockClear(); // Nettoyer pour la prochaine assertion
 
