@@ -133,7 +133,11 @@ const GrimoireVivant: React.FC = () => {
       console.error("Error fetching spell mastery data:", error);
       setFirestoreError(error); // Set the new error state
       setIsLoading(false);
-      addToast('Erreur de connexion au Grimoire.', 'error'); // Keep existing toast
+      if (import.meta.env.DEV) {
+        addToast("Erreur Grimoire (Dev): Vérifiez l'émulateur Firestore (port 8092).", 'error', 10000);
+      } else {
+        addToast('Erreur de connexion au Grimoire.', 'error');
+      }
     });
 
     // Initial check for offline data if user is already offline
@@ -242,16 +246,28 @@ const GrimoireVivant: React.FC = () => {
   }
 
   if (firestoreError) {
+    const isDev = import.meta.env.DEV;
     return (
       <div className="grimoire-container error-container" style={{ padding: '20px', textAlign: 'center' }}>
-        <h3>Grimoire Temporarily Unavailable</h3>
-        <p>We encountered an issue loading your spell mastery data.</p>
-        <p>This might be due to a connection problem or account access restrictions.</p>
-        <p>Please try refreshing the page or check again later.</p>
-        {/* For developers: more specific error info can be logged or displayed conditionally */}
-        {import.meta.env.DEV && firestoreError.message && (
+        <h3>{isDev ? "Grimoire Connection Error (Development)" : "Grimoire Temporarily Unavailable"}</h3>
+        {isDev ? (
+          <>
+            <p>Failed to connect to Firestore to load your spell mastery data.</p>
+            <p><strong>Please ensure the Firebase emulators, especially Firestore, are running.</strong></p>
+            <p>The application expects the Firestore emulator on port <strong>8092</strong>.</p>
+            <p>You can typically start them with: <code>firebase emulators:start</code></p>
+            <p>If emulators are running, check your network configuration and Firestore security rules.</p>
+          </>
+        ) : (
+          <>
+            <p>We encountered an issue loading your spell mastery data.</p>
+            <p>This might be due to a connection problem or account access restrictions.</p>
+            <p>Please try refreshing the page or check again later.</p>
+          </>
+        )}
+        {firestoreError.message && (
           <p style={{ fontSize: '0.8em', color: 'grey', marginTop: '10px' }}>
-            <i>Developer Info: {firestoreError.message} (Code: {firestoreError.code})</i>
+            <i>Error Details: {firestoreError.message} (Code: {firestoreError.code})</i>
           </p>
         )}
       </div>
