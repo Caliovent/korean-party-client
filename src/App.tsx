@@ -166,8 +166,10 @@ function App() {
           navigate('/hub');
         }
         // Attempt to sync when user logs in and is online
-        if (navigator.onLine) {
+        if (navigator.onLine && !isSyncing) { // <--- Added !isSyncing here
           processSyncQueue(currentUser);
+        } else if (isSyncing) {
+          console.log("Sync: Login sync attempt skipped, another sync is already in progress.");
         }
       } else if (currentUser && currentUser.isAnonymous) {
         // Handle anonymous user login, typically no user-specific data to sync from a previous session
