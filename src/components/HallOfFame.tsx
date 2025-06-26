@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlayerStats } from '../hooks/useAuth'; // Corrigé
-import { achievementDefinitions, getAchievementDefinition } from '../data/achievementDefinitions'; // Corrigé
+import type { PlayerStats } from '../hooks/useAuth'; // Corrigé
+import { getAchievementDefinition } from '../data/achievementDefinitions'; // Corrigé, removed achievementDefinitions
 import './HallOfFame.css';
 
 interface HallOfFameProps {

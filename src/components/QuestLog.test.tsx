@@ -1,8 +1,7 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import QuestLog from './QuestLog';
-import { Quest } from '../types/game';
+import type { Quest } from '../types/game';
 
 import { vi } from 'vitest';
 
@@ -108,7 +107,7 @@ describe('<QuestLog />', () => {
 
     // Configurer le mock de subscribeToActiveQuests
     (questService.subscribeToActiveQuests as ReturnType<typeof vi.fn>).mockImplementation(
-      (userId: string, onUpdate: (quests: Quest[]) => void, onError: (error: Error) => void) => {
+      (_userId: string, onUpdate: (quests: Quest[]) => void, _onError: (error: Error) => void) => {
         // Appeler immédiatement onUpdate avec les données mockées
         // Le composant mettra à jour son état et setLoadingActiveQuests à false
         onUpdate(mockActiveQuests);
@@ -118,7 +117,7 @@ describe('<QuestLog />', () => {
 
     // Configurer le mock de subscribeToCompletedQuests
     (questService.subscribeToCompletedQuests as ReturnType<typeof vi.fn>).mockImplementation(
-      (userId: string, onUpdate: (quests: Quest[]) => void, onError: (error: Error) => void) => {
+      (_userId: string, onUpdate: (quests: Quest[]) => void, _onError: (error: Error) => void) => {
         onUpdate(mockCompletedQuests);
         return vi.fn(); // Retourner une fonction de désinscription mockée
       }

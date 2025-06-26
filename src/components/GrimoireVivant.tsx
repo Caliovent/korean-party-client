@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, functions } from '../firebaseConfig'; // Added functions
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore'; // Added Timestamp
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
+import type { SpellId } from '../data/spells'; // Import SpellId
 import './GrimoireVivant.css';
 import ReviewSession from './ReviewSession';
 import { httpsCallable } from 'firebase/functions';
@@ -18,18 +19,18 @@ const GrimoireVivant: React.FC = () => {
 
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewItems, setReviewItems] = useState<SpellMasteryData[]>([]);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [_isOffline, setIsOffline] = useState(!navigator.onLine); // Prefixed isOffline
 
   const getReviewItemsCallable = httpsCallable(functions, 'getReviewItems');
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
-      addToast({ type: 'info', message: 'Vous êtes de nouveau en ligne.' });
+      addToast('Vous êtes de nouveau en ligne.', 'info');
     };
     const handleOffline = () => {
       setIsOffline(true);
-      addToast({ type: 'warning', message: 'Vous êtes actuellement hors-ligne.' });
+      addToast('Vous êtes actuellement hors-ligne.', 'warning');
     };
 
     window.addEventListener('online', handleOnline);
@@ -51,7 +52,7 @@ const GrimoireVivant: React.FC = () => {
       if (items && items.length > 0) {
         await saveReviewItems(items, user.uid);
         console.log(`${items.length} review items pre-loaded and stored locally.`);
-        addToast({ type: 'success', message: 'Données de révision pré-chargées pour utilisation hors-ligne.' });
+        addToast('Données de révision pré-chargées pour utilisation hors-ligne.', 'success');
       } else {
         // S'il n'y a pas d'items à réviser en ligne, on vide aussi le cache local
         // pour éviter d'utiliser des données obsolètes en mode hors-ligne.
@@ -60,7 +61,7 @@ const GrimoireVivant: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to fetch or store review items:", error);
-      addToast({ type: 'error', message: 'Erreur lors du pré-chargement des données de révision.' });
+      addToast('Erreur lors du pré-chargement des données de révision.', 'error');
     }
   }, [user, getReviewItemsCallable, addToast]);
 
@@ -68,8 +69,7 @@ const GrimoireVivant: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('word-asc'); // 'word-asc', 'word-desc', 'mastery-asc', 'mastery-desc'
   const [filterMastery, setFilterMastery] = useState<string>('all'); // 'all', '0', '1', '2', '3', '4'
 
-  // Initialize Firebase function callable
-  const getReviewItems = httpsCallable(functions, 'getReviewItems');
+  // Firebase function callable getReviewItemsCallable is already initialized above
 
   useEffect(() => {
     if (!user) {
@@ -86,18 +86,27 @@ const GrimoireVivant: React.FC = () => {
       const now = Date.now();
 
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<SpellMasteryData, 'spellId'> & { nextReviewDate?: number | { seconds: number, nanoseconds: number }, word?: string };
+        const rawData = doc.data() as { [key: string]: any; nextReviewDate?: number | Timestamp | { seconds: number, nanoseconds: number }; word?: string; masteryLevel?: number; successfulCasts?: number; failedCasts?: number; };
+
+        let nextReviewDateMs: number | undefined = undefined;
+        if (rawData.nextReviewDate) {
+          if (typeof rawData.nextReviewDate === 'number') {
+            nextReviewDateMs = rawData.nextReviewDate;
+          } else if (rawData.nextReviewDate instanceof Timestamp) { // Check if it's a Firestore Timestamp
+            nextReviewDateMs = rawData.nextReviewDate.toMillis();
+          } else if (typeof rawData.nextReviewDate === 'object' && 'seconds' in rawData.nextReviewDate && 'nanoseconds' in rawData.nextReviewDate) {
+            // Handle plain object case (if data comes like that, e.g. from non-Timestamp Firebase field)
+            nextReviewDateMs = rawData.nextReviewDate.seconds * 1000 + rawData.nextReviewDate.nanoseconds / 1000000;
+          }
+        }
+
         const rune: SpellMasteryData = {
-          spellId: doc.id,
-          masteryLevel: data.masteryLevel || 0,
-          successfulCasts: data.successfulCasts || 0,
-          failedCasts: data.failedCasts || 0,
-          ...(data.nextReviewDate && {
-            nextReviewDate: typeof data.nextReviewDate === 'number'
-              ? data.nextReviewDate
-              : data.nextReviewDate.seconds * 1000 + data.nextReviewDate.nanoseconds / 1000000
-          }),
-          ...(data.word && { word: data.word }),
+          spellId: doc.id as SpellId,
+          masteryLevel: rawData.masteryLevel || 0,
+          successfulCasts: rawData.successfulCasts || 0,
+          failedCasts: rawData.failedCasts || 0,
+          word: rawData.word,
+          nextReviewDate: nextReviewDateMs,
         };
         fetchedRunes.push(rune);
         if (rune.nextReviewDate && rune.nextReviewDate <= now) {
@@ -121,7 +130,7 @@ const GrimoireVivant: React.FC = () => {
     }, (error) => {
       console.error("Error fetching spell mastery data:", error);
       setIsLoading(false);
-      addToast({ type: 'error', message: 'Erreur de connexion au Grimoire.' });
+      addToast('Erreur de connexion au Grimoire.', 'error');
     });
 
     // Initial check for offline data if user is already offline
@@ -176,7 +185,7 @@ const GrimoireVivant: React.FC = () => {
 
   const handleStartReview = async () => {
     if (!user) {
-      addToast({ type: 'error', message: 'Utilisateur non connecté.' });
+      addToast('Utilisateur non connecté.', 'error');
       return;
     }
     console.log("Lancement de la session de révision...");
@@ -195,13 +204,13 @@ const GrimoireVivant: React.FC = () => {
           // Also save to local storage for potential offline use during the session or next time
           await saveReviewItems(items, user.uid);
         } else {
-          addToast({ type: 'info', message: "Toutes vos runes sont déjà solides ! Aucune révision nécessaire." });
+          addToast("Toutes vos runes sont déjà solides ! Aucune révision nécessaire.", 'info');
           console.log("Aucune rune à réviser.");
           await clearReviewItems(); // Clear local cache if no items online
         }
       } catch (error) {
         console.error("Impossible de récupérer les runes à réviser (en ligne):", error);
-        addToast({ type: 'error', message: "Erreur lors de la préparation de la forge. Tentative avec les données locales." });
+        addToast("Erreur lors de la préparation de la forge. Tentative avec les données locales.", 'error');
         // Fallback to local data if online fetch fails
         await loadItemsFromLocalDB();
       }
@@ -217,9 +226,9 @@ const GrimoireVivant: React.FC = () => {
     if (storedItems && storedItems.length > 0) {
       setReviewItems(storedItems);
       setIsReviewing(true);
-      addToast({ type: 'info', message: 'Session de révision lancée avec les données hors-ligne.' });
+      addToast('Session de révision lancée avec les données hors-ligne.', 'info');
     } else {
-      addToast({ type: 'info', message: "Aucune rune n'est disponible pour révision hors-ligne. Connectez-vous pour les télécharger." });
+      addToast("Aucune rune n'est disponible pour révision hors-ligne. Connectez-vous pour les télécharger.", 'info');
       console.log("Aucune rune à réviser stockée localement.");
     }
   };

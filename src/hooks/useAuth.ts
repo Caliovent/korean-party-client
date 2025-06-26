@@ -17,7 +17,7 @@ export interface PlayerStats {
 // Placeholder for user profile data structure
 // In a real app, this would likely come from Firestore (e.g., a 'users' collection
 // where each document has a 'guildId' field) or from Firebase Auth custom claims.
-interface UserProfile extends User {
+export interface UserProfile extends User { // Added export
   guildId?: string | null; // Stores the ID of the guild the user belongs to, if any.
   stats?: PlayerStats; // Player statistics
   unlockedAchievements?: string[]; // Array of achievement IDs

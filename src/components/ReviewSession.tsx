@@ -38,7 +38,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
 
   const handleResponse = async (isCorrect: boolean) => {
     if (!currentItem || !user) {
-      addToast({ type: 'error', message: 'Erreur: Item ou utilisateur non défini.' });
+      addToast('Erreur: Item ou utilisateur non défini.', 'error');
       return;
     }
 
@@ -54,10 +54,10 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
           isCorrect,
           userId: user.uid, // Pass userId
         });
-        addToast({ type: 'info', message: `Progrès sauvegardé localement pour ${currentItem.word || currentItem.spellId}.` });
+        addToast(`Progrès sauvegardé localement pour ${currentItem.word || currentItem.spellId}.`, 'info');
       } catch (error) {
         console.error("Erreur lors de l'ajout à la file de synchronisation:", error);
-        addToast({ type: 'error', message: "Échec de la sauvegarde locale du progrès." });
+        addToast("Échec de la sauvegarde locale du progrès.", 'error');
       }
     } else {
       console.log(`Mode en ligne: Mise à jour de ${currentItem.spellId} sur le serveur.`);
@@ -67,10 +67,10 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
           isCorrect
         });
         console.log(`Review item ${currentItem.spellId} updated on server.`);
-        addToast({ type: 'success', message: `Progrès synchronisé pour ${currentItem.word || currentItem.spellId}.` });
+        addToast(`Progrès synchronisé pour ${currentItem.word || currentItem.spellId}.`, 'success');
       } catch (error) {
         console.error("Erreur lors de la mise à jour de l'item (en ligne):", error);
-        addToast({ type: 'warning', message: `Échec de la synchronisation pour ${currentItem.word || currentItem.spellId}. Sauvegardé localement.` });
+        addToast(`Échec de la synchronisation pour ${currentItem.word || currentItem.spellId}. Sauvegardé localement.`, 'warning');
         // Fallback: add to sync queue if online update fails
         try {
           await addToSyncQueue({
@@ -80,7 +80,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
           });
         } catch (syncError) {
           console.error("Erreur lors de l'ajout à la file de synchronisation (fallback):", syncError);
-          addToast({ type: 'error', message: "Échec critique: Impossible de sauvegarder le progrès." });
+          addToast("Échec critique: Impossible de sauvegarder le progrès.", 'error');
         }
       }
     }

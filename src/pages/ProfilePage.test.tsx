@@ -3,11 +3,11 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import ProfilePage from './ProfilePage';
 import { useAuth } from '../hooks/useAuth'; // Importer le hook uniquement
-import type { ToastContextType } from '../contexts/ToastContext'; // Importer uniquement le type
+// import type { ToastContextType } from '../contexts/ToastContext'; // Removed unused type import
 import { useToasts } from '../contexts/useToasts';
 import { getAchievementDefinition } from '../data/achievementDefinitions';
 
-import type { UserProfile } from '../hooks/useAuth'; // Import UserProfile for typing mocks
+// import type { UserProfile } from '../hooks/useAuth'; // Removed unused type import
 
 // Mock partiel de useAuth
 vi.mock('../hooks/useAuth', async (importOriginal) => {
@@ -18,12 +18,7 @@ vi.mock('../hooks/useAuth', async (importOriginal) => {
   };
 });
 
-// Define a type for the mock implementation of useAuth based on its actual return type
-type MockUseAuth = {
-  user: UserProfile | null;
-  loading: boolean;
-  updateUserGuildId: ReturnType<typeof vi.fn>;
-};
+// Unused MockUseAuth type removed
 
 // Mock for useToasts hook
 vi.mock('../contexts/useToasts', () => ({
@@ -69,17 +64,13 @@ vi.mock('firebase/firestore', () => ({
     }
     return vi.fn(); // unsubscribe
   }),
-  collection: vi.fn((db, path) => ({ // Ajouter mock pour collection
-    path: path, // pour aider au debug si besoin
-    // Si GrimoireVivant utilise query().onSnapshot(), il faudra l'ajouter ici.
-    // Pour l'instant, on suppose que le onSnapshot mocké ci-dessus est suffisant
-    // ou que GrimoireVivant a une logique de fallback simple.
-    // Pour être plus robuste, on pourrait retourner un objet avec une méthode query,
-    // qui retourne un objet avec une méthode onSnapshot.
-    // Pour l'instant, on le garde simple.
+  // Corrected: Only one definition of collection, with the _db fix
+  collection: vi.fn((_db, path) => ({
+    path: path,
   })),
-  query: vi.fn(ref => ref), // Si query est appelé, il retourne la référence
+  query: vi.fn(ref => ref),
 }));
+
 vi.mock('firebase/functions', () => ({
   getFunctions: vi.fn(),
   httpsCallable: vi.fn(),

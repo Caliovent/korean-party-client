@@ -2,18 +2,15 @@
 
 import Phaser from 'phaser';
 import type { Game, Player } from '../types/game'; // Ensure this matches the updated structure
-import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Import SpellType and SPELL_DEFINITIONS
+import { SPELL_DEFINITIONS, type SpellType, type SpellId } from '../data/spells'; // Import SpellType as type
 import soundService from '../services/soundService'; // Import SoundService
+import type { BoardTile } from '../types/game'; // Import BoardTile
 
-// Updated TileConfig to match src/types/game.ts
-interface TileConfig {
-  type: string;
-  trap?: 'RUNE_TRAP' | string;
-}
+// Removed local TileConfig, will use BoardTile from types/game.ts
 
 export default class MainBoardScene extends Phaser.Scene {
   private playerSprites: { [key:string]: Phaser.GameObjects.Sprite } = {};
-  private tileSprites: Phaser.GameObjects.Sprite[] = []; // Added for tile targeting
+  private tileSprites: Phaser.GameObjects.Image[] = []; // Changed from Sprite[] to Image[]
   private boardPath: { x: number; y: number }[] = [];
   private gameState: Game | null = null;
   private boardIsDrawn = false;
@@ -95,7 +92,7 @@ export default class MainBoardScene extends Phaser.Scene {
   create() {
     this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'board_background').setScale(0.8);
     this.defineBoardPath();
-    this.tileSprites = []; // Initialize tileSprites array
+    this.tileSprites = []; // Initialize tileSprites array (now Image[])
   }
 
   public enterTargetingMode(spellType: SpellType) {
@@ -105,11 +102,11 @@ export default class MainBoardScene extends Phaser.Scene {
 
     if (!this.gameState) return;
 
-    if (spellType === SpellType.TARGET_PLAYER) {
+    if (spellType === "TARGET_PLAYER") {
       this.input.setDefaultCursor('crosshair');
       this.gameState.players.forEach(player => {
-        if (player.id !== this.gameState?.currentPlayerId) { // Can't target self for player-targeted spells
-          const sprite = this.playerSprites[player.id];
+        if (player.uid !== this.gameState?.currentPlayerId) { // Can't target self for player-targeted spells
+          const sprite = this.playerSprites[player.uid];
           if (sprite) {
             sprite.setInteractive(); // Make sure it's interactive
             const tween = this.tweens.add({
@@ -124,7 +121,7 @@ export default class MainBoardScene extends Phaser.Scene {
           }
         }
       });
-    } else if (spellType === SpellType.TARGET_TILE) {
+    } else if (spellType === "TARGET_TILE") {
       this.input.setDefaultCursor('pointer');
       this.tileSprites.forEach(tileSprite => {
         tileSprite.setInteractive(); // Make sure tiles are interactive
@@ -151,9 +148,9 @@ export default class MainBoardScene extends Phaser.Scene {
     this.targetingTweens = [];
 
     // Reset player sprite scales and interactivity if modified for targeting
-    if (this.currentTargetingType === SpellType.TARGET_PLAYER && this.gameState) {
+    if (this.currentTargetingType === "TARGET_PLAYER" && this.gameState) {
       this.gameState.players.forEach(player => {
-        const sprite = this.playerSprites[player.id];
+        const sprite = this.playerSprites[player.uid];
         if (sprite) {
           sprite.setScale(1.5); // Reset to default scale
           // sprite.disableInteractive(); // Optionally disable if only interactive for targeting
@@ -161,7 +158,7 @@ export default class MainBoardScene extends Phaser.Scene {
       });
     }
     // Reset tile sprite visuals and interactivity
-    if (this.currentTargetingType === SpellType.TARGET_TILE) {
+    if (this.currentTargetingType === "TARGET_TILE") {
       this.tileSprites.forEach(tileSprite => {
         tileSprite.setAlpha(1.0); // Reset alpha
         // tileSprite.disableInteractive(); // Optionally disable if only interactive for targeting
@@ -209,19 +206,19 @@ export default class MainBoardScene extends Phaser.Scene {
     if (!this.gameState) return;
 
     this.gameState.players.forEach(player => {
-      const playerSprite = this.playerSprites[player.id];
+      const playerSprite = this.playerSprites[player.uid];
       if (!playerSprite) return;
 
       const isShielded = player.effects?.some(effect => effect.type === 'SHIELDED');
 
-      if (isShielded && !this.shieldEffects[player.id]) {
+      if (isShielded && !this.shieldEffects[player.uid]) {
         // Add shield effect
         const shieldSprite = this.add.sprite(playerSprite.x, playerSprite.y, 'shield_effect');
         // Initial state for animation
         shieldSprite.setScale(0.9); // Start slightly larger, target is 0.7
         shieldSprite.setAlpha(0.8); // Start more opaque, target is 0.6
         shieldSprite.setDepth(playerSprite.depth - 1);
-        this.shieldEffects[player.id] = shieldSprite;
+        this.shieldEffects[player.uid] = shieldSprite;
 
         // Brief appearance animation
         this.tweens.add({
@@ -232,13 +229,13 @@ export default class MainBoardScene extends Phaser.Scene {
           ease: 'Quint.easeOut'
         });
         soundService.playSound('action_shield_gain'); // Play shield gain sound
-      } else if (!isShielded && this.shieldEffects[player.id]) {
+      } else if (!isShielded && this.shieldEffects[player.uid]) {
         // Remove shield effect
-        this.shieldEffects[player.id].destroy();
-        delete this.shieldEffects[player.id];
-      } else if (isShielded && this.shieldEffects[player.id]) {
+        this.shieldEffects[player.uid].destroy();
+        delete this.shieldEffects[player.uid];
+      } else if (isShielded && this.shieldEffects[player.uid]) {
         // Ensure shield follows player if already exists (e.g. after non-move update)
-        this.shieldEffects[player.id].setPosition(playerSprite.x, playerSprite.y);
+        this.shieldEffects[player.uid].setPosition(playerSprite.x, playerSprite.y);
       }
     });
   }
@@ -281,7 +278,7 @@ export default class MainBoardScene extends Phaser.Scene {
 
     const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spellId);
 
-    if (targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+    if (targetSprite && spellDefinition && spellDefinition.type !== "SELF") {
       const bolt = this.add.sprite(casterSprite.x, casterSprite.y, 'mana_bolt');
       bolt.setScale(0.5);
       bolt.setAlpha(0.7);
@@ -308,10 +305,10 @@ export default class MainBoardScene extends Phaser.Scene {
           bolt.destroy();
         }
       });
-    } else if (spellDefinition && spellDefinition.type === SpellType.SELF) {
+    } else if (spellDefinition && spellDefinition.type === "SELF") {
       // For SELF spells, the muzzle flash might be the primary effect.
       console.log(`[Phaser] SELF spell ${spellId} cast by ${casterId}. Muzzle flash shown.`);
-    } else if (!targetSprite && spellDefinition && spellDefinition.type !== SpellType.SELF) {
+    } else if (!targetSprite && spellDefinition && spellDefinition.type !== "SELF") {
       // This handles cases like tile-targeted spells where targetId might be a tile index, not a player ID.
       // Projectile logic for tiles would need to resolve targetId to tile coordinates.
       // For now, only muzzle flash is guaranteed.
@@ -331,7 +328,7 @@ export default class MainBoardScene extends Phaser.Scene {
         console.log(`[Phaser] Player changed from ${oldState.currentPlayerId} to ${newState.currentPlayerId}.`);
 
         // Étape 1: Zoom Out pour revenir à la vue d'ensemble
-        this.cameras.main.zoomTo(1, 1000, 'Power2', false, (cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+        this.cameras.main.zoomTo(1, 1000, 'Power2', false, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
           if (progress === 1) { // Ensure zoom out is complete
             console.log('[Phaser] Zoom out complete. Now zooming in on new player.');
             // Étape 2: Zoom In et Pan sur le nouveau joueur
@@ -374,16 +371,16 @@ export default class MainBoardScene extends Phaser.Scene {
       // Update player positions
       if (oldState) { // Ensure oldState exists for comparison
         this.gameState.players.forEach(player => {
-          const oldPlayer = oldState.players.find(p => p.id === player.id);
+          const oldPlayer = oldState.players.find(p => p.uid === player.uid);
           if (oldPlayer && oldPlayer.position !== player.position) {
-            console.log(`[Phaser] Player ${player.name} moved from ${oldPlayer.position} to ${player.position}`);
-            this.movePlayerSprite(player.id, oldPlayer.position, player.position);
-          } else if (oldPlayer && (playerSpriteNeedsUpdate(oldPlayer, player) || !this.playerSprites[player.id])) {
+            console.log(`[Phaser] Player ${player.displayName} moved from ${oldPlayer.position} to ${player.position}`);
+            this.movePlayerSprite(player.uid, oldPlayer.position, player.position);
+          } else if (oldPlayer && (playerSpriteNeedsUpdate(oldPlayer, player) || !this.playerSprites[player.uid])) {
             // Fallback to redraw/update player sprite if position is same but other visual info changed, or if sprite somehow missing
             // This might be simplified if only position changes trigger moves.
             const currentCoords = this.boardPath[player.position % this.boardPath.length];
-            if (this.playerSprites[player.id]) {
-              this.playerSprites[player.id].setPosition(currentCoords.x, currentCoords.y);
+            if (this.playerSprites[player.uid]) {
+              this.playerSprites[player.uid].setPosition(currentCoords.x, currentCoords.y);
             } else {
               // Re-initialize this specific player if sprite is missing (should be rare)
               // This part of the logic might need refinement based on how player data can change without moving.
@@ -422,7 +419,7 @@ export default class MainBoardScene extends Phaser.Scene {
     ];
   }
 
-  private drawBoard(boardLayout: TileConfig[]) { // Use updated TileConfig
+  private drawBoard(boardLayout: BoardTile[]) { // Changed parameter to BoardTile[]
     if (this.boardPath.length === 0) {
       console.error("drawBoard was called before defineBoardPath set the path.");
       return;
@@ -440,7 +437,7 @@ export default class MainBoardScene extends Phaser.Scene {
       tileSprite.setData('tileIndex', index); // Store index on the sprite
 
       tileSprite.on('pointerdown', () => {
-        if (this.currentTargetingType === SpellType.TARGET_TILE) {
+        if (this.currentTargetingType === "TARGET_TILE") {
             const TILE_INDEX_CLICKED = tileSprite.getData('tileIndex');
             console.log(`[Phaser] Clicked on target tile: ${TILE_INDEX_CLICKED}. Calling React callback.`);
             this.onTargetSelected(TILE_INDEX_CLICKED.toString()); // Convert index to string for consistency
@@ -448,9 +445,9 @@ export default class MainBoardScene extends Phaser.Scene {
           // Not in targeting mode, check for tile activation
           console.log(`[Phaser] Clicked on tile ${index} of type: ${tileConfig.type} (not in targeting mode).`);
 
-          const currentPlayer = this.gameState?.players.find(p => p.id === this.gameState?.currentPlayerId);
+          const currentPlayer = this.gameState?.players.find(p => p.uid === this.gameState?.currentPlayerId);
           if (currentPlayer && currentPlayer.position === index) {
-              console.log(`[Phaser] Current player ${currentPlayer.id} is on tile ${index}. Evaluating tile action.`);
+              console.log(`[Phaser] Current player ${currentPlayer.uid} is on tile ${index}. Evaluating tile action.`);
 
               let hangeulTyphoonOptions: any = null;
               const currentTileConfig = tileConfig; // tileConfig is already the config for the clicked tile (index)
@@ -461,20 +458,20 @@ export default class MainBoardScene extends Phaser.Scene {
                       hangeulTyphoonOptions = {
                           gameMode: 'eupreuveDuScribe',
                           isDuel: false,
-                          attackerPlayerId: currentPlayer.id
+                          attackerPlayerId: currentPlayer.uid
                       };
                       break;
 
                   case 'DUEL_ARENA':
                       console.log('[Phaser] Landing on Duel Arena. Launching Hangeul Typhoon (Duel Mode).');
-                      const opponent = this.gameState?.players.find(p => p.id !== currentPlayer.id);
+                      const opponent = this.gameState?.players.find(p => p.uid !== currentPlayer.uid);
                       if (opponent) {
                           hangeulTyphoonOptions = {
                               gameMode: 'eupreuveDuScribe',
                               isDuel: true,
-                              gameId: `duel_${currentPlayer.id}_vs_${opponent.id}_${Date.now()}`,
-                              attackerPlayerId: currentPlayer.id,
-                              targetPlayerId: opponent.id
+                              gameId: `duel_${currentPlayer.uid}_vs_${opponent.uid}_${Date.now()}`,
+                              attackerPlayerId: currentPlayer.uid,
+                              targetPlayerId: opponent.uid
                           };
                       } else {
                           console.warn('[Phaser] Duel tile landed, but no opponent found to start Hangeul Typhoon duel.');
@@ -488,7 +485,7 @@ export default class MainBoardScene extends Phaser.Scene {
                       hangeulTyphoonOptions = {
                           gameMode: selectedTranslationMode,
                           isDuel: false,
-                          attackerPlayerId: currentPlayer.id
+                          attackerPlayerId: currentPlayer.uid
                       };
                       break;
               }
@@ -497,7 +494,7 @@ export default class MainBoardScene extends Phaser.Scene {
                   this.scene.start('HangeulTyphoonScene', hangeulTyphoonOptions);
               }
           } else {
-              console.log(`[Phaser] Clicked tile ${index}, but current player ${currentPlayer?.id} is at ${currentPlayer?.position}. No action.`);
+              console.log(`[Phaser] Clicked tile ${index}, but current player ${currentPlayer?.uid} is at ${currentPlayer?.position}. No action.`);
           }
         }
       });
@@ -513,15 +510,15 @@ export default class MainBoardScene extends Phaser.Scene {
         const startCoords = this.boardPath[startPosition % this.boardPath.length];
         const playerSprite = this.add.sprite(startCoords.x, startCoords.y, 'player_spritesheet', spriteIndex);
         
-        playerSprite.setTint(this.getPlayerColor(player.id));
+        playerSprite.setTint(this.getPlayerColor(player.uid));
         playerSprite.setScale(1.5); // Default scale
-        this.playerSprites[player.id] = playerSprite;
+        this.playerSprites[player.uid] = playerSprite;
 
         // playerSprite.setInteractive(); // Will be set dynamically in enterTargetingMode
-        playerSprite.setData('playerId', player.id);
+        playerSprite.setData('playerId', player.uid);
 
         playerSprite.on('pointerdown', () => {
-            if (this.currentTargetingType === SpellType.TARGET_PLAYER) {
+            if (this.currentTargetingType === "TARGET_PLAYER") {
                 const targetId = playerSprite.getData('playerId');
                 if (targetId !== this.gameState?.currentPlayerId) { // Ensure not targeting self
                     console.log(`[Phaser] Clicked on target player: ${targetId}. Calling React callback.`);
@@ -534,7 +531,7 @@ export default class MainBoardScene extends Phaser.Scene {
     });
   }
 
-  private movePlayerSprite(playerId: string, startPosition: number, endPosition: number) {
+  private movePlayerSprite(playerId: string, _startPosition: number, endPosition: number) {
     const playerSprite = this.playerSprites[playerId];
     if (!playerSprite) return;
 

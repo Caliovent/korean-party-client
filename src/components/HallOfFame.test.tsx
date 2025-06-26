@@ -1,10 +1,9 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import HallOfFame from './HallOfFame';
 import type { PlayerStats } from '../hooks/useAuth'; // Utiliser import type
-import { AchievementDefinition, achievementDefinitions } from '../data/achievementDefinitions'; // Importer les vraies définitions
+import { achievementDefinitions } from '../data/achievementDefinitions'; // Importer les vraies définitions, removed AchievementDefinition type import
 
 // Mock le module useAuth pour éviter l'initialisation de Firebase via firebaseConfig
 vi.mock('../hooks/useAuth', () => ({

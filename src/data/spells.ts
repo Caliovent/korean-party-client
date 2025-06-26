@@ -10,12 +10,10 @@ export type SpellId =
   "KARMIC_SWAP" |       // Échange Karmique
   "DOKKAEBI_MISCHIEF";  // Malice du Dokkaebi
 
-export enum SpellType {
-  TARGET_TILE = "TARGET_TILE",
-  SELF = "SELF",
-  TARGET_PLAYER = "TARGET_PLAYER",
-  // Add other types as needed, e.g., TARGET_ENEMY, AOE_TILE, etc.
-}
+// Changed SpellType to a string literal union
+export type SpellType = "TARGET_TILE" | "SELF" | "TARGET_PLAYER";
+// Add other types as needed, e.g., TARGET_ENEMY, AOE_TILE, etc.
+
 
 // The 'type' field from the mission brief (DEFENSIVE, CHAOS, TRAP) describes the spell's *effect category*
 // while SpellType here describes the *targeting mechanism* for the frontend.
@@ -37,7 +35,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.push_back.description",
     manaCost: 15,
     requiresTarget: true,
-    type: SpellType.TARGET_PLAYER,
+    type: "TARGET_PLAYER",
     effectCategory: "OFFENSIVE",
   },
   {
@@ -46,7 +44,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.mana_drain.description",
     manaCost: 5,
     requiresTarget: true,
-    type: SpellType.TARGET_PLAYER,
+    type: "TARGET_PLAYER",
     effectCategory: "OFFENSIVE",
   },
   {
@@ -55,7 +53,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.trap_rune.description",
     manaCost: 30, // Example, might be different from Dokkaebi's Mischief
     requiresTarget: true,
-    type: SpellType.TARGET_TILE,
+    type: "TARGET_TILE",
     effectCategory: "TRAP",
   },
   {
@@ -64,7 +62,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.mana_shield.description",
     manaCost: 25, // Example, might be different from Memory Fog
     requiresTarget: false,
-    type: SpellType.SELF,
+    type: "SELF",
     effectCategory: "DEFENSIVE",
   },
   {
@@ -73,7 +71,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.astral_swap.description",
     manaCost: 40, // Example, might be different from Karmic Swap
     requiresTarget: true,
-    type: SpellType.TARGET_PLAYER,
+    type: "TARGET_PLAYER",
     effectCategory: "UTILITY", // Or CHAOS, depending on interpretation
   },
   // New Spells from "L'Art de l'Enchantement"
@@ -83,7 +81,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.memory_fog.description", // Key for "Vous protège du prochain sort négatif lancé contre vous."
     manaCost: 25,
     requiresTarget: false, // Targets self
-    type: SpellType.SELF,
+    type: "SELF",
     effectCategory: "DEFENSIVE",
   },
   {
@@ -92,7 +90,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.karmic_swap.description", // Key for "Échangez votre position sur le plateau avec un autre joueur."
     manaCost: 40,
     requiresTarget: true, // Needs a target player
-    type: SpellType.TARGET_PLAYER,
+    type: "TARGET_PLAYER",
     effectCategory: "CHAOS",
   },
   {
@@ -101,7 +99,7 @@ export const SPELL_DEFINITIONS: Spell[] = [
     descriptionKey: "spells.dokkaebi_mischief.description", // Key for "Placez un piège invisible sur une case. Le prochain joueur à s'y arrêter perd 15 Mana."
     manaCost: 30,
     requiresTarget: true, // Needs a target tile
-    type: SpellType.TARGET_TILE,
+    type: "TARGET_TILE",
     effectCategory: "TRAP",
   },
 ];

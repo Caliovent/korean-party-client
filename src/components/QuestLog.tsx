@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Quest } from '../types/game';
+import type { Quest } from '../types/game';
 import { useTranslation } from 'react-i18next';
 import { subscribeToActiveQuests, subscribeToCompletedQuests } from '../services/questService';
 

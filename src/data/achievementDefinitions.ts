@@ -1,4 +1,4 @@
-import { PlayerStats } from '../hooks/useAuth'; // Importer PlayerStats pour keyof
+import type { PlayerStats } from '../hooks/useAuth'; // Importer PlayerStats pour keyof
 
 export interface AchievementDefinition {
   id: string;

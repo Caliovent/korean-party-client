@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'; // Added userEvent
 import GamePage from './GamePage';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // SPELL_DEFINITIONS is needed for test bodies. SpellType is also needed.
-import { SPELL_DEFINITIONS, SpellType } from '../data/spells';
+import { SPELL_DEFINITIONS, type SpellType } from '../data/spells'; // Changed SpellType to type import
 import { castSpell } from '../services/gameService'; // Import the mock to allow vi.mocked(castSpell)
 
 // Mock soundService
@@ -108,7 +108,7 @@ vi.mock('firebase/firestore', async () => {
 
   return {
     ...actual,
-    onSnapshot: vi.fn((query, callback) => {
+    onSnapshot: vi.fn((_query, callback) => {
       onSnapshotCallback = callback; // Store the callback
       // Immediately trigger with initial data
       setTimeout(() => {
@@ -140,7 +140,7 @@ vi.mock('../hooks/useAuth', () => ({
 }));
 
 // Mock Phaser
-vi.mock('phaser', async (importOriginal) => {
+vi.mock('phaser', async (_importOriginal) => {
     class MockEvents {
       on = vi.fn(); off = vi.fn(); emit = vi.fn(); once = vi.fn();
     }
@@ -231,7 +231,7 @@ describe('GamePage', () => {
 
   it('devrait appeler castSpell directement pour un sort auto-ciblé (SELF)', async () => {
     const user = userEvent.setup();
-    const selfCastSpell = SPELL_DEFINITIONS.find(s => s.type === SpellType.SELF);
+    const selfCastSpell = SPELL_DEFINITIONS.find(s => s.type === "SELF");
     if (!selfCastSpell) throw new Error("Test requires at least one SELF spell defined.");
 
     vi.mocked(castSpell).mockClear(); // Clear mock before test
@@ -258,7 +258,7 @@ describe('GamePage', () => {
 
   it('devrait sélectionner un sort ciblé mais ne pas appeler castSpell sans cible', async () => {
     const user = userEvent.setup();
-    const targetedSpell = SPELL_DEFINITIONS.find(s => s.type === SpellType.TARGET_PLAYER || s.type === SpellType.TARGET_TILE);
+    const targetedSpell = SPELL_DEFINITIONS.find(s => s.type === "TARGET_PLAYER" || s.type === "TARGET_TILE");
     if (!targetedSpell) throw new Error("Test requires at least one TARGETED spell defined.");
 
     vi.mocked(castSpell).mockClear();
@@ -287,8 +287,7 @@ describe('GamePage', () => {
 
   it('Lancement d\'un Sort et Réaction du HUD: le mana du joueur diminue après un sort', async () => {
     const user = userEvent.setup();
-    // Ensure castSpell is a Vitest mock function for this test
-    const mockedCastSpell = vi.mocked(castSpell);
+    // castSpell is already mocked globally, no need for vi.mocked(castSpell) here if the variable isn't used
 
     renderGamePage();
 
@@ -316,7 +315,7 @@ describe('GamePage', () => {
     // Assuming PUSH_BACK is a targeted spell. Find its definition.
     const pushBackSpell = SPELL_DEFINITIONS.find(s => s.id === 'PUSH_BACK');
     if (!pushBackSpell) throw new Error("Spell PUSH_BACK not found in definitions.");
-    expect(pushBackSpell.type).not.toBe(SpellType.SELF); // Ensure it's a targeted spell for this scenario
+    expect(pushBackSpell.type).not.toBe("SELF"); // Ensure it's a targeted spell for this scenario
 
     const spellNameElement = await screen.findByText(pushBackSpell.nameKey);
     const spellItemContainer = spellNameElement.closest('li');
@@ -467,17 +466,31 @@ vi.mock('firebase/firestore', async () => {
 
   let currentMockGameData = JSON.parse(JSON.stringify(initialGameData));
 
+  // Define a simple player type for mock data within this test file
+  type MockPlayer = {
+    id: string;
+    uid: string;
+    name: string;
+    displayName: string;
+    mana: number;
+    grimoires: any[];
+    position: number;
+    spells: string[];
+    effects: any[];
+    // Add other fields as necessary based on usage in tests
+  };
+
   global.updateMockGameState = (newGameStatePartial: Partial<typeof initialGameData>) => {
     // When updating players, ensure we merge correctly if only one player is partially updated.
     if (newGameStatePartial.players && currentMockGameData.players) {
-      const updatedPlayers = currentMockGameData.players.map(p => {
+      const updatedPlayers = currentMockGameData.players.map((p: MockPlayer) => { // Added MockPlayer type
         const updatedPlayer = newGameStatePartial.players!.find(up => up.id === p.id);
         return updatedPlayer ? { ...p, ...updatedPlayer } : p;
       });
       // Check if any new players were added in the partial update (though not typical for this app)
       newGameStatePartial.players.forEach(up => {
-        if (!updatedPlayers.find(p => p.id === up.id)) {
-          updatedPlayers.push(up as any); // Add as any to satisfy Player type, ensure structure is correct
+        if (!updatedPlayers.find((p: MockPlayer) => p.id === up.id)) { // Added MockPlayer type
+          updatedPlayers.push(up as MockPlayer); // Cast to MockPlayer
         }
       });
       currentMockGameData = { ...currentMockGameData, ...newGameStatePartial, players: updatedPlayers };
@@ -513,7 +526,7 @@ vi.mock('firebase/firestore', async () => {
 
   return {
     ...actualFirestore,
-    onSnapshot: vi.fn((query: any, callback: (snapshot: any) => void) => {
+    onSnapshot: vi.fn((_query: any, callback: (snapshot: any) => void) => {
       onSnapshotCallback = callback;
       setTimeout(() => { // Simulate async behavior
         if (onSnapshotCallback) {
@@ -528,7 +541,7 @@ vi.mock('firebase/firestore', async () => {
         onSnapshotCallback = null;
       };
     }),
-    doc: vi.fn().mockImplementation((db, path, id) => ({
+    doc: vi.fn().mockImplementation((_db, path, id) => ({
       id: id || 'mockDocRef', // Use provided id or default
       path: `${path}/${id}`,
       // Add other properties if needed by the code using the doc ref

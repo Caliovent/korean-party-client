@@ -291,10 +291,11 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     this.currentCombo = 0; // Initialize combo
     this.comboTimer = null; // Initialize combo timer reference
 
-    this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
-      if (this.isGameOver && event.key !== 'G') return; // Allow 'G' for debug even if game over for testing this feature
+    if (this.input.keyboard) { // Null check for keyboard
+      this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+        if (this.isGameOver && event.key !== 'G') return; // Allow 'G' for debug even if game over for testing this feature
 
-      // Debug listener for 'G' key (placed inside the main handler to ensure it's also off when main input is off)
+        // Debug listener for 'G' key (placed inside the main handler to ensure it's also off when main input is off)
       if (event.key === 'g' || event.key === 'G') { // Check for 'g' or 'G'
         if (this.isGameOver && !(event.key === 'g' || event.key === 'G')) return; // Re-check for non-G keys if game is over
 
@@ -363,7 +364,8 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
         this.targetedBlock.setTint(0xffffff);
         this.targetedBlock = null;
       }
-    });
+    }); // End of keyboard event listener
+    } // End of if (this.input.keyboard)
 
     this.blockSpawnTimer = this.time.addEvent({ // Assign to the class property
       delay: 2000, // milliseconds (2 seconds)
@@ -426,7 +428,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     blockText.setData('isVulnerable', false);
   }
 
-  update(time: number, delta: number) { // Added time, delta explicitly for clarity
+  update(_time: number, delta: number) { // Added time, delta explicitly for clarity; time unused
     if (this.isGameOver) {
       return; // Stop most update logic if game is over
     }
@@ -501,19 +503,25 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     let bestMatch: Phaser.GameObjects.Text | null = null;
 
     this.blocks.getChildren().forEach(blockObject => {
-      const block = blockObject as Phaser.GameObjects.Text;
-      const blockExpectedInput = block.getData('expectedInput') as string;
+      // Ensure it's a Text object before casting and using
+      if (blockObject instanceof Phaser.GameObjects.Text) {
+        const block = blockObject; // block is now safely Phaser.GameObjects.Text
+        const blockExpectedInput = block.getData('expectedInput') as string;
 
-      if (blockExpectedInput && blockExpectedInput.toLowerCase().startsWith(this.inputTextString.toLowerCase())) {
-        if (!bestMatch || block.y > bestMatch.y) {
-          bestMatch = block;
+        if (blockExpectedInput && blockExpectedInput.toLowerCase().startsWith(this.inputTextString.toLowerCase())) {
+          if (!bestMatch || block.y > bestMatch.y) {
+            bestMatch = block;
+          }
         }
       }
     });
 
-    if (bestMatch) {
+    if (bestMatch) { // If bestMatch is found, it's a Phaser.GameObjects.Text
       this.targetedBlock = bestMatch;
-      this.targetedBlock.setTint(0xffff00); // Highlight with yellow tint
+      // this.targetedBlock is now Phaser.GameObjects.Text, so direct call should be fine.
+      // The 'never' type error on setTint previously was puzzling.
+      // If this still errors, the problem is more complex than simple type guarding.
+      (this.targetedBlock as Phaser.GameObjects.Text).setTint(0xffff00);
     }
   }
 
@@ -591,7 +599,9 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     if (this.comboTimer) { this.comboTimer.remove(false); this.comboTimer = null; }
 
     // Stop player input (careful if other keydown listeners exist, this removes all)
-    this.input.keyboard.removeAllListeners('keydown'); // More specific than just off()
+    if (this.input.keyboard) { // Null check
+      this.input.keyboard.removeAllListeners('keydown'); // More specific than just off()
+    }
 
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;
@@ -640,7 +650,9 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     if (this.blockSpawnTimer) this.blockSpawnTimer.remove(false);
     if (this.comboTimer) { this.comboTimer.remove(false); this.comboTimer = null; }
-    this.input.keyboard.removeAllListeners('keydown');
+    if (this.input.keyboard) { // Null check
+      this.input.keyboard.removeAllListeners('keydown');
+    }
 
     const gameWidth = this.sys.game.config.width as number;
     const gameHeight = this.sys.game.config.height as number;

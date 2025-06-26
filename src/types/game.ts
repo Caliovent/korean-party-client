@@ -62,9 +62,11 @@ export interface Game {
 
 export interface SpellMasteryData {
   spellId: SpellId;
+  word?: string; // The actual word/phrase if it's a word rune, or could be spell name
   masteryLevel: number; // e.g., 0 for unlearned, 1 for basic, 2 for mastered
   successfulCasts: number; // Number of times the spell has been cast successfully
   failedCasts: number; // Number of times the spell failed (e.g., due to lack of mana, target out of range)
+  nextReviewDate?: number; // Unix timestamp (milliseconds) for next scheduled review
   // Optional: could add lastUsedTimestamp, specific spell stats, etc.
 }
 

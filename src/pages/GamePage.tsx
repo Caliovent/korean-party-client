@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import { castSpell } from '../services/gameService'; // Importer castSpell
 import soundService from '../services/soundService'; // Import soundService
-import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Importer le type SpellId
+import { SPELL_DEFINITIONS, type SpellType, type SpellId } from '../data/spells'; // Importer le type SpellId, SpellType as type
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
@@ -61,7 +61,7 @@ const GamePage: React.FC = () => {
         setGame({ id: doc.id, ...doc.data() } as Game);
 
         if (user) {
-          const playerData = gameData.players.find(p => p.id === user.uid);
+          const playerData = gameData.players.find(p => p.uid === user.uid);
           setCurrentPlayer(playerData || null);
         }
       } else {
@@ -143,7 +143,7 @@ const GamePage: React.FC = () => {
     }
 
     // Handle self-cast spells immediately
-    if (spellDefinition.type === SpellType.SELF) {
+    if (spellDefinition.type === "SELF") {
       if (game && user && !isCastingSpell) {
         console.log(`[React] Casting self-spell ${spellId} for game ${game.id}`);
         soundService.playSound('action_spell_cast_generic'); // Sound for casting
@@ -178,7 +178,7 @@ const GamePage: React.FC = () => {
     if (game && selectedSpellId && selectedTargetId && user) {
       const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === selectedSpellId);
       // Ensure it's not a SELF spell trying to cast via target selection.
-      if (spellDefinition && spellDefinition.type !== SpellType.SELF && !isCastingSpell) {
+      if (spellDefinition && spellDefinition.type !== "SELF" && !isCastingSpell) {
         console.log(`[React] Casting targeted spell ${selectedSpellId} on ${selectedTargetId} for game ${game.id}`);
         soundService.playSound('action_spell_cast_generic'); // Sound for casting
         setIsCastingSpell(true);
@@ -204,15 +204,15 @@ const GamePage: React.FC = () => {
 
   // AJOUT : Vérifier si la partie est terminée
   if (game.status === 'finished') {
-    const winner = game.players.find(p => p.id === game.winnerId);
-    const winnerName = winner ? winner.name : 'Un sorcier mystérieux';
+    const winner = game.players.find(p => p.uid === game.winnerId);
+    const winnerName = winner ? winner.displayName : 'Un sorcier mystérieux';
     
     return <VictoryScreen winnerName={winnerName} />;
   }
 
   const isMyTurn = user ? game.currentPlayerId === user.uid : false;
-  const activePlayer = game.players.find(p => p.id === game.currentPlayerId);
-  const activePlayerName = activePlayer ? activePlayer.name : 'Adversaire inconnu';
+  const activePlayer = game.players.find(p => p.uid === game.currentPlayerId);
+  const activePlayerName = activePlayer ? activePlayer.displayName : 'Adversaire inconnu';
 
 
   // Le rendu normal du jeu si la partie n'est pas terminée
@@ -240,7 +240,7 @@ const GamePage: React.FC = () => {
                     onSelectSpell={handleSelectSpell}
                     isCastingSpell={isCastingSpell}
                     castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
-                    isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== SpellType.SELF}
+                    isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== "SELF"}
                   />
                   <GameControls game={game} />
                 </>

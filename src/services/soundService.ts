@@ -46,11 +46,11 @@ class SoundService {
           this.sounds.set(definition.name, sound);
           resolve();
         },
-        onloaderror: (id, error) => {
+        onloaderror: (_id, error) => {
           console.error(`SoundService: Error loading sound ${definition.name} from ${definition.path}:`, error);
           reject(error);
         },
-        onplayerror: (id, error) => {
+        onplayerror: (_id, error) => {
           console.error(`SoundService: Error playing sound ${definition.name}:`, error);
           // Potentially try to unlock audio context if it's an interaction issue
           if (Howler.ctx && Howler.ctx.state === 'suspended') {
