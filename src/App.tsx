@@ -114,15 +114,24 @@ function App() {
 
   const handleOnline = useCallback(() => {
     addToast('Connexion internet rétablie.', 'info');
-    if (user && !user.isAnonymous) { // Ensure user is logged in
+    // Only proceed if a user is logged in and not anonymous, AND not currently syncing.
+    if (user && !user.isAnonymous && !isSyncing) {
       if (onlineSyncDebounceTimer.current) {
         clearTimeout(onlineSyncDebounceTimer.current);
       }
       onlineSyncDebounceTimer.current = setTimeout(() => {
-        processSyncQueue(user); // processSyncQueue is now defined before this
+        // Double check isSyncing again inside setTimeout, as its state might have changed
+        // during the debounce period by other means (e.g. login sync).
+        if (!isSyncing) {
+          processSyncQueue(user);
+        } else {
+          console.log("Sync: Debounced online sync skipped, another sync is already in progress.");
+        }
       }, 5000); // Debounce for 5 seconds
+    } else if (isSyncing) {
+      console.log("Sync: Online event received, but a sync is already in progress. Ignoring.");
     }
-  }, [user, processSyncQueue, addToast]); // processSyncQueue needs to be in the dependency array if it's used inside
+  }, [user, processSyncQueue, addToast, isSyncing]); // Added isSyncing to dependencies
 
   const handleOffline = useCallback(() => {
     addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
@@ -157,8 +166,10 @@ function App() {
           navigate('/hub');
         }
         // Attempt to sync when user logs in and is online
-        if (navigator.onLine) {
+        if (navigator.onLine && !isSyncing) { // <--- Added !isSyncing here
           processSyncQueue(currentUser);
+        } else if (isSyncing) {
+          console.log("Sync: Login sync attempt skipped, another sync is already in progress.");
         }
       } else if (currentUser && currentUser.isAnonymous) {
         // Handle anonymous user login, typically no user-specific data to sync from a previous session
