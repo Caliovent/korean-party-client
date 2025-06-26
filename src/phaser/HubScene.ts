@@ -7,7 +7,7 @@ import {
   onSnapshot,
   collection,
   query,
-  where,
+  // where, // Unused import
   deleteDoc,
   serverTimestamp,
   Timestamp,
@@ -29,6 +29,7 @@ export default class HubScene extends Phaser.Scene {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private triggerZones!: Phaser.Physics.Arcade.StaticGroup;
+  private gamePortal?: Phaser.GameObjects.Sprite; // Added gamePortal property
   private moveSpeed = 200;
 
   private currentUser: User | null = null;
@@ -37,7 +38,7 @@ export default class HubScene extends Phaser.Scene {
   private remotePlayerTargets: Map<string, Phaser.Math.Vector2> = new Map();
   private firestoreListenerUnsubscribe?: () => void;
   private isOverlappingPortal = false;
-  private isOverlappingGuildPanel = false; // Si vous avez aussi un panneau de guilde
+  // private isOverlappingGuildPanel = false; // Unused property
 
   constructor() {
     super({ key: "HubScene" });
@@ -110,7 +111,7 @@ export default class HubScene extends Phaser.Scene {
         this.cameras.main.height / 2,
         "player_avatar",
       ) as any;
-      this.player.setScale(1);
+      this.player?.setScale(1); // Optional chaining
     } else {
       // Fallback for player avatar (as before)
       console.error("Player avatar texture not found!");
@@ -119,12 +120,14 @@ export default class HubScene extends Phaser.Scene {
       graphics.fillRect(-16, -16, 32, 32);
       const textureKey = "player_placeholder_self";
       if (this.textures.exists(textureKey)) this.textures.remove(textureKey);
+      // graphics.generateTexture call creates the texture and adds it to texture manager
+      graphics.generateTexture(textureKey, 32, 32);
       this.player = this.add.sprite(
         this.cameras.main.width / 2,
         this.cameras.main.height / 2,
-        textureKey,
+        textureKey, // Use the key directly
       ) as any;
-      this.player.setTexture(graphics.generateTexture(textureKey, 32, 32));
+      // this.player.setTexture(textureKey); // setTexture is redundant if sprite is created with key
       graphics.destroy();
     }
 
@@ -139,13 +142,15 @@ export default class HubScene extends Phaser.Scene {
     }
 
     // Initialize keyboard controls
-    this.cursors = this.input.keyboard.createCursorKeys();
+    if (this.input.keyboard) { // Null check
+      this.cursors = this.input.keyboard.createCursorKeys();
+    }
 
     // Listen for other players
     this.listenForOtherPlayers();
 
     // Add Game Lobby Portal/NPC
-    const gamePortal = this.triggerZones
+    this.gamePortal = this.triggerZones
       .create(
         this.cameras.main.width - 150,
         this.cameras.main.height / 2,
@@ -155,10 +160,13 @@ export default class HubScene extends Phaser.Scene {
       .setInteractive()
       .refreshBody(); // Important for a static physics body
 
-    gamePortal.on("pointerdown", () => {
-      console.log("Game portal clicked");
-      this.game.events.emit("openGameLobbyModal");
-    });
+    if (this.gamePortal) { // Null check
+      this.gamePortal.on("pointerdown", () => {
+        console.log("Game portal clicked");
+        this.game.events.emit("openGameLobbyModal");
+      });
+    }
+    // Removed extra });
 
     // Add Guild Panel
     const guildPanel = this.triggerZones
@@ -255,38 +263,42 @@ export default class HubScene extends Phaser.Scene {
         // Skip current player
         if (playerUid === this.currentUser!.uid) return;
 
-        let remotePlayerSprite = this.otherPlayers
+        let existingSprite = this.otherPlayers
           .getChildren()
-          .find((p) => (p as any).uid === playerUid) as
-          | (Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body })
-          | undefined;
+          .find((p) => p.getData('uid') === playerUid) as (Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body }) | undefined;
 
         if (change.type === "added" || change.type === "modified") {
-          if (!remotePlayerSprite) {
-            remotePlayerSprite = this.add.sprite(
+          if (!existingSprite) { // Player is new or was missing
+            const newSprite = this.add.sprite(
               playerData.x,
               playerData.y,
               "other_player_avatar",
-            ) as any;
-            remotePlayerSprite.setScale(1); // Slightly different scale for others
-            (remotePlayerSprite as any).uid = playerUid; // Store UID on the sprite
-            this.otherPlayers.add(remotePlayerSprite);
-            this.physics.world.enable(remotePlayerSprite); // Enable physics for basic movement
-            if (remotePlayerSprite.body)
-              remotePlayerSprite.body.setImmovable(true); // So local player doesn't push them easily
+            ) as Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body }; // Removed uid from direct type
 
+            newSprite.setScale(1);
+            newSprite.setData('uid', playerUid); // Store UID using setData
+            this.otherPlayers.add(newSprite); // newSprite is definitely not undefined
+            this.physics.world.enable(newSprite); // newSprite is definitely not undefined
+            if (newSprite.body) { // Standard body check
+              newSprite.body.setImmovable(true);
+            }
+            existingSprite = newSprite; // existingSprite is now the newSprite for target setting
             console.log(
-              `Player ${playerData.displayName || playerUid} added to hub scene.`,
+              `Player ${playerData.displayName || playerUid} added/re-added to hub scene.`,
             );
           }
-          // Store target position for interpolation in update()
-          this.remotePlayerTargets.set(
-            playerUid,
-            new Phaser.Math.Vector2(playerData.x, playerData.y),
-          );
+
+          // existingSprite should be defined here, either found or newly created.
+          if (existingSprite) { // Check existingSprite before setting target
+             this.remotePlayerTargets.set(
+               playerUid,
+               new Phaser.Math.Vector2(playerData.x, playerData.y),
+             );
+          }
+
         } else if (change.type === "removed") {
-          if (remotePlayerSprite) {
-            this.otherPlayers.remove(remotePlayerSprite, true, true); // Remove from group and destroy
+          if (existingSprite) { // Use existingSprite here as well
+            this.otherPlayers.remove(existingSprite, true, true); // Remove from group and destroy
             this.remotePlayerTargets.delete(playerUid);
             console.log(
               `Player ${playerData.displayName || playerUid} removed from hub scene.`,
@@ -297,7 +309,7 @@ export default class HubScene extends Phaser.Scene {
     });
   }
 
-  update(time: number, delta: number) {
+  update(_time: number, _delta: number) { // Parameters time and delta are unused
     // Current player movement
     if (!this.player || !this.player.body || !this.cursors) {
       return;

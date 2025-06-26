@@ -63,7 +63,7 @@ const GameControls: React.FC<GameControlsProps> = ({ game }) => {
   if (!isMyTurn) {
     return (
       <div className="game-controls">
-        <p>C'est au tour de {game.players.find(p => p.id === game.currentPlayerId)?.name}...</p>
+        <p>C'est au tour de {game.players.find(p => p.uid === game.currentPlayerId)?.displayName}...</p>
       </div>
     );
   }

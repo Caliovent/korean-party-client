@@ -3,13 +3,10 @@ import React, { useState, useEffect } from "react";
 import {
   collection,
   onSnapshot,
-  serverTimestamp,
   query,
   where,
   getDocs,
-  deleteDoc,
-  doc,
-} from "firebase/firestore"; // Removed addDoc
+} from "firebase/firestore"; // Removed addDoc, serverTimestamp, deleteDoc, doc
 import { db, functions } from "../firebaseConfig";
 import { httpsCallable } from "firebase/functions";
 import { useNavigate } from "react-router-dom";

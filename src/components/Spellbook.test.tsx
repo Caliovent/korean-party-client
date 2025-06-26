@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
@@ -24,40 +23,41 @@ vi.mock('react-i18next', () => ({
 
 // Mock player data for testing
 const mockPlayer: Player = {
-  id: 'player-1',
-  uid: 'player-1', // Added uid to match Player type
-  name: 'Test Player',
-  displayName: 'Test Player', // Added displayName
-  hp: 100,
+  uid: 'player-1',
+  displayName: 'Test Player',
+  // hp: 100, // hp, name, etc. are not in the Player type from src/types/game.ts
   mana: 100,
   position: 0,
   effects: [],
-  spells: SPELL_DEFINITIONS.map(spell => spell.id), // Populate with all spell IDs for Spellbook to render them
+  // spells: SPELL_DEFINITIONS.map(spell => spell.id), // spells is not in Player type
   grimoires: [],
-  influence: 0,
-  gold: 0,
-  inventory: [],
-  quests: [],
-  isProtected: false,
-  skipNextTurn: false,
-  extraRolls: 0,
-  rollModifier: 0,
-  luck: 0,
-  lastDiceRoll: null,
-  eventDeck: [],
-  playedEventCardIds: [],
-  guildId: null,
-  avatarUrl: '',
-  title: '',
-  joinDate: new Date().toISOString(),
-  lastLoginDate: new Date().toISOString(),
-  stats: {
-    gamesPlayed:0,
-    gamesWon:0,
-    damageDealt:0,
-    manaSpent:0,
-    spellsCast:0,
-  }
+  // influence: 0, // Not in Player type
+  // gold: 0, // Not in Player type
+  // inventory: [], // Not in Player type
+  // quests: [], // Not in Player type
+  // isProtected: false, // Not in Player type
+  // skipNextTurn: false, // Not in Player type
+  // extraRolls: 0, // Not in Player type
+  // rollModifier: 0, // Not in Player type
+  // luck: 0, // Not in Player type
+  // lastDiceRoll: null, // Not in Player type
+  // eventDeck: [], // Not in Player type
+  // playedEventCardIds: [], // Not in Player type
+  guildId: undefined,
+  // avatarUrl: '', // Not in Player type
+  // title: '', // Not in Player type
+  // joinDate: new Date().toISOString(), // Not in Player type
+  // lastLoginDate: new Date().toISOString(), // Not in Player type
+  // stats: { // Not in Player type
+  //   gamesPlayed:0,
+  //   gamesWon:0,
+  //   damageDealt:0,
+  //   manaSpent:0,
+  //   spellsCast:0,
+  // }
+  // Minimal Player type from src/types/game.ts
+  groundHeight: 0, // Added missing required property
+  blocks: [], // Added missing required property
 };
 
 describe('Spellbook', () => {

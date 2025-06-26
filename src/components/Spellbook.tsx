@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SPELL_DEFINITIONS, type SpellId, SpellType } from '../data/spells'; // Added SpellType
+import { SPELL_DEFINITIONS, type SpellId, type SpellType } from '../data/spells'; // Changed SpellType to type import
 import type { Player } from '../types/game';
 import './Spellbook.css';
 
@@ -54,7 +54,7 @@ const Spellbook: React.FC<SpellbookProps> = (props) => {
             // If selected and targeting mode is active for this spell, show "Targeting..."
             // Otherwise, show "Cancel"
             const spellDefinition = SPELL_DEFINITIONS.find(s => s.id === spell.id);
-            if (spellDefinition && spellDefinition.type !== SpellType.SELF && isTargetingMode) {
+            if (spellDefinition && spellDefinition.type !== "SELF" && isTargetingMode) {
               buttonTextKey = 'spellbook.targeting_button'; // New key: "Ciblage..."
             } else {
               buttonTextKey = 'spellbook.cancel_button';

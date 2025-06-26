@@ -49,3 +49,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     </ToastContext.Provider>
   );
 };
+
+// Custom hook to use the ToastContext
+export const useToasts = (): ToastContextType => {
+  const context = React.useContext(ToastContext);
+  if (context === undefined) {
+    throw new Error('useToasts must be used within a ToastProvider');
+  }
+  return context;
+};

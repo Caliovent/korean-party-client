@@ -35,7 +35,7 @@ type TabCategory = 'tenues' | 'familiers' | 'effets' | 'themes';
 
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabCategory>('tenues');
-  const [moonShards, setMoonShards] = useState(5000); // Solde fictif
+  const [moonShards] = useState(5000); // Solde fictif, removed setMoonShards
 
   if (!isOpen) {
     return null;

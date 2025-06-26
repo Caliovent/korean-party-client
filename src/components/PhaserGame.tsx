@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import MainBoardScene from '../phaser/MainBoardScene';
 import type { Game } from '../types/game';
-import { SPELL_DEFINITIONS, SpellType, type SpellId } from '../data/spells'; // Importer le type
+import { SPELL_DEFINITIONS, type SpellType, type SpellId } from '../data/spells'; // Importer le type
 
 interface PhaserGameProps {
   game: Game | null;

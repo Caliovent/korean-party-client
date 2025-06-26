@@ -20,7 +20,7 @@ const HubPage: React.FC = () => {
   const [isQuestLogModalOpen, setIsQuestLogModalOpen] = useState(false); // État pour le modal de quêtes
   const [isDailyChallengeModalOpen, setIsDailyChallengeModalOpen] = useState(false);
   const [isShopModalOpen, setIsShopModalOpen] = useState(false); // État pour la modale de la boutique
-  const [currentChallenge, setCurrentChallenge] = useState({
+  const [currentChallenge, _setCurrentChallenge] = useState({
     title: "Défi de l'Interprète",
     objective: "Atteignez un combo de 15 dans le Défi de l'Interprète",
     reward: "50 Mana + 1 Potion de Clarté",
@@ -46,7 +46,7 @@ const HubPage: React.FC = () => {
         physics: {
           default: 'arcade',
           arcade: {
-            gravity: { y: 0 },
+            gravity: { x: 0, y: 0 },
             debug: false // Set to true for debugging physics
           }
         }
@@ -125,6 +125,12 @@ const HubPage: React.FC = () => {
       <GameLobbyModal
         isOpen={isGameLobbyModalOpen}
         onClose={() => setIsGameLobbyModalOpen(false)}
+        onDelete={(gameId) => {
+          // Placeholder for game deletion logic
+          // This might involve calling a service, then updating UI if necessary
+          console.log(`HubPage: Request to delete game ${gameId}`);
+          // Example: remove game from a local list if games were fetched and stored in HubPage's state
+        }}
       />
       <GuildManagementModal
         isOpen={isGuildModalOpen}

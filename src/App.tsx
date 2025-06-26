@@ -12,7 +12,7 @@ import './App.css';
 import ToastContainer from './components/ToastNotification';
 import { useToasts } from './contexts/ToastContext';
 import soundService, { SOUND_DEFINITIONS } from './services/soundService';
-import { getSyncQueueItems, deleteFromSyncQueue, SyncQueueItem } from './services/dbService'; // Import IndexedDB sync functions
+import { getSyncQueueItems, deleteFromSyncQueue } from './services/dbService'; // Import IndexedDB sync functions, removed SyncQueueItem
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -44,14 +44,14 @@ function App() {
     }
 
     setIsSyncing(true);
-    addToast({ type: 'info', message: 'Synchronisation du progrès hors-ligne en cours...' });
+    addToast('Synchronisation du progrès hors-ligne en cours...', 'info');
     console.log(`Sync: Processing sync queue for user ${currentUser.uid}`);
 
     try {
       const itemsToSync = await getSyncQueueItems(currentUser.uid);
       if (itemsToSync.length === 0) {
         console.log("Sync: Queue is empty.");
-        addToast({ type: 'info', message: 'Aucun progrès local à synchroniser.' });
+        addToast('Aucun progrès local à synchroniser.', 'info');
         setIsSyncing(false);
         return;
       }
@@ -74,20 +74,20 @@ function App() {
       }
 
       if (successCount > 0) {
-        addToast({ type: 'success', message: `${successCount} élément(s) de progrès synchronisé(s) avec succès.` });
+        addToast(`${successCount} élément(s) de progrès synchronisé(s) avec succès.`, 'success');
       }
       if (failureCount > 0) {
-        addToast({ type: 'warning', message: `${failureCount} élément(s) n'ont pas pu être synchronisés. Ils seront réessayés plus tard.` });
+        addToast(`${failureCount} élément(s) n'ont pas pu être synchronisés. Ils seront réessayés plus tard.`, 'warning');
       } else if (successCount === 0 && failureCount === 0 && itemsToSync.length > 0) {
         // This case should ideally not happen if itemsToSync.length > 0
-        addToast({ type: 'info', message: 'File de synchronisation traitée, aucun changement majeur.' });
+        addToast('File de synchronisation traitée, aucun changement majeur.', 'info');
       }
        // TODO: Consider triggering a refresh of runesToReviewCount in GrimoireVivant
        // This might require a global state or event bus, or simply rely on the next Firestore snapshot.
 
     } catch (error) {
       console.error("Sync: Error processing sync queue:", error);
-      addToast({ type: 'error', message: 'Erreur majeure lors de la synchronisation du progrès local.' });
+      addToast('Erreur majeure lors de la synchronisation du progrès local.', 'error');
     } finally {
       setIsSyncing(false);
       console.log("Sync: Queue processing finished.");
@@ -133,13 +133,13 @@ function App() {
 
     // Listen for online event to trigger sync
     const handleOnline = () => {
-      addToast({ type: 'info', message: 'Connexion internet rétablie.' });
+      addToast('Connexion internet rétablie.', 'info');
       if (user && !user.isAnonymous) { // Ensure user is logged in
         processSyncQueue(user);
       }
     };
     const handleOffline = () => {
-      addToast({ type: 'warning', message: 'Connexion internet perdue. Le progrès sera sauvegardé localement.' });
+      addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
     };
 
     window.addEventListener('online', handleOnline);

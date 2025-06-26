@@ -1,6 +1,6 @@
-import { collection, query, onSnapshot, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Quest } from '../types/game';
+import type { Quest } from '../types/game';
 
 type QuestSubscriptionCallback = (quests: Quest[]) => void;
 type ErrorCallback = (error: Error) => void;
