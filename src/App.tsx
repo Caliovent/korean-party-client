@@ -26,6 +26,7 @@ function App() {
   const mainNodeRef = useRef<HTMLElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty] = useState(false); // New state for controlling toast repetition
+  const onlineSyncDebounceTimer = useRef<NodeJS.Timeout | null>(null); // For debouncing online sync
 
   // Define updateReviewItemCallable here as it's used by the sync service
   const updateReviewItemCallable = httpsCallable(functions, 'updateReviewItem');
@@ -47,9 +48,6 @@ function App() {
     }
 
     setIsSyncing(true);
-    // This toast indicates an attempt is starting. It's acceptable for it to show
-    // if a new sync process genuinely starts after a period of inactivity or state change.
-    addToast('Synchronisation du progres hors-ligne en cours...', 'info');
     console.log(`Sync: Processing sync queue for user ${currentUser.uid}`);
 
     try {
@@ -65,6 +63,8 @@ function App() {
       }
 
       // If we've reached here, it means itemsToSync.length > 0.
+      // Show "in progress" toast only if there are items.
+      addToast('Synchronisation du progres hors-ligne en cours...', 'info');
       // So, the previous attempt (if any) was not empty, or this is a new situation.
       // Reset the flag to allow "Aucun progrès..." if the next attempt is empty.
       setLastSyncAttemptWasEmpty(false);
@@ -150,14 +150,24 @@ function App() {
     });
 
     // Listen for online event to trigger sync
-    const handleOnline = () => {
+    const handleOnline = useCallback(() => {
       addToast('Connexion internet rétablie.', 'info');
       if (user && !user.isAnonymous) { // Ensure user is logged in
-        processSyncQueue(user);
+        if (onlineSyncDebounceTimer.current) {
+          clearTimeout(onlineSyncDebounceTimer.current);
+        }
+        onlineSyncDebounceTimer.current = setTimeout(() => {
+          processSyncQueue(user);
+        }, 5000); // Debounce for 5 seconds
       }
-    };
+    }, [user, processSyncQueue, addToast]);
+
     const handleOffline = () => {
       addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
+      // Clear any pending debounced sync if we go offline
+      if (onlineSyncDebounceTimer.current) {
+        clearTimeout(onlineSyncDebounceTimer.current);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -170,8 +180,11 @@ function App() {
       }
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      if (onlineSyncDebounceTimer.current) {
+        clearTimeout(onlineSyncDebounceTimer.current); // Cleanup timer on unmount
+      }
     };
-  }, [navigate, location.pathname, processSyncQueue, user, addToast]); // Added processSyncQueue, user, addToast
+  }, [navigate, location.pathname, processSyncQueue, user, addToast, handleOnline]);
 
   useEffect(() => {
     // Preload all sounds
