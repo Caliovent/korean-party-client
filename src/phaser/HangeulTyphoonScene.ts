@@ -22,7 +22,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   private targetedBlock: Phaser.GameObjects.Text | null = null;
 
   private isGameOver: boolean = false;
-  private gameOverText!: Phaser.GameObjects.Text;
+  // private _gameOverText!: Phaser.GameObjects.Text; // Removed
   private groundY!: number;
   private blockSpawnTimer!: Phaser.Time.TimerEvent;
 
@@ -54,7 +54,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
   private readonly COMBO_TIMEOUT: number = 3000; // 3 seconds
 
   private currentGameMode: string = 'eupreuveDuScribe'; // Default mode
-  private modeText!: Phaser.GameObjects.Text; // Reference to HUD mode text
+  // private _modeText!: Phaser.GameObjects.Text; // Removed, Reference to HUD mode text
   private translationPairs: { lang1: string, lang2_korean: string, type: 'word' | 'phrase' }[] = [
     { lang1: "Maison", lang2_korean: "집", type: 'word' },
     { lang1: "Amour", lang2_korean: "사랑", type: 'word' },
@@ -150,7 +150,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
       // Add display name for Test du Traducteur if different, otherwise it uses Scribe
       modeDisplayName = 'Test du Traducteur'; // Placeholder, adjust if needed
     }
-    this.modeText = this.add.text(gameWidth * 0.9, hudY, `Mode: ${modeDisplayName}`, hudStyle).setOrigin(1, 0);
+     this.add.text(gameWidth * 0.9, hudY, `Mode: ${modeDisplayName}`, hudStyle).setOrigin(1, 0); // Assignment to _modeText removed
 
     // Define game area dimensions and position
     // HUD will be above, input field below.
@@ -624,7 +624,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     }
     // // this.sound.play('sfx_game_over_typhoon'); // Or specific win/loss sounds
 
-    this.gameOverText = this.add.text(
+     this.add.text( // Assignment to _gameOverText removed
       gameWidth / 2, gameHeight / 2, outcomeMessage,
       { fontSize: '64px', color: outcomeStatus === 'defeat' ? '#ff0000' : '#00ff00', backgroundColor: '#000000' }
     ).setOrigin(0.5);
@@ -674,7 +674,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     console.log(`Duel ended by server. Winner: ${winnerId || 'None'}. Player is: ${this.attackerPlayerId}. Outcome: ${outcomeStatus}`);
     // // Play win/loss/draw sound
 
-    this.gameOverText = this.add.text(
+     this.add.text( // Assignment to _gameOverText removed
       gameWidth / 2, gameHeight / 2, outcomeMessage,
       { fontSize: '64px', color: outcomeStatus === 'victory' ? '#00ff00' : (outcomeStatus === 'defeat' ? '#ff0000' : '#ffff00'), backgroundColor: '#000000' }
     ).setOrigin(0.5);
