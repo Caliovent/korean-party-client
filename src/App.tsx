@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
@@ -292,7 +292,9 @@ function App() {
           mountOnEnter // Optional: good practice for CSSTransition with routes
         >
           <main ref={mainNodeRef} className="app-content"> {/* Add ref */}
-            <Outlet />
+            <Suspense fallback={<div className="page-loading-fallback">Chargement de la page...</div>}>
+              <Outlet />
+            </Suspense>
           </main>
         </CSSTransition>
       </TransitionGroup>
