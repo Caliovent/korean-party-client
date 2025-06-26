@@ -25,6 +25,7 @@ function App() {
   const gameInstanceRef = useRef<Phaser.Game | null>(null);
   const mainNodeRef = useRef<HTMLElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty] = useState(false); // New state for controlling toast repetition
 
   // Define updateReviewItemCallable here as it's used by the sync service
   const updateReviewItemCallable = httpsCallable(functions, 'updateReviewItem');
@@ -40,21 +41,33 @@ function App() {
     }
     if (!navigator.onLine) {
       console.log("Sync: Offline, skipping queue processing.");
+      // When offline, reset the flag so that "Aucun progrès" can be shown when coming back online if queue is empty.
+      setLastSyncAttemptWasEmpty(false);
       return;
     }
 
     setIsSyncing(true);
-    addToast('Synchronisation du progrès hors-ligne en cours...', 'info');
+    // This toast indicates an attempt is starting. It's acceptable for it to show
+    // if a new sync process genuinely starts after a period of inactivity or state change.
+    addToast('Synchronisation du progres hors-ligne en cours...', 'info');
     console.log(`Sync: Processing sync queue for user ${currentUser.uid}`);
 
     try {
       const itemsToSync = await getSyncQueueItems(currentUser.uid);
       if (itemsToSync.length === 0) {
         console.log("Sync: Queue is empty.");
-        addToast('Aucun progrès local à synchroniser.', 'info');
-        setIsSyncing(false);
+        if (!lastSyncAttemptWasEmpty) { // Only show this toast if the last attempt wasn't also empty
+          addToast('Aucun progrès local à synchroniser.', 'info');
+        }
+        setLastSyncAttemptWasEmpty(true); // Mark that this attempt found an empty queue
+        setIsSyncing(false); // Reset isSyncing here as we are returning early
         return;
       }
+
+      // If we've reached here, it means itemsToSync.length > 0.
+      // So, the previous attempt (if any) was not empty, or this is a new situation.
+      // Reset the flag to allow "Aucun progrès..." if the next attempt is empty.
+      setLastSyncAttemptWasEmpty(false);
 
       console.log(`Sync: Found ${itemsToSync.length} items to sync.`);
       let successCount = 0;
@@ -75,11 +88,14 @@ function App() {
 
       if (successCount > 0) {
         addToast(`${successCount} élément(s) de progrès synchronisé(s) avec succès.`, 'success');
+        // After a successful sync, the next "empty" message is relevant if the queue becomes empty again.
+        setLastSyncAttemptWasEmpty(false);
       }
       if (failureCount > 0) {
         addToast(`${failureCount} élément(s) n'ont pas pu être synchronisés. Ils seront réessayés plus tard.`, 'warning');
       } else if (successCount === 0 && failureCount === 0 && itemsToSync.length > 0) {
         // This case should ideally not happen if itemsToSync.length > 0
+        // but if it does, it means no actual data changed, so it's like an empty sync in terms of user feedback.
         addToast('File de synchronisation traitée, aucun changement majeur.', 'info');
       }
        // TODO: Consider triggering a refresh of runesToReviewCount in GrimoireVivant
@@ -88,11 +104,13 @@ function App() {
     } catch (error) {
       console.error("Sync: Error processing sync queue:", error);
       addToast('Erreur majeure lors de la synchronisation du progrès local.', 'error');
+      // In case of a major error, allow the "empty" message next time, as the state is uncertain.
+      setLastSyncAttemptWasEmpty(false);
     } finally {
       setIsSyncing(false);
       console.log("Sync: Queue processing finished.");
     }
-  }, [addToast, updateReviewItemCallable, isSyncing]); // Added updateReviewItemCallable and isSyncing
+  }, [addToast, updateReviewItemCallable, isSyncing, lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty]);
 
 
   useEffect(() => {
