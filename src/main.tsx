@@ -1,17 +1,25 @@
 // src/main.tsx (corrigé pour fonctionner avec le routeur)
 
 
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App.tsx';
-import HomePage from './pages/HomePage.tsx';
-import LoginPage from './pages/LoginPage.tsx';
-import ProfilePage from './pages/ProfilePage.tsx';
-import WaitingRoomPage from './pages/WaitingRoomPage.tsx'; // Importer la nouvelle page
-import GamePage from './pages/GamePage.tsx';
-import HubPage from './pages/HubPage.tsx'; // + Import HubPage
+// import HomePage from './pages/HomePage.tsx';
+// import LoginPage from './pages/LoginPage.tsx';
+// import ProfilePage from './pages/ProfilePage.tsx';
+// import WaitingRoomPage from './pages/WaitingRoomPage.tsx'; // Importer la nouvelle page
+// import GamePage from './pages/GamePage.tsx';
+// import HubPage from './pages/HubPage.tsx'; // + Import HubPage
 import ProtectedRoute from './components/ProtectedRoute.tsx';
+
+// Lazy load page components
+const HomePage = lazy(() => import('./pages/HomePage.tsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.tsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
+const WaitingRoomPage = lazy(() => import('./pages/WaitingRoomPage.tsx'));
+const GamePage = lazy(() => import('./pages/GamePage.tsx'));
+const HubPage = lazy(() => import('./pages/HubPage.tsx'));
 import './index.css';
 import './i18n';
 import AuthProvider from './hooks/useAuth.tsx';
