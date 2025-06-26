@@ -110,7 +110,7 @@ function App() {
       setIsSyncing(false);
       console.log("Sync: Queue processing finished.");
     }
-  }, [addToast, updateReviewItemCallable, isSyncing, lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty]);
+  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty]);
 
 
   useEffect(() => {
