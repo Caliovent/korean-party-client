@@ -110,8 +110,27 @@ function App() {
       setIsSyncing(false);
       console.log("Sync: Queue processing finished.");
     }
-  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty]);
+  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty, isSyncing, lastSyncAttemptWasEmpty]); // Added isSyncing and lastSyncAttemptWasEmpty as they are used
 
+  const handleOnline = useCallback(() => {
+    addToast('Connexion internet rétablie.', 'info');
+    if (user && !user.isAnonymous) { // Ensure user is logged in
+      if (onlineSyncDebounceTimer.current) {
+        clearTimeout(onlineSyncDebounceTimer.current);
+      }
+      onlineSyncDebounceTimer.current = setTimeout(() => {
+        processSyncQueue(user); // processSyncQueue is now defined before this
+      }, 5000); // Debounce for 5 seconds
+    }
+  }, [user, processSyncQueue, addToast]); // processSyncQueue needs to be in the dependency array if it's used inside
+
+  const handleOffline = useCallback(() => {
+    addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
+    // Clear any pending debounced sync if we go offline
+    if (onlineSyncDebounceTimer.current) {
+      clearTimeout(onlineSyncDebounceTimer.current);
+    }
+  }, [addToast]);
 
   useEffect(() => {
     // Initialize Phaser game instance
@@ -150,25 +169,25 @@ function App() {
     });
 
     // Listen for online event to trigger sync
-    const handleOnline = useCallback(() => {
-      addToast('Connexion internet rétablie.', 'info');
-      if (user && !user.isAnonymous) { // Ensure user is logged in
-        if (onlineSyncDebounceTimer.current) {
-          clearTimeout(onlineSyncDebounceTimer.current);
-        }
-        onlineSyncDebounceTimer.current = setTimeout(() => {
-          processSyncQueue(user);
-        }, 5000); // Debounce for 5 seconds
-      }
-    }, [user, processSyncQueue, addToast]);
+    // const handleOnline = useCallback(() => { // Will be moved outside and wrapped with useCallback
+    //   addToast('Connexion internet rétablie.', 'info');
+    //   if (user && !user.isAnonymous) { // Ensure user is logged in
+    //     if (onlineSyncDebounceTimer.current) {
+    //       clearTimeout(onlineSyncDebounceTimer.current);
+    //     }
+    //     onlineSyncDebounceTimer.current = setTimeout(() => {
+    //       processSyncQueue(user);
+    //     }, 5000); // Debounce for 5 seconds
+    //   }
+    // }, [user, processSyncQueue, addToast]);
 
-    const handleOffline = () => {
-      addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
-      // Clear any pending debounced sync if we go offline
-      if (onlineSyncDebounceTimer.current) {
-        clearTimeout(onlineSyncDebounceTimer.current);
-      }
-    };
+    // const handleOffline = () => { // Will be moved outside and wrapped with useCallback
+    //   addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
+    //   // Clear any pending debounced sync if we go offline
+    //   if (onlineSyncDebounceTimer.current) {
+    //     clearTimeout(onlineSyncDebounceTimer.current);
+    //   }
+    // };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -184,7 +203,7 @@ function App() {
         clearTimeout(onlineSyncDebounceTimer.current); // Cleanup timer on unmount
       }
     };
-  }, [navigate, location.pathname, processSyncQueue, user, addToast, handleOnline]);
+  }, [navigate, location.pathname, processSyncQueue, user, addToast, handleOffline, handleOnline]); // Corrected: ensure only the new stable handleOnline is present. Order doesn't strictly matter but listing new ones at end is fine.
 
   useEffect(() => {
     // Preload all sounds

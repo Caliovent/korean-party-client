@@ -3,8 +3,8 @@ import { render, screen, within, act } from '@testing-library/react'; // Added w
 import userEvent from '@testing-library/user-event'; // Added userEvent
 import GamePage from './GamePage';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-// SPELL_DEFINITIONS is needed for test bodies. SpellType is also needed.
-import { SPELL_DEFINITIONS, type SpellType } from '../data/spells'; // Changed SpellType to type import
+// SPELL_DEFINITIONS is needed for test bodies.
+import { SPELL_DEFINITIONS } from '../data/spells'; // SpellType removed
 import { castSpell } from '../services/gameService'; // Import the mock to allow vi.mocked(castSpell)
 
 // Mock soundService

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SPELL_DEFINITIONS, type SpellId, type SpellType } from '../data/spells'; // Changed SpellType to type import
+import { SPELL_DEFINITIONS, type SpellId } from '../data/spells'; // SpellType removed
 import type { Player } from '../types/game';
 import './Spellbook.css';
 

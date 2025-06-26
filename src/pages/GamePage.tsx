@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
 import { castSpell } from '../services/gameService'; // Importer castSpell
 import soundService from '../services/soundService'; // Import soundService
-import { SPELL_DEFINITIONS, type SpellType, type SpellId } from '../data/spells'; // Importer le type SpellId, SpellType as type
+import { SPELL_DEFINITIONS, type SpellId } from '../data/spells'; // Importer le type SpellId, SpellType removed
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';

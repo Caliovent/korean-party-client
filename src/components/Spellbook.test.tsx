@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import Spellbook from './Spellbook';
-import { SPELL_DEFINITIONS, type SpellId } from '../data/spells'; // For test data
+import { SPELL_DEFINITIONS } from '../data/spells'; // For test data, SpellId removed
 import type { Player } from '../types/game';
 
 // Mock react-i18next
