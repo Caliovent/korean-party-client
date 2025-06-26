@@ -213,7 +213,7 @@ function App() {
         clearTimeout(onlineSyncDebounceTimer.current); // Cleanup timer on unmount
       }
     };
-  }, [navigate, location.pathname, user, addToast, handleOffline, handleOnline]); // Removed processSyncQueue
+  }, [navigate, location.pathname, user, addToast, handleOffline, handleOnline, processSyncQueue]);
 
   useEffect(() => {
     // Preload all sounds

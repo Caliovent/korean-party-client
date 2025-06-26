@@ -72,5 +72,6 @@
   "event": {
     "example_title": "Titre de l'Événement Exemple",
     "example_description": "Description de l'événement exemple."
-  }
+  },
+  "hub_open_quest_log_button": "Ouvrir le Journal de Quêtes"
 }

@@ -153,5 +153,6 @@
   "guildDetailsUnavailable": "House details unavailable.",
   "noGuildAffiliation": "Not affiliated with any house.",
   "noItemsToReview": "No spells to review at the moment. Well done!",
-  "back": "Back"
+  "back": "Back",
+  "hub_open_quest_log_button": "Open Quest Log"
 }
