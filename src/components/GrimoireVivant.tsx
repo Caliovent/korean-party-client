@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, functions } from '../firebaseConfig'; // Added functions
-import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore'; // Added Timestamp
+import { collection, onSnapshot, query, Timestamp, FirebaseError } from 'firebase/firestore'; // Added Timestamp and FirebaseError
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
 import type { SpellId } from '../data/spells'; // Import SpellId
@@ -236,6 +236,23 @@ const GrimoireVivant: React.FC = () => {
 
   if (isLoading) {
     return <p>Gravure des runes en cours...</p>;
+  }
+
+  if (firestoreError) {
+    return (
+      <div className="grimoire-container error-container" style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>Grimoire Temporarily Unavailable</h3>
+        <p>We encountered an issue loading your spell mastery data.</p>
+        <p>This might be due to a connection problem or account access restrictions.</p>
+        <p>Please try refreshing the page or check again later.</p>
+        {/* For developers: more specific error info can be logged or displayed conditionally */}
+        {import.meta.env.DEV && firestoreError.message && (
+          <p style={{ fontSize: '0.8em', color: 'grey', marginTop: '10px' }}>
+            <i>Developer Info: {firestoreError.message} (Code: {firestoreError.code})</i>
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (isReviewing) {
