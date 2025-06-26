@@ -24,7 +24,7 @@ function App() {
   const navigate = useNavigate();
   const gameInstanceRef = useRef<Phaser.Game | null>(null);
   const mainNodeRef = useRef<HTMLElement>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const isSyncingRef = useRef(false); // Use ref for sync lock
   const [lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty] = useState(false); // New state for controlling toast repetition
   const onlineSyncDebounceTimer = useRef<NodeJS.Timeout | null>(null); // For debouncing online sync
 
@@ -36,8 +36,8 @@ function App() {
       console.log("Sync: User not available, skipping queue processing.");
       return;
     }
-    if (isSyncing) {
-      console.log("Sync: Already in progress, skipping.");
+    if (isSyncingRef.current) {
+      console.log("Sync: Already in progress (ref lock), skipping.");
       return;
     }
     if (!navigator.onLine) {
@@ -47,7 +47,7 @@ function App() {
       return;
     }
 
-    setIsSyncing(true);
+    isSyncingRef.current = true;
     console.log(`Sync: Processing sync queue for user ${currentUser.uid}`);
 
     try {
@@ -58,7 +58,7 @@ function App() {
           addToast('Aucun progrès local à synchroniser.', 'info');
         }
         setLastSyncAttemptWasEmpty(true); // Mark that this attempt found an empty queue
-        setIsSyncing(false); // Reset isSyncing here as we are returning early
+        // No setIsSyncing(false) here, will be handled by finally block
         return;
       }
 
@@ -107,31 +107,30 @@ function App() {
       // In case of a major error, allow the "empty" message next time, as the state is uncertain.
       setLastSyncAttemptWasEmpty(false);
     } finally {
-      setIsSyncing(false);
+      isSyncingRef.current = false; // Release lock
       console.log("Sync: Queue processing finished.");
     }
-  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty, isSyncing, lastSyncAttemptWasEmpty]); // Added isSyncing and lastSyncAttemptWasEmpty as they are used
+  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty]); // Removed isSyncing and lastSyncAttemptWasEmpty
 
   const handleOnline = useCallback(() => {
     addToast('Connexion internet rétablie.', 'info');
-    // Only proceed if a user is logged in and not anonymous, AND not currently syncing.
-    if (user && !user.isAnonymous && !isSyncing) {
+    // Only proceed if a user is logged in and not anonymous, AND not currently syncing (ref check).
+    if (user && !user.isAnonymous && !isSyncingRef.current) {
       if (onlineSyncDebounceTimer.current) {
         clearTimeout(onlineSyncDebounceTimer.current);
       }
       onlineSyncDebounceTimer.current = setTimeout(() => {
-        // Double check isSyncing again inside setTimeout, as its state might have changed
-        // during the debounce period by other means (e.g. login sync).
-        if (!isSyncing) {
+        // Double check isSyncingRef.current again inside setTimeout
+        if (!isSyncingRef.current) {
           processSyncQueue(user);
         } else {
-          console.log("Sync: Debounced online sync skipped, another sync is already in progress.");
+          console.log("Sync: Debounced online sync skipped, another sync is already in progress (ref lock).");
         }
       }, 5000); // Debounce for 5 seconds
-    } else if (isSyncing) {
-      console.log("Sync: Online event received, but a sync is already in progress. Ignoring.");
+    } else if (isSyncingRef.current) {
+      console.log("Sync: Online event received, but a sync is already in progress (ref lock). Ignoring.");
     }
-  }, [user, processSyncQueue, addToast, isSyncing]); // Added isSyncing to dependencies
+  }, [user, processSyncQueue, addToast]); // Removed isSyncing from dependencies
 
   const handleOffline = useCallback(() => {
     addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
@@ -166,10 +165,10 @@ function App() {
           navigate('/hub');
         }
         // Attempt to sync when user logs in and is online
-        if (navigator.onLine && !isSyncing) { // <--- Added !isSyncing here
+        if (navigator.onLine && !isSyncingRef.current) { // Check ref lock
           processSyncQueue(currentUser);
-        } else if (isSyncing) {
-          console.log("Sync: Login sync attempt skipped, another sync is already in progress.");
+        } else if (isSyncingRef.current) {
+          console.log("Sync: Login sync attempt skipped, another sync is already in progress (ref lock).");
         }
       } else if (currentUser && currentUser.isAnonymous) {
         // Handle anonymous user login, typically no user-specific data to sync from a previous session
@@ -214,7 +213,7 @@ function App() {
         clearTimeout(onlineSyncDebounceTimer.current); // Cleanup timer on unmount
       }
     };
-  }, [navigate, location.pathname, processSyncQueue, user, addToast, handleOffline, handleOnline]); // Corrected: ensure only the new stable handleOnline is present. Order doesn't strictly matter but listing new ones at end is fine.
+  }, [navigate, location.pathname, user, addToast, handleOffline, handleOnline]); // Removed processSyncQueue
 
   useEffect(() => {
     // Preload all sounds
