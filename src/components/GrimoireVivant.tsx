@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, functions } from '../firebaseConfig'; // Added functions
-import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore'; // Added Timestamp
+import { collection, onSnapshot, query, Timestamp, FirestoreError } from 'firebase/firestore'; // Corrected to FirestoreError
 import { useAuth } from '../hooks/useAuth';
 import type { SpellMasteryData } from '../types/game';
 import type { SpellId } from '../data/spells'; // Import SpellId
@@ -13,6 +13,7 @@ import { useToasts } from '../contexts/ToastContext'; // Import useToasts
 const GrimoireVivant: React.FC = () => {
   const [runes, setRunes] = useState<SpellMasteryData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [firestoreError, setFirestoreError] = useState<FirestoreError | null>(null); // For Firestore specific errors
   const [runesToReviewCount, setRunesToReviewCount] = useState<number>(0);
   const { user } = useAuth();
   const { addToast } = useToasts();
@@ -116,6 +117,7 @@ const GrimoireVivant: React.FC = () => {
 
       setRunes(fetchedRunes);
       setRunesToReviewCount(reviewCount);
+      setFirestoreError(null); // Clear any previous error on successful load
       setIsLoading(false);
 
       // Pre-load review items if online and there are items to review
@@ -127,10 +129,11 @@ const GrimoireVivant: React.FC = () => {
         console.log("Online and no items to review, cleared local review items cache.");
       }
 
-    }, (error) => {
+    }, (error: FirestoreError) => { // Typed the error parameter
       console.error("Error fetching spell mastery data:", error);
+      setFirestoreError(error); // Set the new error state
       setIsLoading(false);
-      addToast('Erreur de connexion au Grimoire.', 'error');
+      addToast('Erreur de connexion au Grimoire.', 'error'); // Keep existing toast
     });
 
     // Initial check for offline data if user is already offline
@@ -236,6 +239,23 @@ const GrimoireVivant: React.FC = () => {
 
   if (isLoading) {
     return <p>Gravure des runes en cours...</p>;
+  }
+
+  if (firestoreError) {
+    return (
+      <div className="grimoire-container error-container" style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>Grimoire Temporarily Unavailable</h3>
+        <p>We encountered an issue loading your spell mastery data.</p>
+        <p>This might be due to a connection problem or account access restrictions.</p>
+        <p>Please try refreshing the page or check again later.</p>
+        {/* For developers: more specific error info can be logged or displayed conditionally */}
+        {import.meta.env.DEV && firestoreError.message && (
+          <p style={{ fontSize: '0.8em', color: 'grey', marginTop: '10px' }}>
+            <i>Developer Info: {firestoreError.message} (Code: {firestoreError.code})</i>
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (isReviewing) {

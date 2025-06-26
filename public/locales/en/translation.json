@@ -83,6 +83,59 @@
   "loading": "Loading...",
   "profileNotFound": "User profile not found.",
   "profilePageTitle": "My Wizard Profile",
+  "profilePage": {
+    "title": "My Living Grimoire",
+    "description": "Consult and manage your spell mastery.",
+    "hallOfFameTitle": "My Hall of Fame"
+  },
+  "hall_of_fame": {
+    "stats_title": "Statistics",
+    "stats": {
+      "games_played": "Games Played",
+      "spells_cast": "Spells Cast",
+      "mana_spent": "Mana Spent",
+      "duels_won": "Duels Won",
+      "quests_completed": "Quests Completed",
+      "runes_reviewed": "Runes Reviewed"
+    },
+    "achievements_title": "Achievements",
+    "achievement_unlocked_title": "Achievement Unlocked!",
+    "no_achievements": "No achievements unlocked yet."
+  },
+  "achievements": {
+    "first_game_played": {
+      "name": "First Game Played",
+      "description": "Participate in your first game."
+    },
+    "duels_won_1": {
+      "name": "First Duel Won",
+      "description": "Win your first duel against an opponent."
+    },
+    "duels_won_10": {
+      "name": "Duel Master",
+      "description": "Win 10 duels."
+    },
+    "first_spell_cast": {
+      "name": "First Spell Cast",
+      "description": "Cast your first spell."
+    },
+    "spells_cast_100": {
+      "name": "Archmage",
+      "description": "Cast 100 spells."
+    },
+    "quests_completed_1": {
+      "name": "Quest Beginner",
+      "description": "Complete your first quest."
+    },
+    "quests_completed_10": {
+      "name": "Quest Conqueror",
+      "description": "Complete 10 quests."
+    },
+    "runes_reviewed_50": {
+      "name": "Rune Scholar",
+      "description": "Review 50 runes in the Spell Forge."
+    }
+  },
   "loadingGuildName": "Loading house name...",
   "editdisplayName": "Edit Username",
   "spellForgeTitle": "Spell Forge",
