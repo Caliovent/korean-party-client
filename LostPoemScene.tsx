@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PoemPuzzle, PoemLine, getPoemPuzzleData } from './poemApi'; // Assuming poemApi.ts is in the same directory
+import type { PoemPuzzle, PoemLine, PoemSubmitResult } from './poemApi'; // Assuming poemApi.ts is in the same directory
+import { getPoemPuzzleData, submitPoemResults } from './poemApi'; // Assuming poemApi.ts is in the same directory
 
 interface LostPoemSceneProps {
   // Props if any, e.g., onGameComplete
@@ -13,7 +14,7 @@ const LostPoemScene: React.FC<LostPoemSceneProps> = () => {
   const [selectedWord, setSelectedWord] = useState<{ word: string; fromBank: boolean; originalIndex?: number } | null>(null);
   const [feedback, setFeedback] = useState<('correct' | 'incorrect' | 'empty' | null)[]>([]);
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [submitResult, setSubmitResult] = useState<api.PoemSubmitResult | null>(null);
+  const [submitResult, setSubmitResult] = useState<PoemSubmitResult | null>(null);
 
 
   useEffect(() => {
@@ -96,7 +97,7 @@ const LostPoemScene: React.FC<LostPoemSceneProps> = () => {
     setFeedback(newFeedback);
 
     try {
-      const result = await api.submitPoemResults(poemData.id, filledSlots);
+      const result = await submitPoemResults(poemData.id, filledSlots);
       setSubmitResult(result);
       // console.log("Poem submitted, result:", result);
     } catch (e) {

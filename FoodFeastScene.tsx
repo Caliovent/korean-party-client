@@ -1,8 +1,9 @@
 // FoodFeastScene.tsx
 import React, { useState, useEffect } from 'react';
 // Assuming foodApi.ts is in the same directory & MOCK_FOOD_ITEMS is exported
-import { FoodGameData, getFoodGameData, MOCK_FOOD_ITEMS } from './foodApi';
-import soundService from './services/soundService';
+import type { FoodGameData, FoodGameSubmitResult, FoodGameRoundResult, FoodItem } from './foodApi';
+import { getFoodGameData, MOCK_FOOD_ITEMS, submitFoodGameResults } from './foodApi';
+import soundService from './src/services/soundService';
 
 interface FoodFeastSceneProps {
   // Define props if any, e.g., onGameComplete
@@ -25,7 +26,7 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = () => {
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
   const [questionsAnswered, setQuestionsAnswered] = useState<number>(0);
   const [isRoundOver, setIsRoundOver] = useState<boolean>(false);
-  const [submissionResult, setSubmissionResult] = useState<api.FoodGameSubmitResult | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<FoodGameSubmitResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
 
@@ -34,12 +35,12 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = () => {
   const handleGameEnd = async () => {
     setIsSubmitting(true);
     try {
-      const roundResult: api.FoodGameRoundResult = {
+      const roundResult: FoodGameRoundResult = {
         score,
         correctAnswers: score, // Assuming 1 point per correct answer
         totalQuestions: QUESTIONS_PER_ROUND,
       };
-      const result = await api.submitFoodGameResults(roundResult);
+      const result = await submitFoodGameResults(roundResult);
       setSubmissionResult(result);
     } catch (e) {
       console.error("Failed to submit game results:", e);
@@ -121,7 +122,7 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = () => {
     }
 
     // Play pronunciation sound of the selected option (if available and desired)
-    const clickedFoodItemDetails = MOCK_FOOD_ITEMS.find(item => item.name === selectedOption); // Assuming MOCK_FOOD_ITEMS is accessible or options have pronunciation URLs
+    const clickedFoodItemDetails = MOCK_FOOD_ITEMS.find((item: FoodItem) => item.name === selectedOption); // Assuming MOCK_FOOD_ITEMS is accessible or options have pronunciation URLs
     if (clickedFoodItemDetails?.pronunciationUrl) {
        soundService.playSound(clickedFoodItemDetails.pronunciationUrl);
     }

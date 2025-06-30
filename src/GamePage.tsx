@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import NamdaemunMarketScene from '../NamdaemunMarketScene';
-import { GameRoundData, Item } from './types';
+import type { GameRoundData, Item } from './types';
 import { getNamdaemunGameData, submitNamdaemunResults } from './gameData';
 
 const TOTAL_ROUNDS_NAMDAEMUN = 5; // Example: 5 rounds for the mini-game

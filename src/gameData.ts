@@ -1,4 +1,4 @@
-import { GameRoundData, Item } from './types';
+import type { GameRoundData, Item } from './types';
 
 const allItems: Item[] = [
   { id: 'apple', name: '사과', altText: "Image d'une pomme", imageUrl: 'https://placehold.co/100x100/FFDDDD/FF0000?text=사과' },
