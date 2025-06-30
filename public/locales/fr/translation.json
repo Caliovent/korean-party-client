@@ -74,5 +74,7 @@
     "example_description": "Description de l'événement exemple."
   },
   "hub_open_quest_log_button": "Ouvrir le Journal de Quêtes",
-  "quest_log_modal_title": "Journal de Quêtes"
+  "quest_log_modal_title": "Journal de Quêtes",
+  "quests_load_error_active": "Erreur de chargement des quêtes actives. Veuillez réessayer plus tard.",
+  "quests_load_error_completed": "Erreur de chargement des quêtes terminées. Veuillez réessayer plus tard."
 }
