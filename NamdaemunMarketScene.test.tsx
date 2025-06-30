@@ -1,80 +1,162 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import NamdaemunMarketScene from './NamdaemunMarketScene';
+import { getNamdaemunGameData } from './src/gameData';
+import { GameRoundData } from './src/types';
 
-// Mock component since the actual one is empty
-const NamdaemunMarketScene = () => <div />;
+// Mock callback functions
+const mockOnCorrectChoice = jest.fn();
+const mockOnIncorrectChoice = jest.fn();
+const mockOnRoundTimeout = jest.fn();
+
+const ROUND_TIME_LIMIT = 15; // Match default in GamePage for consistency if used
 
 describe('NamdaemunMarketScene', () => {
+  let currentTestGameData: GameRoundData;
+
+  beforeEach(async () => {
+    jest.useFakeTimers(); // Use fake timers for controlling setInterval and setTimeout
+    currentTestGameData = await getNamdaemunGameData(0); // Apple round
+    mockOnCorrectChoice.mockClear();
+    mockOnIncorrectChoice.mockClear();
+    mockOnRoundTimeout.mockClear();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers(); // Restore real timers
+  });
+
+  const renderScene = (gameData: GameRoundData, score: number = 0, timeLimit: number = ROUND_TIME_LIMIT) => {
+    return render(
+      <NamdaemunMarketScene
+        gameData={gameData}
+        score={score}
+        onCorrectChoice={mockOnCorrectChoice}
+        onIncorrectChoice={mockOnIncorrectChoice}
+        roundTimeLimit={timeLimit}
+        onRoundTimeout={mockOnRoundTimeout}
+      />
+    );
+  };
+
   describe('Scenario 1: Le client demande un objet', () => {
-    it('devrait afficher un client et plusieurs choix d\'objets', () => {
-      // Arrange: Mock game data for a client requesting "사과"
-      const mockGameData = {
-        customerRequest: '사과', // Apple
-        choices: [
-          { name: '사과', altText: "Image d'une pomme", id: 'apple' },
-          { name: '모자', altText: "Image d'un chapeau", id: 'hat' },
-        ],
-      };
+    it('devrait afficher un client, plusieurs choix d\'objets, score et timer', () => {
+      renderScene(currentTestGameData);
 
-      // Act: Render the component NamdaemunMarketScene
-      // For now, we'll just simulate the presence of elements based on mocks
-      // as the component itself is empty.
-      // In a real scenario, we would pass mockGameData as props to NamdaemunMarketScene
-      // e.g., render(<NamdaemunMarketScene gameData={mockGameData} />);
+      expect(screen.getByTestId('customer-request-text')).toHaveTextContent('사과 주세요');
+      expect(screen.getByAltText("Image d'une pomme")).toBeInTheDocument();
 
-      // Assert (doit échouer)
-      // Verify that the text "사과 주세요" is visible on the screen.
-      // This will fail because the component is empty and doesn't render this text.
-      expect(screen.queryByText('사과 주세요')).toBeVisible();
+      const hatChoice = currentTestGameData.choices.find(choice => choice.id === 'hat');
+      if (hatChoice) {
+        expect(screen.getByAltText(hatChoice.altText)).toBeInTheDocument();
+      } else {
+        // Check for any choice if 'hat' is not guaranteed (it should be by mock)
+         currentTestGameData.choices.forEach(choice => {
+            expect(screen.getByAltText(choice.altText)).toBeInTheDocument();
+         });
+      }
 
-      // Verify that an image with alt="Image d'une pomme" is present.
-      // This will fail because the component is empty.
-      expect(screen.queryByAltText("Image d'une pomme")).toBeInTheDocument();
-
-      // Verify that an image with alt="Image d'un chapeau" is also present.
-      // This will fail because the component is empty.
-      expect(screen.queryByAltText("Image d'un chapeau")).toBeInTheDocument();
+      expect(screen.getByTestId('score-display')).toHaveTextContent('0');
+      expect(screen.getByTestId('time-left')).toHaveTextContent(ROUND_TIME_LIMIT.toString());
+      expect(screen.getByTestId('timer-bar')).toHaveStyle(`width: 100%`);
     });
   });
 
   describe('Scenario 2: Le joueur fait le bon choix', () => {
-    it('devrait afficher un feedback positif et augmenter le score après un choix correct', () => {
-      // Arrange: Set up the same scenario as above
-      const mockGameData = {
-        customerRequest: '사과', // Apple
-        choices: [
-          { name: '사과', altText: "Image d'une pomme", id: 'apple' },
-          { name: '모자', altText: "Image d'un chapeau", id: 'hat' },
-        ],
-        initialScore: 0,
-      };
+    it('devrait afficher un feedback positif, appeler onCorrectChoice, et arrêter le timer', async () => {
+      renderScene(currentTestGameData, 0);
 
-      // We need a way to simulate the UI elements that would be clicked
-      // and the score display. For now, these will be conceptual.
-      // render(<NamdaemunMarketScene gameData={mockGameData} />);
+      const appleImageButton = screen.getByAltText(currentTestGameData.customerRequest.itemWanted.altText).closest('button');
+      expect(appleImageButton).not.toBeNull();
+      fireEvent.click(appleImageButton!);
 
-      // Act: Simulate a click on the apple image.
-      // This requires the image to be in the document, which it won't be.
-      // const appleImage = screen.queryByAltText("Image d'une pomme");
-      // if (appleImage) {
-      //   fireEvent.click(appleImage);
-      // }
+      await waitFor(() => {
+        expect(screen.getByTestId('feedback-area')).toHaveTextContent('Merci !');
+        expect(screen.getByTestId('feedback-area')).toHaveStyle('color: green');
+      });
+      expect(mockOnCorrectChoice).toHaveBeenCalledWith(currentTestGameData.customerRequest.itemWanted);
+      expect(mockOnIncorrectChoice).not.toHaveBeenCalled();
 
-      // Assert (doit échouer)
-      // Verify that a success message (e.g., "Merci !") or a positive animation is triggered.
-      // This will fail as there's no such message.
-      expect(screen.queryByText('Merci !')).toBeVisible();
+      // Timer should stop, advance time by a bit to see if it changed
+      act(() => {
+        jest.advanceTimersByTime(2000);
+      });
+      // Assuming the timer stops, timeLeft should remain what it was when clicked or 0 if logic sets it.
+      // The current logic clears interval, so timeLeft stops decrementing.
+      // We can check if it's not significantly less than initial, or if buttons are disabled.
+      expect(screen.getByTestId('time-left').textContent).not.toBe((ROUND_TIME_LIMIT - 2).toString());
+      expect(appleImageButton).toBeDisabled();
+    });
+  });
 
-      // Verify that the score displayed on the screen has increased.
-      // This will fail as there's no score displayed or logic to increase it.
-      // Assuming score is displayed in an element with testid 'score-display'
-      const scoreDisplay = screen.queryByTestId('score-display');
-      // expect(scoreDisplay).toHaveTextContent('1'); // Or whatever the incremented score is
-      expect(scoreDisplay).toBeNull(); // This will pass for now, but the spirit is it should fail
-                                       // once score display is implemented and doesn't update.
-                                       // To make it fail as intended now:
-      // expect(screen.getByTestId('score-display')).toHaveTextContent('1');
+  describe('Scenario 3: Le joueur fait le mauvais choix', () => {
+    it('devrait afficher un feedback négatif, appeler onIncorrectChoice, et arrêter le timer', async () => {
+      renderScene(currentTestGameData, 0);
+
+      const wrongChoice = currentTestGameData.choices.find(c => c.id !== currentTestGameData.customerRequest.itemWanted.id);
+      expect(wrongChoice).toBeDefined(); // Ensure we have a wrong choice from mock
+
+      const wrongImageButton = screen.getByAltText(wrongChoice!.altText).closest('button');
+      expect(wrongImageButton).not.toBeNull();
+      fireEvent.click(wrongImageButton!);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('feedback-area')).toHaveTextContent(`Oops! Ce n'est pas ${wrongChoice!.name}. Le client voulait ${currentTestGameData.customerRequest.itemWanted.name}.`);
+        expect(screen.getByTestId('feedback-area')).toHaveStyle('color: red');
+      });
+      expect(mockOnIncorrectChoice).toHaveBeenCalledWith(wrongChoice, false);
+      expect(mockOnCorrectChoice).not.toHaveBeenCalled();
+      expect(wrongImageButton).toBeDisabled();
+    });
+  });
+
+  describe('Scenario 4: Timeout du round', () => {
+    it('devrait afficher un feedback de timeout, appeler onIncorrectChoice et onRoundTimeout', async () => {
+      renderScene(currentTestGameData, 0, 5); // 5s time limit for faster test
+
+      expect(screen.getByTestId('time-left')).toHaveTextContent('5');
+
+      act(() => {
+        jest.advanceTimersByTime(5000); // Advance time by 5 seconds
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('feedback-area')).toHaveTextContent(`Temps écoulé ! Le client voulait ${currentTestGameData.customerRequest.itemWanted.name}.`);
+        expect(screen.getByTestId('feedback-area')).toHaveStyle('color: red');
+      });
+
+      expect(mockOnIncorrectChoice).toHaveBeenCalledWith(currentTestGameData.customerRequest.itemWanted, true);
+      expect(mockOnRoundTimeout).toHaveBeenCalled();
+      expect(mockOnCorrectChoice).not.toHaveBeenCalled();
+
+      // Check if buttons are disabled
+      const appleImageButton = screen.getByAltText(currentTestGameData.customerRequest.itemWanted.altText).closest('button');
+      expect(appleImageButton).toBeDisabled();
+    });
+
+    it('le timer bar devrait se mettre à jour correctement', () => {
+      renderScene(currentTestGameData, 0, 10);
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 100%');
+
+      act(() => { jest.advanceTimersByTime(1000); }); // 1s elapsed
+      expect(screen.getByTestId('time-left')).toHaveTextContent('9');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 90%');
+
+      act(() => { jest.advanceTimersByTime(4000); }); // 5s total elapsed
+      expect(screen.getByTestId('time-left')).toHaveTextContent('5');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 50%');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('background-color: #f59e0b'); // amber/orange
+
+      act(() => { jest.advanceTimersByTime(3000); }); // 8s total elapsed
+      expect(screen.getByTestId('time-left')).toHaveTextContent('2');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 20%');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('background-color: #ef4444'); // red
+
+      act(() => { jest.advanceTimersByTime(2000); }); // 10s total elapsed - timeout
+      expect(screen.getByTestId('time-left')).toHaveTextContent('0');
+      expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 0%');
     });
   });
 });
