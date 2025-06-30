@@ -12,6 +12,8 @@ import App from './App.tsx';
 // import GamePage from './pages/GamePage.tsx';
 // import HubPage from './pages/HubPage.tsx'; // + Import HubPage
 import ProtectedRoute from './components/ProtectedRoute.tsx';
+import LostPoemScene from '../LostPoemScene.tsx'; // Assuming LostPoemScene.tsx is in src/
+import FoodFeastScene from '../FoodFeastScene.tsx'; // New Minigame Scene
 
 // Lazy load page components
 const HomePage = lazy(() => import('./pages/HomePage.tsx'));
@@ -39,6 +41,8 @@ const router = createBrowserRouter([
           // AJOUT : La nouvelle route pour la salle d'attente
           { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },
           { path: 'game/:gameId', element: <GamePage /> },
+          { path: 'lost-poem', element: <LostPoemScene /> },
+          { path: 'food-feast', element: <FoodFeastScene /> }, // New route for FoodFeastScene
         ],
       },
     ],
