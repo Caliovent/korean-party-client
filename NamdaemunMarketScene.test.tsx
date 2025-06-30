@@ -6,9 +6,9 @@ import { getNamdaemunGameData } from './src/gameData';
 import { GameRoundData } from './src/types';
 
 // Mock callback functions
-const mockOnCorrectChoice = jest.fn();
-const mockOnIncorrectChoice = jest.fn();
-const mockOnRoundTimeout = jest.fn();
+const mockOnCorrectChoice = vi.fn();
+const mockOnIncorrectChoice = vi.fn();
+const mockOnRoundTimeout = vi.fn();
 
 const ROUND_TIME_LIMIT = 15; // Match default in GamePage for consistency if used
 
@@ -16,7 +16,7 @@ describe('NamdaemunMarketScene', () => {
   let currentTestGameData: GameRoundData;
 
   beforeEach(async () => {
-    jest.useFakeTimers(); // Use fake timers for controlling setInterval and setTimeout
+    vi.useFakeTimers(); // Use fake timers for controlling setInterval and setTimeout
     currentTestGameData = await getNamdaemunGameData(0); // Apple round
     mockOnCorrectChoice.mockClear();
     mockOnIncorrectChoice.mockClear();
@@ -24,8 +24,8 @@ describe('NamdaemunMarketScene', () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers(); // Restore real timers
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers(); // Restore real timers
   });
 
   const renderScene = (gameData: GameRoundData, score: number = 0, timeLimit: number = ROUND_TIME_LIMIT) => {
@@ -81,7 +81,7 @@ describe('NamdaemunMarketScene', () => {
 
       // Timer should stop, advance time by a bit to see if it changed
       act(() => {
-        jest.advanceTimersByTime(2000);
+        vi.advanceTimersByTime(2000);
       });
       // Assuming the timer stops, timeLeft should remain what it was when clicked or 0 if logic sets it.
       // The current logic clears interval, so timeLeft stops decrementing.
@@ -119,7 +119,7 @@ describe('NamdaemunMarketScene', () => {
       expect(screen.getByTestId('time-left')).toHaveTextContent('5');
 
       act(() => {
-        jest.advanceTimersByTime(5000); // Advance time by 5 seconds
+        vi.advanceTimersByTime(5000); // Advance time by 5 seconds
       });
 
       await waitFor(() => {
@@ -140,21 +140,21 @@ describe('NamdaemunMarketScene', () => {
       renderScene(currentTestGameData, 0, 10);
       expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 100%');
 
-      act(() => { jest.advanceTimersByTime(1000); }); // 1s elapsed
+      act(() => { vi.advanceTimersByTime(1000); }); // 1s elapsed
       expect(screen.getByTestId('time-left')).toHaveTextContent('9');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 90%');
 
-      act(() => { jest.advanceTimersByTime(4000); }); // 5s total elapsed
+      act(() => { vi.advanceTimersByTime(4000); }); // 5s total elapsed
       expect(screen.getByTestId('time-left')).toHaveTextContent('5');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 50%');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('background-color: #f59e0b'); // amber/orange
 
-      act(() => { jest.advanceTimersByTime(3000); }); // 8s total elapsed
+      act(() => { vi.advanceTimersByTime(3000); }); // 8s total elapsed
       expect(screen.getByTestId('time-left')).toHaveTextContent('2');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 20%');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('background-color: #ef4444'); // red
 
-      act(() => { jest.advanceTimersByTime(2000); }); // 10s total elapsed - timeout
+      act(() => { vi.advanceTimersByTime(2000); }); // 10s total elapsed - timeout
       expect(screen.getByTestId('time-left')).toHaveTextContent('0');
       expect(screen.getByTestId('timer-bar')).toHaveStyle('width: 0%');
     });

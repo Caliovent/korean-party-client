@@ -6,7 +6,8 @@ import { getFoodGameData, MOCK_FOOD_ITEMS, submitFoodGameResults } from './foodA
 import soundService from './src/services/soundService';
 
 interface FoodFeastSceneProps {
-  // Define props if any, e.g., onGameComplete
+  gameId: string;
+  onFinish: () => void;
 }
 
 // Defines the state of feedback after an answer
@@ -17,7 +18,7 @@ type FeedbackState = {
   clickedOption: string | null;
 };
 
-const FoodFeastScene: React.FC<FoodFeastSceneProps> = () => {
+const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ gameId, onFinish }) => { // Added gameId and onFinish to props destructuring
   const [gameData, setGameData] = useState<FoodGameData | null>(null);
   const [score, setScore] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -42,9 +43,12 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = () => {
       };
       const result = await submitFoodGameResults(roundResult);
       setSubmissionResult(result);
+      onFinish(); // Call onFinish after successful submission
     } catch (e) {
       console.error("Failed to submit game results:", e);
       setSubmissionResult({ finalScore: score, message: "Erreur lors de la soumission du score." });
+      // Consider if onFinish() should be called even on error, depends on desired game flow
+      // For now, calling it only on success. If it should always be called, move to finally block.
     } finally {
       setIsSubmitting(false);
     }

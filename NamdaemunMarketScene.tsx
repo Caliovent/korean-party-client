@@ -32,6 +32,8 @@ const playSound = (type: 'success' | 'error') => {
 };
 
 const NamdaemunMarketScene: React.FC<NamdaemunMarketSceneProps> = ({
+  gameId, // Added gameId
+  onFinish, // Added onFinish
   gameData,
   score,
   onCorrectChoice,
@@ -190,6 +192,24 @@ const NamdaemunMarketScene: React.FC<NamdaemunMarketSceneProps> = ({
 
           <div data-testid="feedback-area" style={{ marginTop: '20px', textAlign: 'center', minHeight: '40px', fontWeight: '600', padding: '12px', borderRadius: '8px', fontSize: '1.1rem', color: feedbackMessage.startsWith('Merci') ? '#059669' : feedbackMessage ? '#dc2626' : 'transparent', backgroundColor: feedbackMessage ? (feedbackMessage.startsWith('Merci') ? '#d1fae5' : '#fee2e2') : 'transparent', transition: 'all 0.3s ease' }}> {/* green-600/100, red-600/100 */}
             {feedbackMessage}
+          </div>
+
+          {/* Temporary button to call onFinish for testing purposes */}
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <button
+              onClick={onFinish}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                color: 'white',
+                backgroundColor: '#007bff',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              Force Finish Namdaemun Market (Dev)
+            </button>
           </div>
         </div>
       </div>
