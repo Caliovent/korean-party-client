@@ -155,5 +155,13 @@
   "noItemsToReview": "No spells to review at the moment. Well done!",
   "back": "Back",
   "hub_open_quest_log_button": "Open Quest Log",
-  "quest_log_modal_title": "Quest Log"
+  "quest_log_modal_title": "Quest Log",
+  "close_button_label": "Close",
+  "loading_quests_message": "Loading quests...",
+  "quests_active_tab_label": "Active",
+  "quests_completed_tab_label": "Completed",
+  "active_quests_title": "Active Quests",
+  "no_active_quests": "No active quests.",
+  "quests_load_error_active": "Error loading active quests.",
+  "quests_load_error_completed": "Error loading completed quests."
 }
