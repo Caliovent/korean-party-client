@@ -13,7 +13,7 @@ import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
 // --- COMPOSANT PRINCIPAL DE LA PAGE DE PROFIL ---
 const ProfilePage: React.FC = () => {
-  const { t } = useTranslation();
+    const { t, i18n } = useTranslation(); // Added i18n
   const { user: authUser, loading: authLoading } = useAuth(); // Use useAuth hook
   const { addToast } = useToasts(); // Hook pour les toasts
 
@@ -41,8 +41,14 @@ const ProfilePage: React.FC = () => {
     const userDocRef = doc(db, "users", authUser.uid);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
-            setProfile(doc.data());
-            setNewdisplayName(doc.data().displayName || ''); // Ensure displayName is not undefined
+            const data = doc.data();
+            setProfile(data);
+            setNewdisplayName(data.displayName || ''); // Ensure displayName is not undefined
+            // Set initial language for the buttons based on profile, if available
+            // This is for UI indication, actual language is applied by useAuth
+            if (data.languagePreference) {
+              // console.log("Profile language preference:", data.languagePreference);
+            }
         } else {
             setError("Profil non trouvé."); // This error is for the Firestore profile document
         }
@@ -152,6 +158,35 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Fonction pour gérer le changement de langue
+  const handleLanguageChange = async (lang: string) => {
+    if (!authUser) {
+      addToast(t('profilePage.errors.notLoggedInForLanguage', 'Vous devez être connecté pour changer la langue.'), 'error');
+      return;
+    }
+
+    let functionsInstance; // Corrected variable name
+    if (import.meta.env.DEV) {
+      functionsInstance = getFunctions(app, 'europe-west1'); // Corrected variable name
+      functionsInstance.customDomain = `http://localhost:5173/functions-proxy`;
+    } else {
+      functionsInstance = getFunctions(app, 'europe-west1'); // Corrected variable name
+    }
+    const updateUserProfile = httpsCallable(functionsInstance, 'updateUserProfile');
+
+    try {
+      await updateUserProfile({ languagePreference: lang });
+      i18n.changeLanguage(lang); // Change language in UI
+      addToast(t('profilePage.languageChanged', 'Langue mise à jour avec succès !'), 'success');
+      // Force re-render or update profile state if necessary, though i18n change should trigger it for texts
+      // For the button's active state, we might need to ensure ProfilePage re-renders if i18n.language isn't directly making it happen.
+      // However, i18n.changeLanguage should cause components using useTranslation to re-render.
+    } catch (err: unknown) {
+      console.error("Erreur de mise à jour de la langue:", err);
+      addToast(t('profilePage.errors.languageUpdateFailed', "Impossible de mettre à jour la préférence linguistique."), 'error');
+    }
+  };
+
   if (authLoading || loadingProfile) return <div>{t('loading', 'Chargement...')}</div>;
   // Error from auth hook (e.g. not logged in) might be handled by a redirect in App.tsx or useAuth itself
   if (!authUser) return <div>{t('notLoggedIn', 'Veuillez vous connecter pour voir votre profil.')}</div>;
@@ -206,6 +241,25 @@ const ProfilePage: React.FC = () => {
           <button type="submit">{t('save', 'Enregistrer')}</button>
         </form>
       )}
+
+      {/* --- SECTION PRÉFÉRENCES LINGUISTIQUES --- */}
+      <section className="language-preferences-section profile-section">
+        <h2>{t('profilePage.languagePreferencesTitle', 'Préférences Linguistiques')}</h2>
+        <div className="language-buttons">
+          <button
+            onClick={() => handleLanguageChange('fr')}
+            className={i18n.language.startsWith('fr') ? 'active' : ''}
+          >
+            {t('language.french', 'Français')}
+          </button>
+          <button
+            onClick={() => handleLanguageChange('en')}
+            className={i18n.language.startsWith('en') ? 'active' : ''}
+          >
+            {t('language.english', 'English')}
+          </button>
+        </div>
+      </section>
 
       {/* --- SECTION DU GRIMOIRE VIVANT --- */}
       <main>
