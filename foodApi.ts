@@ -33,7 +33,7 @@ export interface FoodGameSubmitResult {
 
 // --- Mock Data ---
 
-const MOCK_FOOD_ITEMS: FoodItem[] = [
+export const MOCK_FOOD_ITEMS: FoodItem[] = [
   { id: "ramyeon_01", name: "라면", imageUrl: "/assets/images/foods/ramyeon.jpg", imageAlt: "Image de Ramyeon", pronunciationUrl: "/assets/sounds/foods/ramyeon.mp3" },
   { id: "kimchi_01", name: "김치", imageUrl: "/assets/images/foods/kimchi.jpg", imageAlt: "Image de Kimchi", pronunciationUrl: "/assets/sounds/foods/kimchi.mp3" },
   { id: "bibimbap_01", name: "비빔밥", imageUrl: "/assets/images/foods/bibimbap.jpg", imageAlt: "Image de Bibimbap", pronunciationUrl: "/assets/sounds/foods/bibimbap.mp3" },

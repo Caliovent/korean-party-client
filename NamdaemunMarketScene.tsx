@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NamdaemunMarketSceneProps, Item } from './src/types';
+import type { NamdaemunMarketSceneProps, Item } from './src/types';
 
 // Assuming Tone.js might be globally available or via import * as Tone from 'tone';
 // For robust sound, proper Tone.js setup (like Tone.start()) in the parent GamePage is recommended.
