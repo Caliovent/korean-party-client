@@ -32,7 +32,6 @@ const playSound = (type: 'success' | 'error') => {
 };
 
 const NamdaemunMarketScene: React.FC<NamdaemunMarketSceneProps> = ({
-  gameId, // Added gameId
   onFinish, // Added onFinish
   gameData,
   score,
@@ -102,6 +101,7 @@ const NamdaemunMarketScene: React.FC<NamdaemunMarketSceneProps> = ({
   const timerBarPercentage = roundTimeLimit > 0 ? (timeLeft / roundTimeLimit) * 100 : 0;
 
   // Basic styles - ideally these would be in a CSS file or use a styling library
+  // Test comment
   const sceneStyle: React.CSSProperties = {
     fontFamily: "'Inter', 'Malgun Gothic', sans-serif", // From example
     padding: '20px',

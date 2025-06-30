@@ -41,8 +41,8 @@ const router = createBrowserRouter([
           // AJOUT : La nouvelle route pour la salle d'attente
           { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },
           { path: 'game/:gameId', element: <GamePage /> },
-          { path: 'lost-poem', element: <LostPoemScene /> },
-          { path: 'food-feast', element: <FoodFeastScene /> }, // New route for FoodFeastScene
+          { path: 'lost-poem', element: <LostPoemScene onFinish={async () => console.log('LostPoemScene finished (dev route)')} /> },
+          { path: 'food-feast', element: <FoodFeastScene onFinish={async () => console.log('FoodFeastScene finished (dev route)')} /> }, // New route for FoodFeastScene
         ],
       },
     ],

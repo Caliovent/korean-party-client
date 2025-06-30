@@ -3,7 +3,7 @@ import React from 'react';
 
 interface DokkaebiSaysSceneProps {
   gameId: string;
-  onFinish: () => void;
+  onFinish: () => Promise<void>;
 }
 
 const DokkaebiSaysScene: React.FC<DokkaebiSaysSceneProps> = ({ gameId, onFinish }) => {

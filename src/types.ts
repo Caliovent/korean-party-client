@@ -16,8 +16,7 @@ export interface GameRoundData {
 }
 
 export interface NamdaemunMarketSceneProps {
-  gameId: string; // Added gameId
-  onFinish: () => void; // Added onFinish for when the entire mini-game session is over
+  onFinish: () => Promise<void>; // Added onFinish for when the entire mini-game session is over
   gameData: GameRoundData; // This is for a single round
   score: number; // Current total score for the mini-game
   onCorrectChoice: (item: Item) => void; // Callback for correct choice in a round
@@ -41,7 +40,7 @@ export interface NamdaemunGameData {
 // export declare function getNamdaemunGameData(): Promise<NamdaemunGameData>;
 // export declare function submitNamdaemunResults(score: number): Promise<void>;
 
-// For the test file, we might need to refine this later.
+// For the test file, we might need to refine this later. // Test comment
 // The tests currently imply a simpler structure being passed or available.
 // Let's adjust based on the test structure for now.
 
