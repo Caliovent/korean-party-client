@@ -143,6 +143,7 @@ export const SOUND_DEFINITIONS: SoundDefinition[] = [
   { name: 'ui_click', path: '/assets/sounds/ui_click.wav', volume: 0.7 },
   { name: 'ui_modal_open', path: '/assets/sounds/ui_modal_open.wav', volume: 0.6 },
   { name: 'ui_modal_close', path: '/assets/sounds/ui_modal_close.wav', volume: 0.6 },
+  { name: 'ui_click_match', path: '/assets/sounds/ui_click_match.wav', volume: 0.7 },
 
   // Ambience Music
   { name: 'music_hub', path: '/assets/sounds/music_hub.mp3', loop: true, isMusic: true, volume: 0.7 },
