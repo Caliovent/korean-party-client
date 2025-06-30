@@ -289,6 +289,7 @@ function App() {
         <Link to="/" style={{textDecoration: 'none'}}><h2>{t('nav.home')}</h2></Link>
         <Link to="/hub" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.hub', 'Hub')}</h2></Link> {/* Assuming 'Hub' is a reasonable default */}
         <Link to="/lost-poem" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.lostPoem', 'Poème Perdu')}</h2></Link>
+        <Link to="/food-feast" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.foodFeast', 'Festin des Mots')}</h2></Link>
         <div className="firebase-status">
           {renderAuthStatus()}
         </div>

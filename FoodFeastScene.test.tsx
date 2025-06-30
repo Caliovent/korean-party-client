@@ -21,184 +21,171 @@ interface FoodGameData {
   correctAnswer: string;
 }
 
+import { waitFor } from '@testing-library/react';
+import FoodFeastScene from './FoodFeastScene';
+import * as api from './foodApi'; // Import all exports from foodApi
+// import soundService from './services/soundService'; // Actual import if used by component
+
+// --- Conceptual Data Structures (already in foodApi.ts, but good for test reference) ---
+// interface FoodItem { id: string; name: string; imageUrl: string; imageAlt: string; }
+// interface FoodGameData { foodItem: FoodItem; options: string[]; correctAnswer: string; }
+
 // --- Mock API ---
-// We'll mock this at a higher level if FoodFeastScene imports it.
-// For now, the mock component will receive data directly.
-// const getFoodGameData = jest.fn();
+jest.mock('./foodApi'); // Mock the entire foodApi module
+const mockedApi = api as jest.Mocked<typeof api>;
 
 // --- Mock Audio Service ---
 const mockPlaySound = jest.fn();
+// Assuming soundService is a default export from './services/soundService'
+// If the component imports it like `import soundService from './services/soundService';`
 jest.mock('./services/soundService', () => ({
-  __esModule: true, // This is important for mocking ES modules
-  default: { // Assuming soundService is an object with methods
+  __esModule: true,
+  default: {
     playSound: mockPlaySound,
-    // Mock other methods if FoodFeastScene uses them
+    // Mock other methods if FoodFeastScene uses them e.g. loadSounds, stopSound etc.
   },
-  SOUND_DEFINITIONS: {}, // Mock other exports if needed
-}), { virtual: true }); // virtual mock if soundService doesn't exist yet or to ensure our mock is used
-
-// --- Mock FoodFeastScene Component (for initial failing test) ---
-// This will be replaced by the actual FoodFeastScene implementation later.
-interface MockFoodFeastSceneProps {
-  gameData: FoodGameData | null;
-  score: number;
-  onOptionClick: (option: string) => void;
-}
-
-const MockFoodFeastSceneContent: React.FC<MockFoodFeastSceneProps> = ({ gameData, score, onOptionClick }) => {
-  if (!gameData) {
-    return <div>Chargement des données du jeu...</div>;
-  }
-
-  return (
-    <div>
-      <div data-testid="score-display">Score: {score}</div>
-      <img src={gameData.foodItem.imageUrl} alt={gameData.foodItem.imageAlt} data-testid="food-image" />
-      <div className="options-container">
-        {gameData.options.map((option, index) => (
-          <button key={index} onClick={() => onOptionClick(option)} data-testid={`option-button-${index}`}>
-            {option}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+  // If soundService also exports named things like SOUND_DEFINITIONS and component uses them:
+  // SOUND_DEFINITIONS: { GENERIC_SUCCESS: 'success.mp3', NEW_QUESTION: 'new_question.mp3'},
+}), { virtual: true }); // Virtual mock is good if the actual service file might not exist or for enforcing the mock
 
 
 describe('FoodFeastScene', () => {
+  const mockRamyeonGameData: api.FoodGameData = { // Use api.FoodGameData for type
+    questionId: 'q_ramyeon_test_1',
+    foodItem: {
+      id: 'ramyeon_01',
+      name: '라면',
+      imageUrl: '/assets/images/foods/ramyeon.jpg',
+      imageAlt: 'Image de Ramyeon',
+      pronunciationUrl: '/assets/sounds/foods/ramyeon.mp3'
+    },
+    options: ['라면', '김치', '비빔밥', '불고기'],
+    correctAnswer: '라면',
+  };
+
   beforeEach(() => {
     mockPlaySound.mockClear();
-    // getFoodGameData.mockClear(); // If we were mocking a module-level API
+    mockedApi.getFoodGameData.mockReset(); // Reset the main API mock
+    mockedApi.submitFoodGameResults.mockReset();
   });
 
   describe('Scénario 1 : Un plat est présenté (Mode Reconnaissance)', () => {
-    const mockRamyeonGameData: FoodGameData = {
-      foodItem: {
-        id: 'ramyeon_01',
-        name: '라면',
-        imageUrl: '/images/foods/ramyeon.jpg', // Placeholder URL
-        imageAlt: 'Image de Ramyeon',
-      },
-      options: ['라면', '김치', '비빔밥', '불고기'],
-      correctAnswer: '라면',
-    };
+    test('devrait afficher une image de nourriture et quatre options de texte', async () => {
+      mockedApi.getFoodGameData.mockResolvedValue(mockRamyeonGameData);
 
-    test('devrait afficher une image de nourriture et quatre options de texte', () => {
-      // For this initial test, FoodFeastScene itself is empty or basic.
-      // We expect this test to FAIL because the actual FoodFeastScene doesn't implement this yet.
-      // To make it fail against the *actual* component (once it's not empty):
-      // render(<FoodFeastScene />);
-      // For now, to define the expectation, we can use a conceptual render or just list assertions.
+      render(<FoodFeastScene />);
 
-      // This test will initially fail because FoodFeastScene is basic.
-      // The assertions below are what we EXPECT the final component to satisfy.
-      // To make this test "runnable" and "fail" in a TDD way against an empty component,
-      // we'd typically expect getByTestId or getByRole to throw errors.
-
-      render(<FoodFeastScene />); // Render the actual, currently basic, component
-
-      // Assertions that will fail because FoodFeastScene is not yet implemented:
-      // 1. Vérifiez qu'un élément img avec un alt spécifique (ex: "Image de Ramyeon") est à l'écran.
-      //    We won't find it yet.
-      expect(screen.queryByAltText(mockRamyeonGameData.foodItem.imageAlt)).not.toBeInTheDocument();
-      // To make it fail more directly if the query* doesn't throw:
-      // expect(screen.getByAltText(mockRamyeonGameData.foodItem.imageAlt)).toBeInTheDocument(); // This would throw
+      // Wait for loading to complete (component fetches data in useEffect)
+      // 1. Vérifiez qu'un élément img avec un alt spécifique est à l'écran.
+      const foodImage = await screen.findByAltText('Image de Ramyeon');
+      expect(foodImage).toBeInTheDocument();
+      expect(foodImage).toHaveAttribute('src', mockRamyeonGameData.foodItem.imageUrl);
 
       // 2. Vérifiez que quatre boutons cliquables contenant les mots en Hangeul sont présents.
-      //    We won't find them yet.
-      const optionButtons = screen.queryAllByRole('button'); // A real component would have specific roles or testids
-      expect(optionButtons.length).toBe(0); // Or check against a specific count if there are other buttons from the basic render.
-                                            // For an empty component, 0 is fine.
-                                            // For the actual component, we'd expect 4.
+      //    The component uses data-testid={`option-button-${option}`}
+      for (const option of mockRamyeonGameData.options) {
+        const optionButton = await screen.findByTestId(`option-button-${option.replace(/\s+/g, '-')}`);
+        expect(optionButton).toBeInTheDocument();
+        expect(optionButton).toHaveTextContent(option);
+        expect(optionButton).toBeEnabled();
+      }
 
-      // To be more explicit about the failure against an empty/basic component:
-      // This demonstrates the test is written but the component doesn't meet it.
-      // These will throw errors, making the test fail.
-      try {
-        screen.getByAltText(mockRamyeonGameData.foodItem.imageAlt);
-      } catch (e) {
-        // Expected error
-      }
-      try {
-        expect(screen.getAllByRole('button', { name: /라면|김치|비빔밥|불고기/i })).toHaveLength(4);
-      } catch (e) {
-        // Expected error
-      }
-      // A simpler way to ensure failure for now, if the above are too complex for an empty component:
-      // expect(true).toBe(false); // Remove this once component starts being built.
+      // Check for score display (even if it's 0 initially)
+      expect(screen.getByTestId('score-display')).toHaveTextContent('Score: 0');
+
+      // Optional: Check if a sound was played for new question (if implemented)
+      // For now, this is not strictly part of Scenario 1's assertions but good to keep in mind for sound integration step.
+      // expect(mockPlaySound).toHaveBeenCalledWith(mockRamyeonGameData.foodItem.pronunciationUrl);
+      // OR
+      // expect(mockPlaySound).toHaveBeenCalledWith('new_question_generic_sound');
     });
   });
 
   describe('Scénario 2 : Goût correct !', () => {
-    const mockRamyeonGameData: FoodGameData = { // Same data as Scenario 1 for consistency
+    const mockNextFoodItem: api.FoodGameData = {
+      questionId: 'q_kimchi_test_1',
       foodItem: {
-        id: 'ramyeon_01',
-        name: '라면',
-        imageUrl: '/images/foods/ramyeon.jpg',
-        imageAlt: 'Image de Ramyeon',
+        id: 'kimchi_01',
+        name: '김치',
+        imageUrl: '/assets/images/foods/kimchi.jpg',
+        imageAlt: 'Image de Kimchi',
+        pronunciationUrl: '/assets/sounds/foods/kimchi.mp3'
       },
-      options: ['라면', '김치', '비빔밥', '불고기'],
-      correctAnswer: '라면',
+      options: ['김치', '된장찌개', '삼겹살', '갈비'],
+      correctAnswer: '김치',
     };
 
-    // Mock getFoodGameData which would be called for the next question
-    const mockGetFoodGameData = jest.fn();
-    // If FoodFeastScene directly imports and uses getFoodGameData from an api file:
-    // jest.mock('./foodApi', () => ({ // Assuming an api file
-    //   getFoodGameData: mockGetFoodGameData,
-    // }));
-
+    // mockGetFoodGameData is already part of mockedApi
+    // const mockGetFoodGameData = jest.fn(); // Not needed like this anymore
 
     test('devrait afficher un feedback de succès et passer à la question suivante après un choix correct', async () => {
-      // This test will use a more complete conceptual mock of FoodFeastScene
-      // to define interactions, or it will fail against the actual basic component.
-      // For TDD, we write it as if the component has the necessary structure.
+      // Setup initial call and subsequent call for getFoodGameData
+      mockedApi.getFoodGameData
+        .mockResolvedValueOnce(mockRamyeonGameData) // First question
+        .mockResolvedValueOnce(mockNextFoodItem);   // Next question
 
-      // Simulate that the component has fetched initial data
-      // In a real component test, this would be mocked via its props or internal state/API calls
-
-      // To make this test fail correctly now, we'll render the basic FoodFeastScene.
-      // The interactions (userEvent.click) will likely fail or not find elements.
       render(<FoodFeastScene />);
-      // const user = userEvent.setup(); // User event for actual component interaction
+import userEvent from '@testing-library/user-event'; // Ensure userEvent is imported
 
-      // Assertions will fail as the component doesn't handle this.
+// ... (mockRamyeonGameData and mockNextFoodItem definitions remain the same) ...
 
-      // 1. Vérifiez qu'une animation ou un son de succès est joué (en mockant le service audio).
-      // This check would happen after a simulated click.
-      // For now, to make it fail:
-      expect(mockPlaySound).not.toHaveBeenCalled(); // It hasn't been called yet.
+    test('devrait afficher un feedback de succès, augmenter le score, et passer à la question suivante après un choix correct', async () => {
+      // Setup initial call and subsequent call for getFoodGameData
+      mockedApi.getFoodGameData
+        .mockResolvedValueOnce(mockRamyeonGameData) // First question
+        .mockResolvedValueOnce(mockNextFoodItem);   // Next question
+
+      const user = userEvent.setup({ delay: null }); // Use userEvent, delay: null for faster tests if needed
+      render(<FoodFeastScene />);
+
+      // Wait for the first question (Ramyeon) to load
+      const foodImageRamyeon = await screen.findByAltText(mockRamyeonGameData.foodItem.imageAlt);
+      expect(foodImageRamyeon).toBeInTheDocument();
+      expect(screen.getByTestId('score-display')).toHaveTextContent('Score: 0');
+
+      // Simulate click on the correct option for "Ramyeon"
+      const correctButtonRamyeon = await screen.findByTestId(`option-button-${mockRamyeonGameData.correctAnswer.replace(/\s+/g, '-')}`);
+      await user.click(correctButtonRamyeon);
+
+      // 1. Vérifiez qu'une animation ou un son de succès est joué
+      // Sound for correct answer + sound for selected option pronunciation
+      expect(mockPlaySound).toHaveBeenCalledWith('correct_answer');
+      if (mockRamyeonGameData.foodItem.pronunciationUrl) { // Check if the clicked item itself has a pronunciation URL
+          const clickedItemPronunciation = mockRamyeonGameData.options
+              .map(opt => api.MOCK_FOOD_ITEMS.find(item => item.name === opt))
+              .find(item => item?.name === mockRamyeonGameData.correctAnswer)?.pronunciationUrl;
+          if (clickedItemPronunciation) {
+            expect(mockPlaySound).toHaveBeenCalledWith(clickedItemPronunciation);
+          }
+      }
+
 
       // 2. Vérifiez que le score affiché augmente.
-      // This requires a score display and logic to update it.
-      // To make it fail (assuming no score display or it doesn't change):
-      // Example: const scoreDisplay = screen.queryByTestId('score-display');
-      // expect(scoreDisplay).toBeNull(); // Or if it exists, check its initial text and then that it doesn't change.
-      // For an empty component, this is fine.
-      // A more direct failure:
-      // expect(screen.getByTestId('score-display')).toHaveTextContent("Score: 1"); // This will fail.
+      // Feedback message appears, then score updates, then next question after delay
+      await waitFor(() => {
+        expect(screen.getByTestId('score-display')).toHaveTextContent('Score: 1');
+      });
+      expect(await screen.findByTestId('feedback-message')).toHaveTextContent('Correct!');
+
 
       // 3. Vérifiez que le composant demande un nouveau set de jeu pour la question suivante.
-      // This means getFoodGameData (or its equivalent) should be called again.
-      // To make it fail:
-      expect(mockGetFoodGameData).not.toHaveBeenCalled();
+      // getFoodGameData is called once initially, then again for the next question.
+      // Wait for the next question (Kimchi) to load, which implies getFoodGameData was called again.
+      const foodImageKimchi = await screen.findByAltText(mockNextFoodItem.foodItem.imageAlt, {}, { timeout: 3000 }); // Increased timeout for state changes and setTimeout
+      expect(foodImageKimchi).toBeInTheDocument();
 
+      // Verify getFoodGameData was called twice
+      expect(mockedApi.getFoodGameData).toHaveBeenCalledTimes(2);
 
-      // To make the test explicitly fail because elements for interaction are missing:
-      // This is a placeholder for the actual interaction that should happen.
-      // If we tried to click a button that doesn't exist, it would throw.
-      // For example:
-      // try {
-      //   const correctButton = screen.getByRole('button', { name: mockRamyeonGameData.correctAnswer });
-      //   await user.click(correctButton);
-      // } catch (e) {
-      //   // This error is expected with the current basic component
-      // }
-
-      // Ensure the test fails due to unmet assertions for now
-      // Combined explicit failure for unmet conditions:
-      expect(true).toBe(false); // This ensures the test fails until logic is implemented.
+      // Verify sound for new question (Kimchi)
+      // This sound plays when the new question data (mockNextFoodItem) is processed.
+       await waitFor(() => {
+         if (mockNextFoodItem.foodItem.pronunciationUrl) {
+            expect(mockPlaySound).toHaveBeenCalledWith(mockNextFoodItem.foodItem.pronunciationUrl);
+         } else {
+            expect(mockPlaySound).toHaveBeenCalledWith('new_question_default');
+         }
+       });
     });
   });
 });
