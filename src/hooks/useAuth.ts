@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../firebaseConfig'; // Assuming firebaseConfig is correctly set up
+import { auth, db } from '../firebaseConfig'; // Assuming firebaseConfig is correctly set up, added db
+import { doc, getDoc } from 'firebase/firestore'; // Added for fetching user profile
 import type { User } from 'firebase/auth';
+import i18n from '../i18n'; // Import i18n instance
 
 // Statistics structure
 export interface PlayerStats {
@@ -21,6 +23,7 @@ export interface UserProfile extends User { // Added export
   guildId?: string | null; // Stores the ID of the guild the user belongs to, if any.
   stats?: PlayerStats; // Player statistics
   unlockedAchievements?: string[]; // Array of achievement IDs
+  languagePreference?: string; // User's preferred language
 }
 
 /**
@@ -47,57 +50,70 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async firebaseUser => { // Made async for potential profile fetch
+    const unsubscribe = auth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
-        // --- REAL IMPLEMENTATION START ---
-        // setLoading(true); // Set loading true while fetching profile
-        // try {
-        //   // Example: Fetch profile from Firestore
-        //   // const userDocRef = doc(db, 'users', firebaseUser.uid);
-        //   // const userDocSnap = await getDoc(userDocRef);
-        //   // if (userDocSnap.exists()) {
-        //   //   const userProfileData = userDocSnap.data();
-        //   //   setUser({ ...firebaseUser, guildId: userProfileData.guildId || null });
-        //   // } else {
-        //   //   // Handle case where user profile doesn't exist, maybe create one
-        //   //   setUser({ ...firebaseUser, guildId: null });
-        //   // }
-        //
-        //   // OR Example: Using custom claims (after ensuring token is fresh)
-        //   // const idTokenResult = await firebaseUser.getIdTokenResult();
-        //   // const customClaims = idTokenResult.claims;
-        //   // setUser({ ...firebaseUser, guildId: customClaims.guildId || null });
-        // } catch (error) {
-        //   console.error("Error fetching user profile:", error);
-        //   setUser({ ...firebaseUser, guildId: null }); // Fallback
-        // } finally {
-        //   setLoading(false);
-        // }
-        // --- REAL IMPLEMENTATION END ---
+        setLoading(true);
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          let userProfileData: Partial<UserProfile> = {};
 
-        // Mock implementation (current):
-        const mockUserProfile: UserProfile = {
-          ...firebaseUser,
-          // To test guild creation, set guildId to null initially:
-          // guildId: null,
-          guildId: 'some-existing-guild-id', // To test user already in a guild
-          // Mock initial stats and achievements
-          stats: {
-            gamesPlayed: 5,
-            spellsCast: 120,
-            manaSpent: 450,
-            duelsWon: 2,
-            questsCompleted: 3,
-            runesReviewed: 50,
-          },
-          unlockedAchievements: ['ACH_FIRST_SPELL_CAST'], // Example achievement
-        };
-        setUser(mockUserProfile);
-        setLoading(false); // Mock sets loading false here
+          if (userDocSnap.exists()) {
+            userProfileData = userDocSnap.data() as UserProfile;
+          } else {
+            // Handle case where user profile doesn't exist in Firestore yet
+            // console.log(`No profile document found for user ${firebaseUser.uid}, using defaults.`);
+          }
+
+          const resolvedUser: UserProfile = {
+            ...firebaseUser,
+            guildId: userProfileData.guildId || null,
+            stats: userProfileData.stats || { gamesPlayed: 0, spellsCast: 0, manaSpent: 0, duelsWon: 0, questsCompleted: 0, runesReviewed: 0 },
+            unlockedAchievements: userProfileData.unlockedAchievements || [],
+            languagePreference: userProfileData.languagePreference, // This will be undefined if not set
+          };
+          setUser(resolvedUser);
+
+          // Apply language preference
+          if (resolvedUser.languagePreference) {
+            // console.log(`Applying user language preference: ${resolvedUser.languagePreference}`);
+            i18n.changeLanguage(resolvedUser.languagePreference);
+          } else {
+            // Fallback logic: browser language or default
+            const browserLang = navigator.language.split('-')[0]; // Get 'en' from 'en-US'
+            // console.log(`No user language preference found. Browser language: ${browserLang}`);
+            if (['en', 'fr'].includes(browserLang)) {
+              // console.log(`Applying browser language: ${browserLang}`);
+              i18n.changeLanguage(browserLang);
+            } else {
+              // console.log(`Browser language not supported or not detected, defaulting to 'en'.`);
+              i18n.changeLanguage('en'); // Default language
+            }
+          }
+
+        } catch (error) {
+          console.error("Error fetching user profile or setting language:", error);
+          // Fallback for user object in case of error
+          const errorUser: UserProfile = {
+            ...firebaseUser,
+            guildId: null,
+            stats: { gamesPlayed: 0, spellsCast: 0, manaSpent: 0, duelsWon: 0, questsCompleted: 0, runesReviewed: 0 },
+            unlockedAchievements: [],
+          };
+          setUser(errorUser);
+          // Fallback language setting in case of error
+          // console.log(`Error occurred, defaulting language to 'en'.`);
+          i18n.changeLanguage('en');
+        } finally {
+          setLoading(false);
+        }
       } else {
         setUser(null);
+        setLoading(false);
+        // Optionally, reset language to browser default or a general default when logged out
+        // For now, it will keep the last set language or the initial one from i18n.ts
+        // console.log("User logged out. Current language:", i18n.language);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

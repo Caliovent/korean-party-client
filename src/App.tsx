@@ -246,11 +246,6 @@ function App() {
     signOut(auth).catch(error => console.error("Erreur de déconnexion", error));
   };
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    soundService.playSound('ui_click');
-  };
-
   // Fonction pour afficher le statut de connexion de manière propre
   const renderAuthStatus = () => {
     if (loading) {
@@ -281,10 +276,6 @@ function App() {
     <div className="App">
       <ToastContainer toasts={toasts} dismissToast={dismissToast} /> {/* Render ToastContainer */}
       <header className="app-header">
-        <div>
-          <button onClick={() => changeLanguage('fr')}>FR</button>
-          <button onClick={() => changeLanguage('en')}>EN</button>
-        </div>
         {/* Link itself is not a button, but if it were styled as one and had an action other than navigation, it would need sound */}
         <Link to="/" style={{textDecoration: 'none'}}><h2>{t('nav.home')}</h2></Link>
         <Link to="/hub" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.hub', 'Hub')}</h2></Link> {/* Assuming 'Hub' is a reasonable default */}
