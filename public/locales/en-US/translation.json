@@ -154,5 +154,6 @@
   "noGuildAffiliation": "Not affiliated with any house.",
   "noItemsToReview": "No spells to review at the moment. Well done!",
   "back": "Back",
-  "hub_open_quest_log_button": "Open Quest Log"
+  "hub_open_quest_log_button": "Open Quest Log",
+  "quest_log_modal_title": "Quest Log"
 }
