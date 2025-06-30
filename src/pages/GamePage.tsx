@@ -243,11 +243,11 @@ const GamePage: React.FC = () => {
 
     switch (game.currentMiniGame) {
       case 'FOOD_FEAST':
-        return <FoodFeastScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+        return <FoodFeastScene onFinish={handleMiniGameFinish} />;
       case 'DOKKAEBI_SAYS':
         return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} />;
       case 'LOST_POEM':
-        return <LostPoemScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+        return <LostPoemScene onFinish={handleMiniGameFinish} />;
       case 'NAMDAEMUN_MARKET':
         // NamdaemunMarketScene has more complex props.
         // It requires gameData for the current round, score management, etc.
@@ -283,7 +283,6 @@ const GamePage: React.FC = () => {
           choices: [{ id: '1', name: '사과', altText: '사과', imageUrl: '' }],
         };
         return <NamdaemunMarketScene
-                  gameId={gameId}
                   onFinish={handleMiniGameFinish}
                   gameData={dummyNamdaemunGameData}
                   score={0}

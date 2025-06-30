@@ -6,8 +6,7 @@ import { getFoodGameData, MOCK_FOOD_ITEMS, submitFoodGameResults } from './foodA
 import soundService from './src/services/soundService';
 
 interface FoodFeastSceneProps {
-  gameId: string;
-  onFinish: () => void;
+  onFinish: () => Promise<void>;
 }
 
 // Defines the state of feedback after an answer
@@ -18,7 +17,7 @@ type FeedbackState = {
   clickedOption: string | null;
 };
 
-const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ gameId, onFinish }) => { // Added gameId and onFinish to props destructuring
+const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ onFinish }) => { // Added gameId and onFinish to props destructuring
   const [gameData, setGameData] = useState<FoodGameData | null>(null);
   const [score, setScore] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);

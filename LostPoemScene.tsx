@@ -3,11 +3,10 @@ import type { PoemPuzzle, PoemLine, PoemSubmitResult } from './poemApi'; // Assu
 import { getPoemPuzzleData, submitPoemResults } from './poemApi'; // Assuming poemApi.ts is in the same directory
 
 interface LostPoemSceneProps {
-  gameId: string;
-  onFinish: () => void;
+  onFinish: () => Promise<void>;
 }
 
-const LostPoemScene: React.FC<LostPoemSceneProps> = ({ gameId, onFinish }) => { // Added props here
+const LostPoemScene: React.FC<LostPoemSceneProps> = ({ onFinish }) => { // Added props here
   const [poemData, setPoemData] = useState<PoemPuzzle | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
