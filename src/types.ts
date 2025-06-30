@@ -16,12 +16,14 @@ export interface GameRoundData {
 }
 
 export interface NamdaemunMarketSceneProps {
-  gameData: GameRoundData;
-  score: number;
-  onCorrectChoice: (item: Item) => void;
-  onIncorrectChoice: (item: Item, isTimeout?: boolean) => void;
+  gameId: string; // Added gameId
+  onFinish: () => void; // Added onFinish for when the entire mini-game session is over
+  gameData: GameRoundData; // This is for a single round
+  score: number; // Current total score for the mini-game
+  onCorrectChoice: (item: Item) => void; // Callback for correct choice in a round
+  onIncorrectChoice: (item: Item, isTimeout?: boolean) => void; // Callback for incorrect choice
   roundTimeLimit: number; // Time limit in seconds for the round
-  onRoundTimeout: () => void; // Callback when the round times out
+  onRoundTimeout: () => void; // Callback when a single round times out
 }
 
 export interface NamdaemunGameData {

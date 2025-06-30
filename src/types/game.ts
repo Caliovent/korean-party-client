@@ -24,8 +24,16 @@ export interface Player {
   blocks: any[]; // Utilisez un type plus spécifique si vous l'avez
 }
 
-export type GameStatus = "waiting" | "playing" | "finished";
+export type GameStatus = "waiting" | "playing" | "finished" | "MINI_GAME_STARTING";
 export type TurnState = "AWAITING_ROLL" | "MOVING" | "RESOLVING_TILE";
+
+// Define MiniGame identifiers
+export type MiniGameId =
+  | 'FOOD_FEAST'
+  | 'DOKKAEBI_SAYS'
+  | 'LOST_POEM'
+  | 'NAMDAEMUN_MARKET'
+  | 'HANGEUL_TYPHOON'; // Added based on gameService.tsx content for HangeulTyphoon
 
 export interface BoardTile {
   type: string; // e.g., 'food', 'travel', 'library', 'EVENT'
@@ -47,6 +55,7 @@ export interface Game {
   currentPlayerId: string;
   currentTurn: number;
   turnState: TurnState;
+  currentMiniGame?: MiniGameId; // Optional: only present when status is MINI_GAME_STARTING
   board: BoardTile[]; // Changed from { type: string; trap?: 'RUNE_TRAP' | string; }[]
   lastDiceRoll: number | null;
   lastEventCard: { titleKey: string, descriptionKey: string, GfxUrl: string } | null;

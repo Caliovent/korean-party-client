@@ -6,13 +6,13 @@ import { CSSTransition } from 'react-transition-group'; // Import CSSTransition
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
-import { castSpell } from '../services/gameService'; // Importer castSpell
+import { castSpell, finishMiniGame } from '../services/gameService'; // Importer castSpell and finishMiniGame
 import soundService from '../services/soundService'; // Import soundService
 import { SPELL_DEFINITIONS, type SpellId } from '../data/spells'; // Importer le type SpellId, SpellType removed
 import PhaserGame from '../components/PhaserGame';
 import PlayerHUD from '../components/PlayerHUD';
 import GameControls from '../components/GameControls';
-import type { Game, Player } from '../types/game';
+import type { Game, Player, MiniGameId } from '../types/game'; // Added MiniGameId
 import Spellbook from "../components/Spellbook";
 // import type { SpellId } from '../data/spells'; // Importer le type SpellId - Already imported above
 import VictoryScreen from '../components/VictoryScreen'; // Importer l'écran de victoire
@@ -20,6 +20,12 @@ import EventCardModal from '../components/EventCardModal'; // Import the modal
 import OpponentTurnIndicator from '../components/OpponentTurnIndicator'; // Import OpponentTurnIndicator
 import FocusModeButton from '../components/FocusModeButton'; // Import FocusModeButton
 
+// Mini-game scene components
+import FoodFeastScene from '../../FoodFeastScene';
+import DokkaebiSaysScene from '../../DokkaebiSaysScene';
+import LostPoemScene from '../../LostPoemScene';
+import NamdaemunMarketScene from '../../NamdaemunMarketScene';
+// import HangeulTyphoonScene from '../../HangeulTyphoonScene'; // Corrected path, assuming it's top-level like others
 
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -214,60 +220,155 @@ const GamePage: React.FC = () => {
   const activePlayer = game.players.find(p => p.uid === game.currentPlayerId);
   const activePlayerName = activePlayer ? activePlayer.displayName : 'Adversaire inconnu';
 
+  const handleMiniGameFinish = async () => {
+    if (!gameId) {
+      console.error("No gameId available to finish mini-game.");
+      return;
+    }
+    try {
+      console.log(`[GamePage] Mini-game finished for game ${gameId}. Calling backend...`);
+      await finishMiniGame(gameId);
+      // The backend will update the game state, and onSnapshot will refresh the UI.
+      // No direct state change here needed other than what backend dictates.
+    } catch (error) {
+      console.error("Error finishing mini-game:", error);
+      // Potentially show a toast to the user
+    }
+  };
+
+  const renderMiniGame = () => {
+    if (!game || game.status !== 'MINI_GAME_STARTING' || !game.currentMiniGame || !gameId) {
+      return null;
+    }
+
+    switch (game.currentMiniGame) {
+      case 'FOOD_FEAST':
+        return <FoodFeastScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+      case 'DOKKAEBI_SAYS':
+        return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+      case 'LOST_POEM':
+        return <LostPoemScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+      case 'NAMDAEMUN_MARKET':
+        // NamdaemunMarketScene has more complex props.
+        // It requires gameData for the current round, score management, etc.
+        // This basic router setup might need a more sophisticated state management
+        // for NamdaemunMarketScene if it's driven by GamePage.
+        // For now, assuming it can operate with just gameId and onFinish,
+        // or its internal state is sufficient for this flow.
+        // This will likely need refinement based on Namdaemun's actual data needs.
+        // However, the props interface was updated to include gameId and onFinish.
+        // The component itself needs to be able to fetch/manage its round data if not provided.
+        // This is a simplification for the current task.
+        // A more robust solution would involve GamePage fetching and passing round-specific data.
+        // For now, this is a placeholder to fit the routing structure.
+        // It's possible NamdaemunMarketScene is not intended to be routed this way without a wrapper.
+        // Let's assume for now it can manage itself or this is a temporary step.
+        // To make it runnable, we'd need to provide mock or placeholder for its other required props if they are not optional.
+        // The NamdaemunMarketSceneProps requires gameData, score, onCorrectChoice, onIncorrectChoice, roundTimeLimit, onRoundTimeout.
+        // This indicates this direct rendering won't work without more state in GamePage or a wrapper.
+        // For the purpose of this task (implementing the router), I will log an error for this case
+        // and return null, highlighting that it needs special handling.
+        console.error(`Rendering NamdaemunMarketScene via this generic mini-game router needs special data handling in GamePage for its props (gameData, score, etc). Placeholder rendering.`);
+        // return <NamdaemunMarketScene gameId={gameId} onFinish={handleMiniGameFinish} {...anyOtherRequiredPropsFromSomewhere} />;
+        // For now, to avoid breaking, and since this task is about routing:
+        // I will render it with minimal props as a test, assuming its internal logic can handle missing optional data or has defaults.
+        // This is a known simplification.
+        // The props 'gameData', 'score', 'onCorrectChoice', 'onIncorrectChoice', 'roundTimeLimit', 'onRoundTimeout' are NOT optional.
+        // This will cause a TypeScript error.
+        // TODO: Address NamdaemunMarketScene's specific data requirements.
+        // For now, I will pass dummy/mock values to satisfy TypeScript and allow testing the flow.
+        // This is a significant simplification and should be documented.
+        const dummyNamdaemunGameData = {
+          customerRequest: { itemWanted: { id: '1', name: '사과', altText: '사과', imageUrl: '' }, displayText: '사과 주세요' },
+          choices: [{ id: '1', name: '사과', altText: '사과', imageUrl: '' }],
+        };
+        return <NamdaemunMarketScene
+                  gameId={gameId}
+                  onFinish={handleMiniGameFinish}
+                  gameData={dummyNamdaemunGameData}
+                  score={0}
+                  onCorrectChoice={() => console.log("NMDM Correct (dummy)")}
+                  onIncorrectChoice={() => console.log("NMDM Incorrect (dummy)")}
+                  roundTimeLimit={60}
+                  onRoundTimeout={() => console.log("NMDM Timeout (dummy)")}
+                />;
+      // case 'HANGEUL_TYPHOON':
+      //   return <HangeulTyphoonScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+      default:
+        console.error("Unknown mini-game:", game.currentMiniGame);
+        return <div>Error: Unknown Mini-Game ({game.currentMiniGame})</div>;
+    }
+  };
 
   // Le rendu normal du jeu si la partie n'est pas terminée
   return (
     <div>
       <FocusModeButton isFocus={isFocusMode} onClick={() => setIsFocusMode(!isFocusMode)} />
 
+      {/* Persistent UI elements like HUD, Event Modals, etc. */}
       {!isFocusMode && (
         <>
           <EventCardModal eventCard={currentEvent} onClose={handleCloseEventModal} />
+          {/* PlayerHUD might need context if mini-games also need to show some player info,
+              or it's only relevant to the main board game state.
+              Task states "HUD ... restent visibles". So it stays outside the main game/minigame switch.
+          */}
           <PlayerHUD player={currentPlayer} />
-          <CSSTransition
-            nodeRef={playerControlsRef}
-            in={isMyTurn && game.turnState === 'AWAITING_ROLL' && !!currentPlayer}
-            timeout={300}
-            classNames="player-controls-transition"
-            unmountOnExit
-          >
-            <div ref={playerControlsRef}> {/* Wrapper div for the ref */}
-              {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
-                <>
-                  <Spellbook
-                    player={currentPlayer}
-                    selectedSpellId={selectedSpellId}
-                    onSelectSpell={handleSelectSpell}
-                    isCastingSpell={isCastingSpell}
-                    castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
-                    isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== "SELF"}
-                  />
-                  <GameControls game={game} />
-                </>
-              )}
-            </div>
-          </CSSTransition>
-          <CSSTransition
-            nodeRef={opponentIndicatorRef}
-            in={!isMyTurn && game.status === 'playing'}
-            timeout={300}
-            classNames="opponent-indicator-transition"
-            unmountOnExit
-          >
-            <div ref={opponentIndicatorRef}> {/* Wrapper div for the ref */}
-              {!isMyTurn && game.status === 'playing' && (
-                <OpponentTurnIndicator playerName={activePlayerName} />
-              )}
-            </div>
-          </CSSTransition>
+
+          {/* Conditional rendering for elements specific to main game turn */}
+          {game && game.status !== 'MINI_GAME_STARTING' && (
+            <>
+              <CSSTransition
+                nodeRef={playerControlsRef}
+                in={isMyTurn && game.turnState === 'AWAITING_ROLL' && !!currentPlayer}
+                timeout={300}
+                classNames="player-controls-transition"
+                unmountOnExit
+              >
+                <div ref={playerControlsRef}> {/* Wrapper div for the ref */}
+                  {isMyTurn && game.turnState === 'AWAITING_ROLL' && currentPlayer && (
+                    <>
+                      <Spellbook
+                        player={currentPlayer}
+                        selectedSpellId={selectedSpellId}
+                        onSelectSpell={handleSelectSpell}
+                        isCastingSpell={isCastingSpell}
+                        castingSpellId={selectedSpellId} // Pass selectedSpellId as castingSpellId
+                        isTargetingMode={selectedSpellId !== null && SPELL_DEFINITIONS.find(s => s.id === selectedSpellId)?.type !== "SELF"}
+                      />
+                      <GameControls game={game} />
+                    </>
+                  )}
+                </div>
+              </CSSTransition>
+              <CSSTransition
+                nodeRef={opponentIndicatorRef}
+                in={!isMyTurn && game.status === 'playing'}
+                timeout={300}
+                classNames="opponent-indicator-transition"
+                unmountOnExit
+              >
+                <div ref={opponentIndicatorRef}> {/* Wrapper div for the ref */}
+                  {!isMyTurn && game.status === 'playing' && (
+                    <OpponentTurnIndicator playerName={activePlayerName} />
+                  )}
+                </div>
+              </CSSTransition>
+            </>
+          )}
         </>
       )}
 
-      <PhaserGame
-        game={game}
-        selectedSpellId={selectedSpellId}
-        onTargetSelected={handleTargetSelected}
-      />
+      {/* Main content: either Mini-Game or PhaserGame (Main Board) */}
+      {game && game.status === 'MINI_GAME_STARTING' ? (
+        renderMiniGame()
+      ) : (
+        <PhaserGame
+          game={game}
+          selectedSpellId={selectedSpellId}
+          onTargetSelected={handleTargetSelected}
+        />
+      )}
     </div>
   );
 };

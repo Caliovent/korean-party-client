@@ -3,10 +3,11 @@ import type { PoemPuzzle, PoemLine, PoemSubmitResult } from './poemApi'; // Assu
 import { getPoemPuzzleData, submitPoemResults } from './poemApi'; // Assuming poemApi.ts is in the same directory
 
 interface LostPoemSceneProps {
-  // Props if any, e.g., onGameComplete
+  gameId: string;
+  onFinish: () => void;
 }
 
-const LostPoemScene: React.FC<LostPoemSceneProps> = () => {
+const LostPoemScene: React.FC<LostPoemSceneProps> = ({ gameId, onFinish }) => { // Added props here
   const [poemData, setPoemData] = useState<PoemPuzzle | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,9 +101,12 @@ const LostPoemScene: React.FC<LostPoemSceneProps> = () => {
       const result = await submitPoemResults(poemData.id, filledSlots);
       setSubmitResult(result);
       // console.log("Poem submitted, result:", result);
+      onFinish(); // Call onFinish after successful submission
     } catch (e) {
       console.error("Failed to submit poem results:", e);
       setSubmitResult({ score: 0, message: "Erreur lors de la soumission."});
+      // Consider if onFinish() should be called even on error.
+      // For now, calling it only on success.
     }
   };
 

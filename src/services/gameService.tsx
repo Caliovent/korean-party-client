@@ -33,6 +33,24 @@ export const createGame = async (gameName: string): Promise<HttpsCallableResult 
   }
 };
 
+/**
+ * Calls the Cloud Function to signal that a mini-game has finished.
+ * The backend is expected to transition the game state appropriately.
+ * @param gameId The ID of the game where the mini-game finished.
+ */
+export const finishMiniGame = async (gameId: string): Promise<void> => {
+  try {
+    console.log(`[CLIENT] Calling 'finishMiniGame' function for game: ${gameId}`);
+    const finishMiniGameFunction = httpsCallable(functions, 'finishMiniGame');
+    await finishMiniGameFunction({ gameId });
+    console.log("Cloud Function 'finishMiniGame' called for game ${gameId}");
+  } catch (error) {
+    console.error(`Error calling finishMiniGame function for game ${gameId}:`, error);
+    // Optionally re-throw or handle as per application's error handling strategy
+    throw error;
+  }
+};
+
 export const joinGame = async (gameId: string): Promise<void> => {
   try {
     console.log("[CLIENT] Calling 'joinGame' function for game: ${gameId}");
