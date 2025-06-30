@@ -23,6 +23,10 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ game, selectedSpellId, onTarget
       width: 1280,
       height: 720,
       parent: 'phaser-container',
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
       scene: [MainBoardScene],
       backgroundColor: '#2d2d2d',
     };
