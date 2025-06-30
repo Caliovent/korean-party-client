@@ -63,6 +63,15 @@ const GamePage: React.FC = () => {
     // Reset other game page states if any
   }
 
+  const handleNamdaemunFinish = async (): Promise<void> => {
+    setCurrentMiniGame('none');
+    setShowNamdaemunEndScreen(true);
+    // If there's any specific cleanup or finalization needed when NamdaemunMarketScene calls onFinish,
+    // it can be added here. For example, ensuring results are submitted if not already.
+    // await submitNamdaemunResults(namdaemunScore); // This is already in advanceToNextRound
+    console.log("Namdaemun Market mini-game finished and onFinish called.");
+  };
+
   if (currentMiniGame === 'namdaemun' && namdaemunGameData) {
     return (
       <NamdaemunMarketScene
@@ -72,6 +81,7 @@ const GamePage: React.FC = () => {
         onIncorrectChoice={handleIncorrectChoice}
         roundTimeLimit={ROUND_TIME_LIMIT_SECONDS}
         onRoundTimeout={handleRoundTimeout} // Or directly call advanceToNextRound if that's the only action
+        onFinish={handleNamdaemunFinish}
       />
     );
   }

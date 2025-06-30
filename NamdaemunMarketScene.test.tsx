@@ -9,6 +9,7 @@ import { GameRoundData } from './src/types';
 const mockOnCorrectChoice = vi.fn();
 const mockOnIncorrectChoice = vi.fn();
 const mockOnRoundTimeout = vi.fn();
+const mockOnFinish = vi.fn(); // Added mock for onFinish
 
 const ROUND_TIME_LIMIT = 15; // Match default in GamePage for consistency if used
 
@@ -21,6 +22,7 @@ describe('NamdaemunMarketScene', () => {
     mockOnCorrectChoice.mockClear();
     mockOnIncorrectChoice.mockClear();
     mockOnRoundTimeout.mockClear();
+    mockOnFinish.mockClear(); // Clear onFinish mock
   });
 
   afterEach(() => {
@@ -37,6 +39,7 @@ describe('NamdaemunMarketScene', () => {
         onIncorrectChoice={mockOnIncorrectChoice}
         roundTimeLimit={timeLimit}
         onRoundTimeout={mockOnRoundTimeout}
+        onFinish={mockOnFinish} // Added onFinish prop
       />
     );
   };
