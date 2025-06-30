@@ -44,6 +44,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "fake-indexeddb": "^6.0.1",
     "globals": "^16.0.0",
+    "jest-environment-jsdom": "^30.0.2",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
