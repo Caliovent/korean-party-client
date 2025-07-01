@@ -111,11 +111,11 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ reviewItems, onSessionEnd
           {currentItem.word || currentItem.spellId || 'Mot/Sort à réviser'}
         </div>
         <div className={`review-answer ${isRevealed ? 'visible' : ''}`}>
-          {/* This is a placeholder. The actual "answer" would depend on what needs to be recalled.
-              For a spell, it might be its effect, components, or incantation.
-              For now, we'll just use a generic placeholder. */}
-          <p>Signification/Détails de la rune : "{currentItem.word || currentItem.spellId}"</p>
-          {/* Example: <p>Effet: {currentItem.effectDescription}</p> */}
+          {currentItem.definition ? (
+            <p>{currentItem.definition}</p>
+          ) : (
+            <p>Définition non disponible.</p>
+          )}
         </div>
 
         {!isRevealed ? (

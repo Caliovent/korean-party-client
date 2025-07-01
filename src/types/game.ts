@@ -76,6 +76,7 @@ export interface SpellMasteryData {
   successfulCasts: number; // Number of times the spell has been cast successfully
   failedCasts: number; // Number of times the spell failed (e.g., due to lack of mana, target out of range)
   nextReviewDate?: number; // Unix timestamp (milliseconds) for next scheduled review
+  definition?: string; // The translation or definition of the word/spell
   // Optional: could add lastUsedTimestamp, specific spell stats, etc.
 }
 
