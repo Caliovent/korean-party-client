@@ -126,3 +126,89 @@
     font-size: 1.6rem;
   }
 }
+
+/* Added styles for ProfilePage enhancements */
+
+/* Shared styling for sections */
+.profile-section {
+  background-color: var(--background-color, #ffffff); /* Default to white if var not set */
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.profile-section h2 {
+  font-size: 1.8rem;
+  color: var(--accent-color-dark, #333); /* Default if var not set */
+  margin-top: 0; /* Override if needed */
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #eee); /* Default if var not set */
+}
+
+/* XP Progress Bar Styles */
+.xp-progress-section {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.xp-progress-section > p { /* Target the label like "Progression vers le prochain niveau" */
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--text-color-secondary, #555);
+}
+
+.xp-bar-container {
+  width: 100%;
+  background-color: var(--border-color, #e0e0e0); /* Light grey background for the bar */
+  border-radius: 8px;
+  height: 28px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border-color-darker, #ccc); /* Slightly darker border */
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background-color: var(--success-color, #4caf50); /* Green for XP fill */
+  border-radius: 7px 0 0 7px; /* Match container's border-radius less 1px for inner feel */
+  transition: width 0.5s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9em;
+  line-height: 28px; /* Match container height */
+}
+
+.xp-bar-text {
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+/* If progress is 100%, round all corners of the fill */
+.xp-bar-fill[style*="width: 100%"] {
+  border-radius: 7px; /* Match container's border-radius less 1px */
+}
+
+.profile-edit-button { /* Specific class for the main edit button if needed */
+  margin-bottom: 1.5rem; /* Space it out from sections below */
+  /* Inherits general button styling from above */
+}
+
+/* Ensure sections defined in ProfilePage.tsx use .profile-section class */
+/* .profile-details is already styled. Others like: */
+/* .language-preferences-section, .grimoire-detail-section, */
+/* .grimoire-review-section, .hall-of-fame-section */
+/* should have .profile-section applied to them in the JSX for consistent styling. */
+
+/* Remove generic main styling if GrimoireVivant is now within a .profile-section */
+/*
+.profile-page-container main {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+*/

@@ -6,14 +6,18 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from '../hooks/useAuth'; // Import useAuth
 import { getGuildById } from '../services/gameService'; // Import getGuildById
 import GrimoireVivant from '../components/GrimoireVivant'; // Import GrimoireVivant
+// Import the new GrimoireDetail component
+import GrimoireDetail from '../components/GrimoireDetail'; // MODIFIED: Import GrimoireDetail
 import HallOfFame from '../components/HallOfFame'; // Importer HallOfFame
 import { useToasts } from '../contexts/useToasts'; // Importer useToast
 import { getAchievementDefinition } from '../data/achievementDefinitions'; // Importer pour les détails des HF
+// Import level calculation utilities
+import { getLevelFromExperience, getLevelProgress, getExperienceForLevel } from '../data/levelExperience'; // MODIFIED: Import level utils
 import './ProfilePage.css'; // Créez ou ajustez ce fichier CSS si nécessaire
 
 // --- COMPOSANT PRINCIPAL DE LA PAGE DE PROFIL ---
 const ProfilePage: React.FC = () => {
-    const { t, i18n } = useTranslation(); // Added i18n
+  const { t, i18n } = useTranslation(); // Added i18n
   const { user: authUser, loading: authLoading } = useAuth(); // Use useAuth hook
   const { addToast } = useToasts(); // Hook pour les toasts
 
@@ -193,6 +197,19 @@ const ProfilePage: React.FC = () => {
   if (error && !profile) return <div className="error-message">{error}</div>; // Error fetching profile document
   if (!profile) return <div>{t('profileNotFound', "Profil de l'utilisateur non trouvé.")}</div>;
 
+  // Calculate Wizard Level and XP Progress
+  // Assuming 'profile.totalExperience' holds the total XP
+  // And 'profile.wizardLevel' might exist, or we can calculate it.
+  // The mission implies 'wizardLevel' is a field on the user document.
+  // If not, we'd use getLevelFromExperience(profile.totalExperience).
+  const totalExperience = profile.totalExperience || 0;
+  // Let's prioritize a wizardLevel field if it exists, otherwise calculate it.
+  // The task mentions "écouter en temps réel les champs totalExperience et wizardLevel du document user"
+  const currentWizardLevel = profile.wizardLevel || getLevelFromExperience(totalExperience);
+
+  const levelProgress = getLevelProgress(totalExperience, currentWizardLevel);
+  const currentLevelData = getExperienceForLevel(currentWizardLevel);
+
   return (
     <div className="profile-page-container"> {/* Updated class name */}
       <header className="profile-header">
@@ -200,11 +217,39 @@ const ProfilePage: React.FC = () => {
         <p>{t('profilePage.description', "Consultez et gérez la maîtrise de vos sortilèges.")}</p>
       </header>
 
-      {/* --- SECTION D'AFFICHAGE ET D'ÉDITION DU PROFIL (Conservée) --- */}
-      <div className="profile-details">
-        <h2>{t('profilePageTitle', 'Mon Profil de Sorcier')}</h2>
-        <p><strong>Email:</strong> {profile.email}</p>
-        <p><strong>displayName:</strong> {profile.displayName}</p>
+      {/* --- SECTION D'AFFICHAGE ET D'ÉDITION DU PROFIL --- */}
+      <section className="profile-details profile-section">
+        <h2>{t('profilePage.userProfileTitle', 'Mon Profil de Sorcier')}</h2>
+        <p><strong>{t('profilePage.emailLabel', 'Email')}:</strong> {profile.email}</p>
+        <p><strong>{t('profilePage.displayNameLabel', 'Nom d\'Invocateur')}:</strong> {profile.displayName}</p>
+
+        {/* Wizard Level Display */}
+        <p>
+          <strong>{t('profilePage.wizardLevelLabel', 'Niveau de Sorcier')}:</strong> {currentWizardLevel}
+        </p>
+
+        {/* XP Progress Bar */}
+        {levelProgress && currentLevelData && (
+          <div className="xp-progress-section">
+            <p>
+              {t('profilePage.xpProgressLabel', 'Progression vers le prochain niveau')}:
+            </p>
+            <div className="xp-bar-container">
+              <div
+                className="xp-bar-fill"
+                style={{ width: `${levelProgress.progressPercentage}%` }}
+              >
+                <span className="xp-bar-text">
+                  {`${Math.floor(levelProgress.currentXPInLevel)} / ${levelProgress.xpForThisLevelToNext} XP`}
+                </span>
+              </div>
+            </div>
+            {levelProgress.xpForThisLevelToNext === 0 && ( // Max level reached or next level not defined
+                 <p>{t('profilePage.maxLevelReached', 'Niveau maximum atteint pour le moment !')}</p>
+            )}
+          </div>
+        )}
+
         {/* Guild Information Display */}
         {authUser.guildId && (
           isLoadingGuildName ? (
@@ -220,10 +265,10 @@ const ProfilePage: React.FC = () => {
         {!authUser.guildId && !isLoadingGuildName && (
           <p>{t('noGuildAffiliation', "N'appartient à aucune maison.")}</p>
         )}
-      </div>
+      </section>
 
-      <button onClick={() => setIsEditing(!isEditing)}>
-        {isEditing ? t('cancel', 'Annuler') : t('editdisplayName', 'Modifier le displayName')}
+      <button onClick={() => setIsEditing(!isEditing)} className="profile-edit-button">
+        {isEditing ? t('cancel', 'Annuler') : t('editdisplayName', 'Modifier le Nom d\'Invocateur')}
       </button>
 
       {isEditing && (
@@ -261,10 +306,18 @@ const ProfilePage: React.FC = () => {
         </div>
       </section>
 
-      {/* --- SECTION DU GRIMOIRE VIVANT --- */}
-      <main>
+      {/* --- SECTION DU GRIMOIRE VIVANT (DÉTAIL DES RUNES) --- */}
+      <section className="grimoire-detail-section profile-section">
+        {/* This is where the new GrimoireDetail component goes */}
+        <GrimoireDetail />
+      </section>
+
+      {/* --- SECTION DU GRIMOIRE VIVANT (SESSION DE RÉVISION - CONSERVÉE) --- */}
+      {/* Assuming GrimoireVivant is the component for starting review sessions etc. */}
+      <section className="grimoire-review-section profile-section">
+         <h2>{t('profilePage.grimoireReviewTitle', 'Forgeron de Runes')}</h2>
         <GrimoireVivant />
-      </main>
+      </section>
 
       {/* --- SECTION STATS ET HAUTS FAITS --- */}
       <section className="hall-of-fame-section profile-section">
