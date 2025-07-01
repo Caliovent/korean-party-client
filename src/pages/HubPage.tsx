@@ -7,9 +7,33 @@ import GuildManagementModal from '../components/GuildManagementModal';
 import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
 import DailyChallengeModal from '../components/DailyChallengeModal'; // Importer la modale du défi quotidien
 import ShopModal from '../components/ShopModal'; // Importer la modale de la boutique
+import DialogueModal from '../components/DialogueModal'; // <<< Import new DialogueModal
 import StreakIndicator from '../components/StreakIndicator'; // Importer le StreakIndicator
 import soundService from '../services/soundService';
 import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
+
+// Define NPC data structure
+interface NpcInfo {
+  name: string;
+  dialogue: string;
+  portrait?: string; // asset key or path
+}
+
+const npcDialogues: Record<string, NpcInfo> = {
+  directeur: {
+    name: "Directeur Yong Geomwi",
+    // From mission doc: "Pourrait donner la prémisse d'une quête principale, comme mentionné dans ."
+    // Assuming a more concrete starting dialogue for now.
+    dialogue: "Ah, vous voilà. L'Académie a de grands espoirs pour vous. Le chemin d'un K-Mage est exigeant. Votre première tâche sera de vous familiariser avec les énergies de ce lieu.",
+    portrait: "assets/directeur_fallback_npc.png", // Using fallback, assuming placeholders might not exist
+  },
+  maitre_cheon: {
+    name: "Maître Cheon Mun",
+    dialogue: "Bienvenue, aspirant K-Mage. La langue des anciens, le Hangeul, est la clé pour déverrouiller votre potentiel. Considérez cela comme l'Éveil de vos propres Runes intérieures. Êtes-vous prêt à commencer ?",
+    portrait: "assets/maitre_cheon_fallback_npc.png", // Using fallback
+  },
+};
+
 
 const HubPage: React.FC = () => {
   const { t } = useTranslation(); // Hook de traduction
@@ -20,6 +44,14 @@ const HubPage: React.FC = () => {
   const [isQuestLogModalOpen, setIsQuestLogModalOpen] = useState(false); // État pour le modal de quêtes
   const [isDailyChallengeModalOpen, setIsDailyChallengeModalOpen] = useState(false);
   const [isShopModalOpen, setIsShopModalOpen] = useState(false); // État pour la modale de la boutique
+
+  // State for DialogueModal
+  const [isDialogueModalOpen, setIsDialogueModalOpen] = useState(false);
+  const [currentPnjId, setCurrentPnjId] = useState<string | null>(null);
+  const [currentPnjName, setCurrentPnjName] = useState<string>("");
+  const [currentPnjDialogue, setCurrentPnjDialogue] = useState<string>("");
+  const [currentPnjPortrait, setCurrentPnjPortrait] = useState<string | undefined>(undefined);
+
   const [currentChallenge, _setCurrentChallenge] = useState({
     title: "Défi de l'Interprète",
     objective: "Atteignez un combo de 15 dans le Défi de l'Interprète",
@@ -72,6 +104,21 @@ const HubPage: React.FC = () => {
         soundService.playSound('ui_modal_open'); // Utiliser un son générique pour l'ouverture de modale
         setIsShopModalOpen(true);
       });
+
+      // Listener for Phaser scene to open dialogue modal
+      phaserGameRef.current.events.on('openDialogueModal', (data: { pnjId: string }) => {
+        const pnjInfo = npcDialogues[data.pnjId];
+        if (pnjInfo) {
+          setCurrentPnjId(data.pnjId);
+          setCurrentPnjName(pnjInfo.name);
+          setCurrentPnjDialogue(pnjInfo.dialogue);
+          setCurrentPnjPortrait(pnjInfo.portrait);
+          setIsDialogueModalOpen(true);
+          soundService.playSound('ui_modal_open');
+        } else {
+          console.warn(`Dialogue data not found for pnjId: ${data.pnjId}`);
+        }
+      });
     }
 
     return () => {
@@ -80,6 +127,7 @@ const HubPage: React.FC = () => {
         phaserGameRef.current.events.off('openGuildManagementModal'); // Clean up guild listener
         phaserGameRef.current.events.off('openDailyChallengeModal'); // Clean up daily challenge listener
         phaserGameRef.current.events.off('openShopModal'); // Clean up shop listener
+        phaserGameRef.current.events.off('openDialogueModal'); // <<< Clean up dialogue listener
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
       }
@@ -183,6 +231,18 @@ const HubPage: React.FC = () => {
           }
         }}
         challenge={currentChallenge}
+      />
+
+      <DialogueModal
+        isOpen={isDialogueModalOpen}
+        onClose={() => {
+          setIsDialogueModalOpen(false);
+          soundService.playSound('ui_modal_close');
+        }}
+        pnjId={currentPnjId}
+        npcName={currentPnjName}
+        dialogueText={currentPnjDialogue}
+        npcPortraitUrl={currentPnjPortrait}
       />
     </div>
   );

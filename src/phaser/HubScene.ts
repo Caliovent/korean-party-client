@@ -62,6 +62,13 @@ export default class HubScene extends Phaser.Scene {
     this.load.image("daily_challenge_board", "assets/game_portal.jpeg"); // Placeholder for daily challenge board (using game_portal asset for now)
     this.load.image("shop_sign", "assets/game_portal.jpeg"); // Placeholder for shop sign (using game_portal asset for now)
     this.load.image("transparent", "assets/effects/transparent.png");
+
+    // NPC Assets - placeholders, will fallback if not found
+    this.load.image("directeur_npc", "assets/directeur_placeholder.png");
+    this.load.image("maitre_cheon_npc", "assets/maitre_cheon_placeholder.png");
+    // Fallback assets if placeholders are missing
+    this.load.image("directeur_fallback_npc", "assets/sprites/orb-red.png");
+    this.load.image("maitre_cheon_fallback_npc", "assets/sprites/orb-green.png");
   }
 
   create() {
@@ -229,6 +236,38 @@ export default class HubScene extends Phaser.Scene {
 
     // Handle scene shutdown to remove player from Firestore
     this.events.on("shutdown", this.shutdown, this);
+
+    // --- Add PNJ ---
+
+    // Directeur Yong Geomwi
+    const directeurKey = this.textures.exists("directeur_npc") ? "directeur_npc" : "directeur_fallback_npc";
+    const directeurYong = this.add.sprite(
+      this.cameras.main.width / 2 - 200, // Position: Example near center-left
+      this.cameras.main.height / 2,
+      directeurKey
+    )
+    .setScale(1.5) // Assuming orbs are small, scale them up a bit
+    .setInteractive();
+
+    directeurYong.on("pointerdown", () => {
+      console.log("Directeur Yong Geomwi clicked");
+      this.game.events.emit("openDialogueModal", { pnjId: "directeur" });
+    });
+
+    // Maître Cheon Mun
+    const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
+    const maitreCheon = this.add.sprite(
+      150, // Position: Example towards top-left, "welcome" area
+      150,
+      maitreCheonKey
+    )
+    .setScale(1.5) // Assuming orbs are small, scale them up a bit
+    .setInteractive();
+
+    maitreCheon.on("pointerdown", () => {
+      console.log("Maître Cheon Mun clicked");
+      this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
+    });
   }
 
   updatePlayerPositionInFirestore(x: number, y: number) {
