@@ -79,13 +79,12 @@ export default class HubScene extends Phaser.Scene {
     // Assuming hub_background_village is 1600x1200 as per instructions.
     bg.setDepth(-1); // Ensure background is behind everything else
 
-    // 1. Définir la taille du monde explorable (as per user feedback and initial plan)
-    this.physics.world.setBounds(0, 0, 1600, 1200);
+    // 1. Définir la taille du monde explorable (REVISED to 8000x6000)
+    this.physics.world.setBounds(0, 0, 8000, 6000);
 
-    // 3. Empêcher la caméra de voir au-delà des limites du monde (as per user feedback and initial plan)
+    // 3. Empêcher la caméra de voir au-delà des limites du monde (REVISED to 8000x6000)
     // Placed here as it's logically connected to world bounds.
-    this.cameras.main.setBounds(0, 0, 1600, 1200);
-
+    this.cameras.main.setBounds(0, 0, 8000, 6000);
     // Initialize physics groups
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
