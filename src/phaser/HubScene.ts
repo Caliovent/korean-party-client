@@ -73,24 +73,18 @@ export default class HubScene extends Phaser.Scene {
 
   create() {
     console.log("HubScene created! Current user:", this.currentUser?.uid);
-    // Setup background image to cover the screen
-    const bg = this.add.image(
-      this.cameras.main.width / 2,
-      this.cameras.main.height / 2,
-      "hub_background_village",
-    );
 
-    const screenWidth = this.cameras.main.width;
-    const screenHeight = this.cameras.main.height;
-    const bgWidth = bg.width;
-    const bgHeight = bg.height;
-
-    const scaleX = screenWidth / bgWidth;
-    const scaleY = screenHeight / bgHeight;
-    const scale = Math.max(scaleX, scaleY); // Use Math.max to "cover" the screen
-
-    bg.setScale(scale).setScrollFactor(0); // setScrollFactor(0) ensures it stays fixed during camera movement
+    // Setup background image for the extended world
+    const bg = this.add.image(0, 0, "hub_background_village").setOrigin(0,0);
+    // Assuming hub_background_village is 1600x1200 as per instructions.
     bg.setDepth(-1); // Ensure background is behind everything else
+
+    // 1. Définir la taille du monde explorable (REVISED to 8000x6000)
+    this.physics.world.setBounds(0, 0, 8000, 6000);
+
+    // 3. Empêcher la caméra de voir au-delà des limites du monde (REVISED to 8000x6000)
+    // Placed here as it's logically connected to world bounds.
+    this.cameras.main.setBounds(0, 0, 8000, 6000);
 
     // Initialize physics groups
     this.obstacles = this.physics.add.staticGroup();
@@ -141,11 +135,14 @@ export default class HubScene extends Phaser.Scene {
     if (this.player) {
       this.physics.world.enable(this.player);
       if (this.player.body) {
-        this.player.body.setCollideWorldBounds(true);
+        // Line below REMOVED as per user feedback and initial plan to allow player to move beyond camera's initial view.
+        // this.player.body.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.obstacles);
         // Send initial position
         this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
       }
+      // 2. Attacher la caméra au joueur (as per user feedback and initial plan)
+      this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     }
 
     // Initialize keyboard controls
