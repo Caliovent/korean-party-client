@@ -1,0 +1,119 @@
+.grimoire-detail-container {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 20px;
+  border: 1px solid #eee;
+}
+
+.grimoire-detail-container h3 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+  font-size: 1.4em;
+  margin-bottom: 15px;
+}
+
+.grimoire-summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.grimoire-summary-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 1.1em;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.grimoire-summary-item:last-child {
+  border-bottom: none;
+}
+
+.grimoire-summary-item.interactive {
+  cursor: pointer;
+}
+.grimoire-summary-item.interactive:hover {
+  background-color: #f0f0f0; /* Light hover effect for interactive items */
+}
+
+
+.rune-icon {
+  margin-right: 10px;
+  font-size: 1.5em; /* Placeholder, adjust when real icons are used */
+}
+
+.rune-label {
+  font-weight: bold;
+  color: #555;
+  flex-grow: 1;
+}
+
+.rune-count {
+  font-weight: bold;
+  color: #2a2a2a;
+  background-color: #e8e8e8;
+  padding: 3px 8px;
+  border-radius: 4px;
+  min-width: 30px; /* Ensure some width for small numbers */
+  text-align: center;
+}
+
+/* Optional: Specific styling per mastery level for emphasis */
+.mastery-engraved .rune-icon { color: #ffd700; } /* Gold */
+.mastery-powerful .rune-icon { color: #c0c0c0; } /* Silver */
+.mastery-awakened .rune-icon { color: #cd7f32; } /* Bronze */
+.mastery-dormant .rune-icon { color: #708090; } /* SlateGray */
+.mastery-unknown .rune-icon { color: #ccc; }
+
+.mastery-engraved .rune-label { color: #b8860b; }
+.mastery-powerful .rune-label { color: #a9a9a9; }
+.mastery-awakened .rune-label { color: #8b4513; }
+.mastery-dormant .rune-label { color: #2f4f4f; }
+
+
+.error-message {
+  color: #D8000C; /* Red for errors */
+  background-color: #FFD2D2; /* Light red background */
+  border: 1px solid #D8000C;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* Styles for Detailed View */
+.grimoire-detailed-view h3 {
+  font-size: 1.2em;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+.detailed-rune-list {
+  list-style: square;
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+.detailed-rune-item {
+  padding: 5px 0;
+  font-size: 1em;
+  color: #333;
+}
+
+.close-detail-button {
+  display: block;
+  margin: 15px auto 0;
+  padding: 8px 15px;
+  background-color: #777;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.close-detail-button:hover {
+  background-color: #555;
+}
