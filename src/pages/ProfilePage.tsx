@@ -34,12 +34,18 @@ const ProfilePage: React.FC = () => {
   const [isLoadingGuildName, setIsLoadingGuildName] = useState<boolean>(false);
   const [guildNameError, setGuildNameError] = useState<string | null>(null);
 
+  // State for calculated level and experience
+  const [calculatedLevel, setCalculatedLevel] = useState<number | null>(null);
+  const [calculatedExperience, setCalculatedExperience] = useState<number | null>(null);
+  const [loadingCalculatedLevel, setLoadingCalculatedLevel] = useState<boolean>(true);
+  const [levelCalculationError, setLevelCalculationError] = useState<string | null>(null);
+
+
   // Effet pour charger les données du profil de l'utilisateur en temps réel
   useEffect(() => {
-    // Note: auth.currentUser might be initially null, use authUser from hook instead for reliability
     if (!authUser) {
         setLoadingProfile(false);
-        // Error can be set if needed, or rely on auth hook to redirect/handle
+        setLoadingCalculatedLevel(false); // Also stop loading level if no authUser
         return;
     };
     const userDocRef = doc(db, "users", authUser.uid);
@@ -47,14 +53,12 @@ const ProfilePage: React.FC = () => {
         if (doc.exists()) {
             const data = doc.data();
             setProfile(data);
-            setNewdisplayName(data.displayName || ''); // Ensure displayName is not undefined
-            // Set initial language for the buttons based on profile, if available
-            // This is for UI indication, actual language is applied by useAuth
+            setNewdisplayName(data.displayName || '');
             if (data.languagePreference) {
               // console.log("Profile language preference:", data.languagePreference);
             }
         } else {
-            setError("Profil non trouvé."); // This error is for the Firestore profile document
+            setError("Profil non trouvé.");
         }
         setLoadingProfile(false);
     }, (err) => {
@@ -62,8 +66,35 @@ const ProfilePage: React.FC = () => {
         setError("Erreur de chargement du profil.");
         setLoadingProfile(false);
     });
+
+    // Call the Cloud Function to calculate level and XP
+    setLoadingCalculatedLevel(true);
+    setLevelCalculationError(null);
+    const functions = getFunctions(app, 'europe-west1');
+    if (import.meta.env.DEV) {
+        functions.customDomain = `http://localhost:5173/functions-proxy`;
+    }
+    const calculatePlayerLevelFunction = httpsCallable(functions, 'calculatePlayerLevel');
+
+    calculatePlayerLevelFunction()
+      .then((result) => {
+        const data = result.data as { totalExperience: number; sorcererLevel: number };
+        setCalculatedExperience(data.totalExperience);
+        setCalculatedLevel(data.sorcererLevel);
+      })
+      .catch((err) => {
+        console.error("Error calling calculatePlayerLevel function:", err);
+        setLevelCalculationError(t('profilePage.errors.levelCalculationFailed', "Erreur lors du calcul du niveau."));
+        // Set to default/fallback values or handle error display appropriately
+        setCalculatedExperience(0); // Fallback
+        setCalculatedLevel(1);      // Fallback
+      })
+      .finally(() => {
+        setLoadingCalculatedLevel(false);
+      });
+
     return () => unsubscribe();
-  }, [authUser]); // Depend on authUser from useAuth
+  }, [authUser, t, app]); // Add app and t to dependencies
 
   // Effect to fetch guild name when user's guildId changes
   useEffect(() => {
@@ -191,24 +222,20 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  if (authLoading || loadingProfile) return <div>{t('loading', 'Chargement...')}</div>;
+  if (authLoading || loadingProfile || (authUser && loadingCalculatedLevel)) {
+    return <div>{t('loading', 'Chargement...')}</div>;
+  }
   // Error from auth hook (e.g. not logged in) might be handled by a redirect in App.tsx or useAuth itself
   if (!authUser) return <div>{t('notLoggedIn', 'Veuillez vous connecter pour voir votre profil.')}</div>;
   if (error && !profile) return <div className="error-message">{error}</div>; // Error fetching profile document
   if (!profile) return <div>{t('profileNotFound', "Profil de l'utilisateur non trouvé.")}</div>;
 
-  // Calculate Wizard Level and XP Progress
-  // Assuming 'profile.totalExperience' holds the total XP
-  // And 'profile.wizardLevel' might exist, or we can calculate it.
-  // The mission implies 'wizardLevel' is a field on the user document.
-  // If not, we'd use getLevelFromExperience(profile.totalExperience).
-  const totalExperience = profile.totalExperience || 0;
-  // Let's prioritize a wizardLevel field if it exists, otherwise calculate it.
-  // The task mentions "écouter en temps réel les champs totalExperience et wizardLevel du document user"
-  const currentWizardLevel = profile.wizardLevel || getLevelFromExperience(totalExperience);
+  // Use calculated level and experience
+  const displayExperience = calculatedExperience ?? 0;
+  const displayWizardLevel = calculatedLevel ?? 1;
 
-  const levelProgress = getLevelProgress(totalExperience, currentWizardLevel);
-  const currentLevelData = getExperienceForLevel(currentWizardLevel);
+  const levelProgress = getLevelProgress(displayExperience, displayWizardLevel);
+  // const currentLevelData = getExperienceForLevel(displayWizardLevel); // currentLevelData is not directly used in JSX below
 
   return (
     <div className="profile-page-container"> {/* Updated class name */}
@@ -225,14 +252,17 @@ const ProfilePage: React.FC = () => {
 
         {/* Wizard Level Display */}
         <p>
-          <strong>{t('profilePage.wizardLevelLabel', 'Niveau de Sorcier')}:</strong> {currentWizardLevel}
+          <strong>{t('profilePage.wizardLevelLabel', 'Niveau de Sorcier')}:</strong> {loadingCalculatedLevel ? t('loading', 'Chargement...') : displayWizardLevel}
         </p>
 
         {/* XP Progress Bar */}
-        {levelProgress && currentLevelData && (
+        {levelCalculationError && <p className="error-message">{levelCalculationError}</p>}
+
+        {!loadingCalculatedLevel && levelProgress && (
           <div className="xp-progress-section">
             <p>
               {t('profilePage.xpProgressLabel', 'Progression vers le prochain niveau')}:
+              ({t('profilePage.totalExperience', 'Expérience totale')}: {Math.floor(displayExperience)})
             </p>
             <div className="xp-bar-container">
               <div

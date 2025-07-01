@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import type { Player } from '../types/game'; // Utiliser "import type"
+import { getFunctions, httpsCallable } from "firebase/functions"; // Added
+import { app } from '../firebaseConfig'; // Added
+// import { getLevelProgress, getExperienceForLevel } from '../data/levelExperience'; // Potentially for XP bar
 import './PlayerHUD.css';
 
 interface FloatingText {
@@ -25,33 +28,67 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
   const [isExpandedOnMobile, setIsExpandedOnMobile] = useState(false);
 
+  // State for calculated Level and XP
+  const [sorcererLevelHUD, setSorcererLevelHUD] = useState<number | null>(null);
+  const [totalExperienceHUD, setTotalExperienceHUD] = useState<number | null>(null);
+  const [loadingLevelXP, setLoadingLevelXP] = useState<boolean>(false); // Don't start loading until player exists
+  const [levelXPError, setLevelXPError] = useState<string | null>(null);
+
+
   useEffect(() => {
     const handleResize = () => {
       const newIsMobileView = window.innerWidth <= MOBILE_BREAKPOINT;
       if (newIsMobileView !== isMobileView) {
         setIsMobileView(newIsMobileView);
-        // If we switch from desktop to mobile, ensure HUD is compact by default
         if (newIsMobileView) {
           setIsExpandedOnMobile(false);
         }
       }
     };
-
     window.addEventListener('resize', handleResize);
-    // Initial check in case the component mounts after the initial window width check
     handleResize();
-
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobileView]);
 
   useEffect(() => {
-    if (player) {
+    if (player && player.uid) { // Check for player.uid specifically
       prevManaRef.current = player.mana;
       setTextTopPositionKey(0);
+
+      // Fetch Level and XP
+      setLoadingLevelXP(true);
+      setLevelXPError(null);
+      const functions = getFunctions(app, 'europe-west1');
+      if (import.meta.env.DEV) {
+        functions.customDomain = `http://localhost:5173/functions-proxy`;
+      }
+      const calculatePlayerLevelFunction = httpsCallable(functions, 'calculatePlayerLevel');
+
+      calculatePlayerLevelFunction()
+        .then((result) => {
+          const data = result.data as { totalExperience: number; sorcererLevel: number };
+          setTotalExperienceHUD(data.totalExperience);
+          setSorcererLevelHUD(data.sorcererLevel);
+        })
+        .catch((err) => {
+          console.error("Error calling calculatePlayerLevel function in HUD:", err);
+          setLevelXPError("N/A"); // Keep it brief for HUD
+          setTotalExperienceHUD(0);
+          setSorcererLevelHUD(1);
+        })
+        .finally(() => {
+          setLoadingLevelXP(false);
+        });
+
     } else {
       prevManaRef.current = undefined;
+      // Reset level/XP if player is null
+      setSorcererLevelHUD(null);
+      setTotalExperienceHUD(null);
+      setLoadingLevelXP(false);
+      setLevelXPError(null);
     }
-  }, [player]);
+  }, [player]); // Effect depends on the whole player object, will re-run if player changes
 
   useEffect(() => {
     if (player && prevManaRef.current !== undefined && player.mana !== prevManaRef.current) {
@@ -134,27 +171,38 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
           <div className="hud-item hud-player-name-compact">
             <span>{player.displayName} {player.guildTag && `[${player.guildTag}]`}</span>
           </div>
+          <div className="hud-item hud-level-compact">
+            <span>Niv: {loadingLevelXP ? '...' : levelXPError || sorcererLevelHUD}</span>
+          </div>
           <div className="hud-item hud-mana-compact">
-            <span>Mana: {player.mana}</span> {/* Floating text might be too much here, simplified */}
+            <span>Mana: {player.mana}</span>
           </div>
           <div className="hud-item hud-grimoires-count-compact">
-            <span>Grimoires: {player.grimoires?.length || 0}</span>
+            <span>Grim: {player.grimoires?.length || 0}</span>
           </div>
         </div>
       );
     } else {
-      // Mobile Expanded View (similar to desktop but will be styled differently by CSS)
+      // Mobile Expanded View
       return (
         <div className={hudClasses}>
           <div className="hud-header-mobile" onClick={toggleExpandedView}>
             <h4>{player.displayName} - Appuyez pour réduire</h4>
-            {/* Or use a close button icon */}
           </div>
           <div className="hud-item hud-player-info">
             <h3>Joueur</h3>
             <p>
               {player.displayName} {player.guildTag && `[${player.guildTag}]`}
             </p>
+          </div>
+          <div className="hud-item hud-level-xp">
+            <h3>Niveau & Expérience</h3>
+            {loadingLevelXP ? <p>Chargement...</p> : levelXPError ? <p>Niveau: {levelXPError}</p> :
+            <>
+              <p>Niveau: {sorcererLevelHUD}</p>
+              <p>XP: {totalExperienceHUD}</p>
+            </>
+            }
           </div>
           <div className="hud-item hud-mana">
             <h3>Mana</h3>
@@ -163,7 +211,6 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
           <div className="hud-item hud-grimoires">
             <GrimoiresList />
           </div>
-          {/* Add other HUD elements like fragments if they exist in Player type */}
         </div>
       );
     }
@@ -178,6 +225,15 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
           {player.displayName} {player.guildTag && `[${player.guildTag}]`}
         </p>
       </div>
+      <div className="hud-item hud-level-xp">
+        <h3>Niveau & Expérience</h3>
+        {loadingLevelXP ? <p>Chargement...</p> : levelXPError ? <p>Niveau: {levelXPError}</p> :
+        <>
+          <p>Niveau: {sorcererLevelHUD}</p>
+          <p>XP: {totalExperienceHUD}</p>
+        </>
+        }
+      </div>
       <div className="hud-item hud-mana">
         <h3>Mana</h3>
         <ManaDisplay />
@@ -185,7 +241,6 @@ const PlayerHUD: React.FC<PlayerHUDProps> = ({ player }) => {
       <div className="hud-item hud-grimoires">
         <GrimoiresList />
       </div>
-      {/* Add other HUD elements like fragments if they exist in Player type */}
     </div>
   );
 };
