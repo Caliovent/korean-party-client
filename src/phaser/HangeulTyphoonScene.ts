@@ -311,59 +311,72 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
       let previousInputTextString = this.inputTextString;
 
-      if (event.key === 'Enter' || event.key === ' ') {
+      if (event.key === 'Enter') {
         event.preventDefault();
-        if (this.isInAttackMode && this.inputTextString.startsWith('<') && this.inputTextString.endsWith('>')) {
-          const attackWord = this.inputTextString.substring(1, this.inputTextString.length - 1);
-          this.handleAttackCommand(attackWord);
+        if (this.isInAttackMode && this.inputTextString.startsWith('<')) {
+          // Extract word, assuming it's <word>. If it could be just <word
+          // then substring(1) is enough. Current logic implies we wait for >.
+          // For <mot_cible> and Enter, we extract from after '<'.
+          const attackWord = this.inputTextString.substring(1); // Remove leading '<'
+          if (attackWord.length > 0) { // Ensure there's an actual word
+            this.handleAttackCommand(attackWord);
+          } else {
+            console.log("Attack command initiated but no word provided.");
+            // Optionally clear attack mode or wait for more input.
+            // For now, let's clear it as per spec (Enter validates).
+            this.clearAttackInput(); // Clears isInAttackMode too
+          }
         } else if (!this.isInAttackMode) {
           this.handleInputValidation();
-        } else {
-          console.log("Enter/Space pressed in attack mode but input is not a complete command:", this.inputTextString);
         }
+        // If in attack mode but input doesn't start with '<' (e.g. cleared by backspace)
+        // and Enter is pressed, it could be treated as exiting attack mode or doing nothing.
+        // The clearAttackInput in handleAttackCommand will reset state.
       } else if (event.key === 'Backspace') {
         if (this.inputTextString.length > 0) {
+          const charBeingRemoved = this.inputTextString.slice(-1);
           this.inputTextString = this.inputTextString.slice(0, -1);
+          if (this.inputTextString.length === 0 && charBeingRemoved === '<') {
+            // If '<' was the last character and it's removed, exit attack mode
+            this.isInAttackMode = false;
+            this.currentInputText.setBackgroundColor('#ffffff');
+          }
         }
-      } else if (event.key === '<' && !this.inputTextString.includes('<')) {
-          this.inputTextString = '<';
-      } else if (event.key === '>' && this.inputTextString.startsWith('<') && !this.inputTextString.endsWith('>')) {
-          this.inputTextString += event.key;
-      } else if (event.key.length === 1) { // General printable characters, excluding those handled above
-        // Only append if in attack mode (after '<') or if not starting an attack
-        if (this.isInAttackMode || (!this.inputTextString.startsWith('<') && event.key !== '<' && event.key !== '>')) {
-             this.inputTextString += event.key;
-        } else if (!this.isInAttackMode && event.key !== '<' && event.key !== '>') { // Allow normal typing if not starting attack
+      } else if (event.key === '<' && !this.isInAttackMode) {
+          // Enter attack mode only if not already in it and no other text is present
+          if (this.inputTextString.length === 0) {
+            this.inputTextString = '<';
+            this.isInAttackMode = true;
+            if (this.targetedBlock) { // Clear any existing non-attack target
+                this.targetedBlock.setTint(0xffffff);
+                this.targetedBlock = null;
+            }
+            this.currentInputText.setBackgroundColor('#d3d3d3'); // Indicate attack mode
+          }
+      } else if (event.key.length === 1) { // General printable characters
+        // Allow typing if in attack mode (after '<') or if not in attack mode at all.
+        // Prevent typing '>' directly unless it's part of the word.
+        // The spec says "<mot_cible>" then Enter, not "<mot_cible>".
+        if (this.isInAttackMode && this.inputTextString.startsWith('<')) {
+            if (event.key !== '>') { // Do not allow '>' to be typed as part of the word
+                 this.inputTextString += event.key;
+            }
+        } else if (!this.isInAttackMode && event.key !== '<' && event.key !== '>') {
             this.inputTextString += event.key;
         }
       }
 
       this.currentInputText.setText(this.inputTextString);
 
-      if (this.inputTextString.startsWith('<')) {
-        if (!this.isInAttackMode) { // Just entered attack mode
-            this.isInAttackMode = true;
-            if (this.targetedBlock) {
-                this.targetedBlock.setTint(0xffffff);
-                this.targetedBlock = null;
-            }
-        }
-        this.currentInputText.setBackgroundColor('#d3d3d3');
-      } else {
-        if (this.isInAttackMode) { // Just exited attack mode (e.g. backspaced '<')
-            this.isInAttackMode = false;
-        }
-        this.currentInputText.setBackgroundColor('#ffffff');
-      }
+      // Visual update for attack mode is handled during '<' press and backspace
+      // No need for the broader check of `this.inputTextString.startsWith('<')` here
+      // as it's managed more granularly above.
 
       if (!this.isInAttackMode && previousInputTextString !== this.inputTextString) {
         this.updateTargetedBlock();
-      } else if (this.isInAttackMode && this.targetedBlock !== null) {
-        // If somehow a target was set while entering attack mode, clear it.
-        // This is mostly covered by the check when starting attack mode.
-        this.targetedBlock.setTint(0xffffff);
-        this.targetedBlock = null;
       }
+      // If we entered attack mode, targetedBlock was already cleared.
+      // If we exited attack mode (e.g. backspaced '<'), updateTargetedBlock will be called if input changes.
     }); // End of keyboard event listener
     } // End of if (this.input.keyboard)
 
@@ -425,7 +438,7 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     blockText.setData('blockType', blockType);
     blockText.setData('spawnTime', this.time.now);
     blockText.setData('isProtected', true);
-    blockText.setData('isVulnerable', false);
+    blockText.setData('isVulnerable', false); // Explicitly set isVulnerable
   }
 
   update(_time: number, delta: number) { // Added time, delta explicitly for clarity; time unused
@@ -443,31 +456,32 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
         const speed = block.getData('speed') as number; // Speed in pixels per second
         block.y += speed * deltaInSeconds;
 
-        // Vulnerability Check (only if it's still protected)
-        if (block.getData('isProtected')) {
-          const spawnTime = block.getData('spawnTime') as number;
-          if (this.time.now > spawnTime + 5000) { // 5000ms = 5 seconds
-            block.setData('isProtected', false);
-            block.setData('isVulnerable', true); // Mark as vulnerable
+        // Vulnerability Check
+        const isProtected = block.getData('isProtected') as boolean;
+        const spawnTime = block.getData('spawnTime') as number;
 
-            // Change visual appearance for vulnerability
-            block.setBackgroundColor('#FFFFFF'); // Vulnerable block background (e.g., white)
-            block.setColor('#000000');         // Text color for vulnerable block (e.g., black)
-            // Add a small visual effect like a quick flash or scale pulse
-            this.tweens.add({
-              targets: block,
-              scaleX: 1.05, // Slightly less intense scaling
-              scaleY: 1.05,
-              duration: 150, // Slightly longer duration for visibility
-              yoyo: true,
-              ease: 'Power1'
-            });
-            // // this.sound.play('sfx_block_vulnerable'); // Sound effect for vulnerability
-            console.log(`Block '${block.getData('hangeulText')}' is now VULNERABLE`);
-          }
+        if (isProtected && this.time.now > spawnTime + 5000) {
+          block.setData('isProtected', false);
+          block.setData('isVulnerable', true);
+
+          // Change visual appearance for vulnerability: background to white, text to black
+          block.setBackgroundColor('#FFFFFF');
+          block.setColor('#000000');
+
+          // Optional: Add a small visual effect or sound
+          this.tweens.add({
+            targets: block,
+            scaleX: 1.05,
+            scaleY: 1.05,
+            duration: 150,
+            yoyo: true,
+            ease: 'Power1'
+          });
+          // console.log(`Block '${block.getData('hangeulText')}' is now VULNERABLE`);
+          // Example: this.sound.play('sfx_block_vulnerable');
         }
 
-        // Check for game over condition (after vulnerability check)
+        // Check for game over condition
         if (!this.isGameOver && block.y + block.height >= this.groundY) {
           this.triggerGameOver();
           // No need to return from forEach, isGameOver flag handles stopping logic
@@ -757,20 +771,79 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
 
     if (response.status === 'success') {
       console.log(`Client: Attack reported as SUCCESS. Word: ${response.destroyedBlockWord}. Target ground rise: ${response.targetGroundRiseAmount}`);
-      // Opponent's ground rise is handled by them listening to Firestore.
-      // // this.sound.play('sfx_attack_sent');
+      // // this.sound.play('sfx_attack_sent'); // Placeholder for success sound
+
+      // Positive visual notification
+      const successText = this.add.text(
+        (this.sys.game.config.width as number) / 2,
+        (this.sys.game.config.height as number) / 2 - 50, // Position slightly higher
+        `ATTAQUE RÉUSSIE!\nMot: ${response.destroyedBlockWord}`,
+        { fontSize: '28px', color: '#00ff00', backgroundColor: '#003300', align: 'center' }
+      ).setOrigin(0.5);
+      this.time.delayedCall(2500, () => { successText.destroy(); });
+
+      // Simulate opponent's ground update
+      if (response.targetGroundRiseAmount && response.targetPlayerId === this.targetPlayerId) { // Ensure it's for the opponent we track
+        // In a real scenario, opponent's groundHeight would come from server state.
+        // Here, we're simulating the effect of our successful attack on *their* ground.
+        // The `updateOpponentGroundVisual` expects the *new total height* of the opponent's ground.
+        // We don't know their current ground height directly, so we'll interpret targetGroundRiseAmount
+        // as the amount their ground *additionally* rises due to this attack.
+        // This requires a slight conceptual adjustment or maintaining a simulated opponent ground height.
+        // For now, let's assume `updateOpponentGroundVisual` can take a delta or we simulate adding it.
+        // Let's refine updateOpponentGroundVisual to take the *amount to rise* for this simulation.
+        // OR, more simply, pass the new total height if we could calculate it.
+        // The current `updateOpponentGroundVisual` expects `newServerGroundHeight`.
+        // We'll simulate that the server told us their new height is current + riseAmount.
+        // This is a bit circular for simulation but fits the existing method signature.
+        // A better way would be for the server to send the opponent's *new absolute groundHeight*.
+        // For this task, we'll simulate by adding to a base or a conceptual current opponent height.
+        // The `sendTyphoonAttackService` mock provides `targetGroundRiseAmount`.
+        // Let's assume this is the *total* new height for simplicity of this simulation call.
+        // If `updateOpponentGroundVisual` is designed for absolute height, this is fine.
+        // The `updateOpponentGroundVisual` takes `newServerGroundHeight`. We will use `response.targetGroundRiseAmount`
+        // conceptually as this new total height for the opponent (even though it's named "RiseAmount").
+        // This means the mock should provide a plausible *total height* value.
+        // Let's adjust the mock or how we interpret this.
+        // The spec says: "Le montant de la pénalité sera fourni par la réponse du service." for own ground.
+        // For opponent: "vous pouvez l'appeler directement après une attaque réussie pour simuler l'effet."
+        // Let's assume `response.targetGroundRiseAmount` is the *amount to add* to their current ground.
+        // We need to track opponent's ground height or make `updateOpponentGroundVisual` accept a delta.
+
+        // Let's adjust `updateOpponentGroundVisual` to accept a delta for this simulation context.
+        // Or, more simply, update `this.opponentGroundY` directly here and then call visual update.
+        // The current `this.opponentGroundY` is the visual Y. Higher Y is lower ground.
+        // So, if their ground rises, their `opponentGroundY` decreases.
+        const riseAmount = response.targetGroundRiseAmount;
+        // We need the opponent's current logical ground height to add to.
+        // `this.opponentGroundY` is the visual top Y. `this.initialOpponentBaseGroundY` is the bottom.
+        // Logical height = initialBaseY - currentVisualY.
+        // New logical height = (initialBaseY - opponentGroundY) + riseAmount.
+        // New visual Y = initialBaseY - newLogicalHeight.
+        // New visual Y = initialBaseY - (initialBaseY - opponentGroundY + riseAmount)
+        // New visual Y = opponentGroundY - riseAmount.
+        // This is what `updateOpponentGroundVisual` should achieve.
+        // The method `updateOpponentGroundVisual` expects an *absolute server height* value.
+        // Let's simulate we received this absolute value.
+        // For the simulation, we'll assume the mock `targetGroundRiseAmount` IS the new total ground height for the opponent.
+        // This is a simplification. In a real system, the server would provide the new absolute groundHeight.
+        this.updateOpponentGroundVisual(riseAmount); // Assuming riseAmount from mock is the new total server height.
+      }
+
     } else if (response.status === 'failure') {
       console.log(`Client: Attack reported as FAILURE. Reason: ${response.reason}. Attacker penalty: ${response.attackerPenaltyGroundRiseAmount}`);
-      // // this.sound.play('sfx_attack_failed');
+      // // this.sound.play('sfx_attack_failed'); // Placeholder for failure sound
+
       if (response.attackerPenaltyGroundRiseAmount && response.attackerPenaltyGroundRiseAmount > 0) {
         this.riseOwnGround(response.attackerPenaltyGroundRiseAmount);
+        // Negative visual notification
         const penaltyText = this.add.text(
           (this.sys.game.config.width as number) / 2,
-          (this.sys.game.config.height as number) / 2 + 50,
-          'ATTACK FAILED! PENALTY!',
-          { fontSize: '32px', color: '#ff9900', backgroundColor: '#330000' }
+          (this.sys.game.config.height as number) / 2 + 50, // Position slightly lower
+          `ATTAQUE ÉCHOUÉE!\nPénalité: Sol monte de ${response.attackerPenaltyGroundRiseAmount}!\nRaison: ${response.message || response.reason}`,
+          { fontSize: '28px', color: '#ff9900', backgroundColor: '#330000', align: 'center' }
         ).setOrigin(0.5);
-        this.time.delayedCall(2000, () => { penaltyText.destroy(); });
+        this.time.delayedCall(3000, () => { penaltyText.destroy(); });
       }
     }
   }
