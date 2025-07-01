@@ -85,7 +85,6 @@ export default class HubScene extends Phaser.Scene {
     // 3. Empêcher la caméra de voir au-delà des limites du monde (REVISED to 8000x6000)
     // Placed here as it's logically connected to world bounds.
     this.cameras.main.setBounds(0, 0, 8000, 6000);
-
     // Initialize physics groups
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
