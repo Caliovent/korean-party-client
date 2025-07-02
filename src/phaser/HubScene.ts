@@ -58,11 +58,11 @@ export default class HubScene extends Phaser.Scene {
   preload() {
     this.load.image("hub_background_village", "assets/hub.png");
     this.load.image("player_avatar", "assets/player_32.png");
-    this.load.image("other_player_avatar", "assets/player_32.png"); // Can be a different asset or tinted
+    this.load.image("other_player_avatar", "assets/black.png"); // Can be a different asset or tinted
     this.load.image("game_portal", "assets/game_portal.jpeg"); // Placeholder for portal/NPC
     this.load.image("guild_panel", "assets/guild_panel.jpeg"); // Placeholder for guild panel
-    this.load.image("daily_challenge_board", "assets/game_portal.jpeg"); // Placeholder for daily challenge board (using game_portal asset for now)
-    this.load.image("shop_sign", "assets/game_portal.jpeg"); // Placeholder for shop sign (using game_portal asset for now)
+    this.load.image("daily_challenge_board", "assets/black.png"); // Placeholder for daily challenge board (using game_portal asset for now)
+    this.load.image("shop_sign", "assets/black.png"); // Placeholder for shop sign (using game_portal asset for now)
     this.load.image("transparent", "assets/effects/transparent.png");
 
     // NPC Assets - placeholders, will fallback if not found
@@ -89,17 +89,17 @@ export default class HubScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
 
-    // Add example obstacles
-    this.obstacles
-      .create(400, 300, "transparent")
-      .setSize(200, 150)
-      .setVisible(false)
-      .refreshBody();
-    this.obstacles
-      .create(100, 500, "transparent")
-      .setSize(150, 100)
-      .setVisible(false)
-      .refreshBody();
+    // // Add example obstacles
+    // this.obstacles
+    //   .create(400, 300, "transparent")
+    //   .setSize(200, 150)
+    //   .setVisible(false)
+    //   .refreshBody();
+    // this.obstacles
+    //   .create(100, 500, "transparent")
+    //   .setSize(150, 100)
+    //   .setVisible(false)
+    //   .refreshBody();
 
     // Initialize other players group
     this.otherPlayers = this.add.group();
@@ -110,6 +110,7 @@ export default class HubScene extends Phaser.Scene {
         this.cameras.main.width / 2,
         this.cameras.main.height / 2,
         "player_avatar",
+        0
       ) as any;
       this.player?.setScale(1); // Optional chaining
     } else {
@@ -143,7 +144,7 @@ export default class HubScene extends Phaser.Scene {
       // ÉTAPE 2: Définir la taille du monde - this.physics.world.setBounds(0, 0, worldWidth, worldHeight); - This is done earlier.
 
       // ÉTAPE 3 (NOUVEAU) : Appliquer le zoom par défaut
-      this.cameras.main.setZoom(2.5);
+      this.cameras.main.setZoom(5);
       // ÉTAPE 4 : Lier la caméra au joueur
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
       // ÉTAPE 5 : Limiter la caméra aux bords du monde
@@ -218,6 +219,7 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openShopModal");
     });
 
+
     // Add overlap physics for guildPanel (example, if you want overlap for it too)
     // For now, let's keep it consistent with click for all new elements for simplicity
     // If overlap is desired for the shop, it can be added similarly:
@@ -254,15 +256,21 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openDialogueModal", { pnjId: "directeur" });
     });
 
-    // Maître Cheon Mun
-    const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
-    const maitreCheon = this.add.sprite(
-      150, // Position: Example towards top-left, "welcome" area
-      150,
-      maitreCheonKey
-    )
-    .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
-    .setInteractive();
+  //   // Maître Cheon Mun
+  //   const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
+  //   const maitreCheon = this.add.sprite(
+  //     150, // Position: Example towards top-left, "welcome" area
+  //     150,
+  //     maitreCheonKey
+  //   )
+  //   .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
+  //   .setInteractive();
+
+  //   maitreCheon.on("pointerdown", () => {
+  //     console.log("Maître Cheon Mun clicked");
+  //     this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
+  //   });
+  
 
     maitreCheon.on("pointerdown", () => {
       console.log("Maître Cheon Mun clicked");
@@ -310,6 +318,7 @@ export default class HubScene extends Phaser.Scene {
       }
     }
   }
+
 
   updatePlayerPositionInFirestore(x: number, y: number) {
     if (!this.currentUser) return;
