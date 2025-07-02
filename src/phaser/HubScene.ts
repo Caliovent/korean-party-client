@@ -27,6 +27,7 @@ export default class HubScene extends Phaser.Scene {
     body: Phaser.Physics.Arcade.Body;
   };
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private keys: any; // Added for ZQSD/WASD controls
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private triggerZones!: Phaser.Physics.Arcade.StaticGroup;
   private gamePortal?: Phaser.GameObjects.Sprite; // Added gamePortal property
@@ -132,22 +133,26 @@ export default class HubScene extends Phaser.Scene {
     if (this.player) {
       this.physics.world.enable(this.player);
       if (this.player.body) {
-        // this.player.body.setCollideWorldBounds(true); // Ensure this line is removed or commented out
+        // Player is NOT bound to world edges, allowing camera to be the sole boundary manager.
         this.physics.add.collider(this.player, this.obstacles);
         // Send initial position
         this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
       }
-      // Applique le zoom pour une vue rapprochée - TASK REQUIREMENT
+      // ÉTAPE 1: Libérer le joueur des bords de l'écran - Ensured by removing setCollideWorldBounds above.
+      // ÉTAPE 2: Définir la taille du monde - this.physics.world.setBounds(0, 0, worldWidth, worldHeight); - This is done earlier.
+
+      // ÉTAPE 3 (NOUVEAU) : Appliquer le zoom par défaut
       this.cameras.main.setZoom(2.5);
-      // Attacher la caméra au joueur - TASK REQUIREMENT
+      // ÉTAPE 4 : Lier la caméra au joueur
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-      // Empêcher la caméra de voir au-delà des limites du monde - TASK REQUIREMENT
+      // ÉTAPE 5 : Limiter la caméra aux bords du monde
       this.cameras.main.setBounds(0, 0, worldWidth, worldHeight); // worldWidth/Height now 1024
     }
 
     // Initialize keyboard controls
     if (this.input.keyboard) { // Null check
       this.cursors = this.input.keyboard.createCursorKeys();
+      this.keys = this.input.keyboard.addKeys('W,S,A,D,Z,Q'); // Added for ZQSD/WASD controls
     }
 
     // Listen for other players
@@ -347,7 +352,7 @@ export default class HubScene extends Phaser.Scene {
 
   update(_time: number, _delta: number) { // Parameters time and delta are unused
     // Current player movement
-    if (!this.player || !this.player.body || !this.cursors) {
+    if (!this.player || !this.player.body || !this.cursors || !this.keys) { // Added null check for this.keys
       return;
     }
 
@@ -356,15 +361,16 @@ export default class HubScene extends Phaser.Scene {
     let velocityX = 0;
     let velocityY = 0;
 
-    if (this.cursors.left.isDown) {
+    // Updated movement conditions to include ZQSD/WASD
+    if (this.cursors.left.isDown || this.keys.A.isDown || this.keys.Q.isDown) {
       velocityX = -this.moveSpeed;
-    } else if (this.cursors.right.isDown) {
+    } else if (this.cursors.right.isDown || this.keys.D.isDown) {
       velocityX = this.moveSpeed;
     }
 
-    if (this.cursors.up.isDown) {
+    if (this.cursors.up.isDown || this.keys.W.isDown || this.keys.Z.isDown) {
       velocityY = -this.moveSpeed;
-    } else if (this.cursors.down.isDown) {
+    } else if (this.cursors.down.isDown || this.keys.S.isDown) {
       velocityY = this.moveSpeed;
     }
 
