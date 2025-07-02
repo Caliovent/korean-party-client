@@ -14,6 +14,8 @@ export default class MainBoardScene extends Phaser.Scene {
   private boardPath: { x: number; y: number }[] = [];
   private gameState: Game | null = null;
   private boardIsDrawn = false;
+  private boardCenterX = 0; // Added for board centering
+  private boardCenterY = 0; // Added for board centering
   // private isTargeting = false; // Replaced by currentTargetingType
   private currentTargetingType: SpellType | null = null; // Added
   private targetingTweens: Phaser.Tweens.Tween[] = [];
@@ -364,6 +366,12 @@ export default class MainBoardScene extends Phaser.Scene {
       // Initial visual updates after board is drawn
       this.updateTrapVisuals();
       this.updatePlayerEffects();
+
+      // NOUVELLE LIGNE - Centrer la caméra sur le plateau
+      console.log(`[Phaser] Centering camera on board at X=${this.boardCenterX}, Y=${this.boardCenterY}`);
+      this.cameras.main.centerOn(this.boardCenterX, this.boardCenterY);
+      // Le zoom sur le joueur actuel (s'il existe) se produira toujours après cela
+      // en raison de la logique de changement de joueur ou d'initialisation du premier joueur.
       return;
     }
 
@@ -417,6 +425,26 @@ export default class MainBoardScene extends Phaser.Scene {
         { x: width * 0.52, y: height * 0.60 }, { x: width * 0.57, y: height * 0.56 },
         { x: width * 0.61, y: height * 0.55 }, { x: width * 0.64, y: height * 0.49 },
     ];
+
+    // Calculate board center
+    if (this.boardPath.length > 0) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const pos of this.boardPath) {
+        if (pos.x < minX) minX = pos.x;
+        if (pos.x > maxX) maxX = pos.x;
+        if (pos.y < minY) minY = pos.y;
+        if (pos.y > maxY) maxY = pos.y;
+      }
+      this.boardCenterX = (minX + maxX) / 2;
+      this.boardCenterY = (minY + maxY) / 2;
+      console.log(`[Phaser] Board center calculated at: X=${this.boardCenterX}, Y=${this.boardCenterY}`);
+    } else {
+      // Fallback if boardPath is somehow empty, though defineBoardPath should always populate it.
+      // Center of the screen as a rough default.
+      this.boardCenterX = this.cameras.main.width / 2;
+      this.boardCenterY = this.cameras.main.height / 2;
+      console.warn('[Phaser] Board path empty, centering on screen center as fallback.');
+    }
   }
 
   private drawBoard(boardLayout: BoardTile[]) { // Changed parameter to BoardTile[]
