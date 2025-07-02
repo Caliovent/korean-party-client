@@ -79,12 +79,11 @@ export default class HubScene extends Phaser.Scene {
     // Assuming hub_background_village is 1600x1200 as per instructions.
     bg.setDepth(-1); // Ensure background is behind everything else
 
-    // 1. Définir la taille du monde explorable (REVISED to 8000x6000)
-    this.physics.world.setBounds(0, 0, 8000, 6000);
+    // Utiliser les dimensions réelles de l'image de fond
+    const worldWidth = 2400;
+    const worldHeight = 1800;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
-    // 3. Empêcher la caméra de voir au-delà des limites du monde (REVISED to 8000x6000)
-    // Placed here as it's logically connected to world bounds.
-    this.cameras.main.setBounds(0, 0, 8000, 6000);
     // Initialize physics groups
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
@@ -134,14 +133,17 @@ export default class HubScene extends Phaser.Scene {
     if (this.player) {
       this.physics.world.enable(this.player);
       if (this.player.body) {
-        // Line below REMOVED as per user feedback and initial plan to allow player to move beyond camera's initial view.
-        // this.player.body.setCollideWorldBounds(true);
+        // this.player.body.setCollideWorldBounds(true); // Ensure this line is removed or commented out
         this.physics.add.collider(this.player, this.obstacles);
         // Send initial position
         this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
       }
-      // 2. Attacher la caméra au joueur (as per user feedback and initial plan)
+      // Zoome pour que la vue de 800x600 ne montre qu'une portion de 400x300 du monde
+      this.cameras.main.setZoom(2);
+      // Attacher la caméra au joueur
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+      // Empêcher la caméra de voir au-delà des limites du monde
+      this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
     }
 
     // Initialize keyboard controls
