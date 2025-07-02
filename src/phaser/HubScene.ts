@@ -76,12 +76,11 @@ export default class HubScene extends Phaser.Scene {
 
     // Setup background image for the extended world
     const bg = this.add.image(0, 0, "hub_background_village").setOrigin(0,0);
-    // Assuming hub_background_village is 1600x1200 as per instructions.
+    // Per task: background is 1024x1024. Set world bounds to match.
     bg.setDepth(-1); // Ensure background is behind everything else
 
-    // Utiliser les dimensions réelles de l'image de fond
-    const worldWidth = 2400;
-    const worldHeight = 1800;
+    const worldWidth = 1024; // TASK REQUIREMENT
+    const worldHeight = 1024; // TASK REQUIREMENT
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
     // Initialize physics groups
@@ -138,12 +137,12 @@ export default class HubScene extends Phaser.Scene {
         // Send initial position
         this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
       }
-      // Zoome pour que la vue de 800x600 ne montre qu'une portion de 400x300 du monde
-      this.cameras.main.setZoom(2);
-      // Attacher la caméra au joueur
+      // Applique le zoom pour une vue rapprochée - TASK REQUIREMENT
+      this.cameras.main.setZoom(2.5);
+      // Attacher la caméra au joueur - TASK REQUIREMENT
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-      // Empêcher la caméra de voir au-delà des limites du monde
-      this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+      // Empêcher la caméra de voir au-delà des limites du monde - TASK REQUIREMENT
+      this.cameras.main.setBounds(0, 0, worldWidth, worldHeight); // worldWidth/Height now 1024
     }
 
     // Initialize keyboard controls
@@ -161,7 +160,7 @@ export default class HubScene extends Phaser.Scene {
         this.cameras.main.height / 2,
         "game_portal",
       )
-      .setScale(0.1) // 128x128px
+      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
       .setInteractive()
       .refreshBody(); // Important for a static physics body
 
@@ -176,7 +175,7 @@ export default class HubScene extends Phaser.Scene {
     // Add Guild Panel
     const guildPanel = this.triggerZones
       .create(150, this.cameras.main.height / 2, "guild_panel")
-      .setScale(0.1) // 128x128px
+      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
       .setInteractive()
       .refreshBody();
 
@@ -192,7 +191,7 @@ export default class HubScene extends Phaser.Scene {
         100, // Positioned towards the top
         "daily_challenge_board",
       )
-      .setScale(0.1) // Adjust scale as needed
+      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
       .setInteractive()
       .refreshBody();
 
@@ -207,7 +206,7 @@ export default class HubScene extends Phaser.Scene {
       this.cameras.main.height - 100, // Example position (bottom-ish)
       "shop_sign"
     )
-    .setScale(0.1) // Adjust scale as needed
+    .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
     .setInteractive()
     .refreshBody();
 
@@ -244,7 +243,7 @@ export default class HubScene extends Phaser.Scene {
       this.cameras.main.height / 2,
       directeurKey
     )
-    .setScale(1.5) // Assuming orbs are small, scale them up a bit
+    .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
     .setInteractive();
 
     directeurYong.on("pointerdown", () => {
@@ -259,7 +258,7 @@ export default class HubScene extends Phaser.Scene {
       150,
       maitreCheonKey
     )
-    .setScale(1.5) // Assuming orbs are small, scale them up a bit
+    .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
     .setInteractive();
 
     maitreCheon.on("pointerdown", () => {
