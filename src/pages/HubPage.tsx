@@ -9,6 +9,7 @@ import DailyChallengeModal from '../components/DailyChallengeModal'; // Importer
 import ShopModal from '../components/ShopModal'; // Importer la modale de la boutique
 import DialogueModal from '../components/DialogueModal'; // <<< Import new DialogueModal
 import StreakIndicator from '../components/StreakIndicator'; // Importer le StreakIndicator
+import MapButton from '../components/MapButton'; // <<< Import MapButton
 import soundService from '../services/soundService';
 import { useTranslation } from 'react-i18next'; // Importer pour la traduction du bouton
 
@@ -244,6 +245,9 @@ const HubPage: React.FC = () => {
         dialogueText={currentPnjDialogue}
         npcPortraitUrl={currentPnjPortrait}
       />
+
+      {/* Map Button positioned over the Phaser canvas */}
+      <MapButton game={phaserGameRef.current} />
     </div>
   );
 };

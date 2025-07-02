@@ -40,6 +40,7 @@ export default class HubScene extends Phaser.Scene {
   private firestoreListenerUnsubscribe?: () => void;
   private isOverlappingPortal = false;
   // private isOverlappingGuildPanel = false; // Unused property
+  private isMapView = false; // For toggling map view
 
   constructor() {
     super({ key: "HubScene" });
@@ -159,64 +160,65 @@ export default class HubScene extends Phaser.Scene {
     // Listen for other players
     this.listenForOtherPlayers();
 
-    // // Add Game Lobby Portal/NPC
-    // // Le portail de jeu pourrait se trouver au nord-est du village.
-    // this.gamePortal = this.triggerZones
-    //   .create(900, 250, "game_portal")
-    //   .setScale(0.1) // Adjusted as per new suggestion
-    //   .setInteractive()
-    //   .refreshBody(); // Important for a static physics body
+    // Add Game Lobby Portal/NPC
+    // Le portail de jeu pourrait se trouver au nord-est du village.
+    this.gamePortal = this.triggerZones
+      .create(900, 250, "game_portal")
+      .setScale(0.1) // Adjusted as per new suggestion
+      .setInteractive()
+      .refreshBody(); // Important for a static physics body
 
-    // if (this.gamePortal) { // Null check
-    //   this.gamePortal.on("pointerdown", () => {
-    //     console.log("Game portal clicked");
-    //     this.game.events.emit("openGameLobbyModal");
-    //   });
-    // }
+    if (this.gamePortal) { // Null check
+      this.gamePortal.on("pointerdown", () => {
+        console.log("Game portal clicked");
+        this.game.events.emit("openGameLobbyModal");
+      });
+    }
 
-    // // Add Guild Panel
-    // // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
-    // const guildPanel = this.triggerZones
-    //   .create(150, 800, "guild_panel")
-    //   .setScale(0.1) // Adjusted as per new suggestion
-    //   .setInteractive()
-    //   .refreshBody();
+    // Add Guild Panel
+    // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
+    const guildPanel = this.triggerZones
+      .create(150, 800, "guild_panel")
+      .setScale(0.1) // Adjusted as per new suggestion
+      .setInteractive()
+      .refreshBody();
 
-    // guildPanel.on("pointerdown", () => {
-    //   console.log("Guild panel clicked");
-    //   this.game.events.emit("openGuildManagementModal");
-    // });
+    guildPanel.on("pointerdown", () => {
+      console.log("Guild panel clicked");
+      this.game.events.emit("openGuildManagementModal");
+    });
 
-    // // Add Daily Challenge Board
-    // const dailyChallengeBoard = this.triggerZones
-    //   .create(
-    //     this.cameras.main.width / 2, // Centered horizontally
-    //     100, // Positioned towards the top
-    //     "daily_challenge_board",
-    //   )
-    //   .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
-    //   .setInteractive()
-    //   .refreshBody();
+    // Add Daily Challenge Board
+    const dailyChallengeBoard = this.triggerZones
+      .create(
+        this.cameras.main.width / 2, // Centered horizontally
+        100, // Positioned towards the top
+        "daily_challenge_board",
+      )
+      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+      .setInteractive()
+      .refreshBody();
 
-    // dailyChallengeBoard.on("pointerdown", () => {
-    //   console.log("Daily challenge board clicked");
-    //   this.game.events.emit("openDailyChallengeModal");
-    // });
+    dailyChallengeBoard.on("pointerdown", () => {
+      console.log("Daily challenge board clicked");
+      this.game.events.emit("openDailyChallengeModal");
+    });
 
-    // // Add Shop Sign (Maître Kim's Shop)
-    // const shopSign = this.triggerZones.create(
-    //   this.cameras.main.width / 2 + 150, // Example position
-    //   this.cameras.main.height - 100, // Example position (bottom-ish)
-    //   "shop_sign"
-    // )
-    // .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
-    // .setInteractive()
-    // .refreshBody();
+    // Add Shop Sign (Maître Kim's Shop)
+    const shopSign = this.triggerZones.create(
+      this.cameras.main.width / 2 + 150, // Example position
+      this.cameras.main.height - 100, // Example position (bottom-ish)
+      "shop_sign"
+    )
+    .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+    .setInteractive()
+    .refreshBody();
 
-    // shopSign.on("pointerdown", () => {
-    //   console.log("Shop sign clicked");
-    //   this.game.events.emit("openShopModal");
-    // });
+    shopSign.on("pointerdown", () => {
+      console.log("Shop sign clicked");
+      this.game.events.emit("openShopModal");
+    });
+
 
     // Add overlap physics for guildPanel (example, if you want overlap for it too)
     // For now, let's keep it consistent with click for all new elements for simplicity
@@ -270,7 +272,53 @@ export default class HubScene extends Phaser.Scene {
   //   });
   
 
-}
+    maitreCheon.on("pointerdown", () => {
+      console.log("Maître Cheon Mun clicked");
+      this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
+    });
+
+    // Listen for map view toggle
+    this.game.events.on("toggleMapView", this.handleMapViewToggle, this);
+    // Ensure to clean up this listener in shutdown
+  }
+
+  handleMapViewToggle() {
+    this.isMapView = !this.isMapView;
+    console.log("Map view toggled:", this.isMapView);
+
+    const worldWidth = this.physics.world.bounds.width;
+    const worldHeight = this.physics.world.bounds.height;
+
+    if (this.isMapView) {
+      // Zoom out to see the whole map
+      this.cameras.main.stopFollow();
+      // Pan to the center of the world (e.g., 1024x1024 map, center is 512,512)
+      this.cameras.main.pan(worldWidth / 2, worldHeight / 2, 1000, 'Sine.easeInOut');
+      // Zoom to fit the map (0.75 might need adjustment depending on actual game screen size vs world size)
+      // Let's try to calculate a zoom that would fit the larger dimension of the world into the camera view
+      // This is a simplification; true "fit" might need to consider aspect ratios.
+      // For a 1024x1024 world and e.g. 800x600 camera, zoom to show 1024 width would be 800/1024 = ~0.78
+      // Or to show 1024 height would be 600/1024 = ~0.58. We take the smaller zoom to ensure everything is visible.
+      const zoomX = this.cameras.main.width / worldWidth;
+      const zoomY = this.cameras.main.height / worldHeight;
+      const targetZoom = Math.min(zoomX, zoomY, 0.75); // Cap at 0.75 or calculated if smaller
+      this.cameras.main.zoomTo(targetZoom, 1000, 'Sine.easeInOut');
+      console.log(`Zooming out to: ${targetZoom}`);
+    } else {
+      // Zoom back to player
+      if (this.player) { // Ensure player exists
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.cameras.main.zoomTo(2.5, 1000, 'Sine.easeInOut'); // Default game zoom
+        console.log("Zooming back to player at 2.5x");
+      } else {
+        console.error("Player does not exist, cannot zoom back to player.");
+         // Fallback: pan and zoom to a default view if player is missing
+        this.cameras.main.pan(worldWidth / 2, worldHeight / 2, 1000, 'Sine.easeInOut');
+        this.cameras.main.zoomTo(1, 1000, 'Sine.easeInOut'); // Or some other sensible default
+      }
+    }
+  }
+
 
   updatePlayerPositionInFirestore(x: number, y: number) {
     if (!this.currentUser) return;
@@ -356,40 +404,56 @@ export default class HubScene extends Phaser.Scene {
       return;
     }
 
-    this.player.body.setVelocity(0);
+    // Disable player movement if map view is active
+    if (this.isMapView) {
+      this.player.body.setVelocity(0); // Stop any existing movement
+      // Potentially add other logic here if needed when map is active, e.g., different cursor
+    } else {
+      // Normal player movement logic
+      this.player.body.setVelocity(0);
 
-    let velocityX = 0;
-    let velocityY = 0;
+      let velocityX = 0;
+      let velocityY = 0;
 
-    // Updated movement conditions to include ZQSD/WASD
-    if (this.cursors.left.isDown || this.keys.A.isDown || this.keys.Q.isDown) {
-      velocityX = -this.moveSpeed;
-    } else if (this.cursors.right.isDown || this.keys.D.isDown) {
-      velocityX = this.moveSpeed;
+      // Updated movement conditions to include ZQSD/WASD
+      if (this.cursors.left.isDown || this.keys.A.isDown || this.keys.Q.isDown) {
+        velocityX = -this.moveSpeed;
+      } else if (this.cursors.right.isDown || this.keys.D.isDown) {
+        velocityX = this.moveSpeed;
+      }
+
+      if (this.cursors.up.isDown || this.keys.W.isDown || this.keys.Z.isDown) {
+        velocityY = -this.moveSpeed;
+      } else if (this.cursors.down.isDown || this.keys.S.isDown) {
+        velocityY = this.moveSpeed;
+      }
+
+      this.player.body.setVelocityX(velocityX);
+      this.player.body.setVelocityY(velocityY);
+
+      if (velocityX !== 0 && velocityY !== 0) {
+        const vector = new Phaser.Math.Vector2(velocityX, velocityY)
+          .normalize()
+          .scale(this.moveSpeed);
+        this.player.body.setVelocity(vector.x, vector.y);
+      }
+
+      if (
+        this.player.body.velocity.x !== 0 ||
+        this.player.body.velocity.y !== 0
+      ) {
+        this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+      }
     }
 
-    if (this.cursors.up.isDown || this.keys.W.isDown || this.keys.Z.isDown) {
-      velocityY = -this.moveSpeed;
-    } else if (this.cursors.down.isDown || this.keys.S.isDown) {
-      velocityY = this.moveSpeed;
-    }
-
-    this.player.body.setVelocityX(velocityX);
-    this.player.body.setVelocityY(velocityY);
-
-    if (velocityX !== 0 && velocityY !== 0) {
-      const vector = new Phaser.Math.Vector2(velocityX, velocityY)
-        .normalize()
-        .scale(this.moveSpeed);
-      this.player.body.setVelocity(vector.x, vector.y);
-    }
-
-    if (
-      this.player.body.velocity.x !== 0 ||
-      this.player.body.velocity.y !== 0
-    ) {
-      this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
-      const isCurrentlyOverlappingPortal = this.physics.overlap(this.player, this.gamePortal);
+    // Overlap checks should probably only happen if not in map view,
+    // or if they are passive and don't trigger UI pop-ups that would interfere with map view.
+    // For now, let's assume gamePortal overlap logic is fine as it's a state toggle (isOverlappingPortal)
+    // and doesn't immediately pan/zoom camera, but this might need review.
+    // If map is active, maybe we don't want these modals popping up.
+    // Let's move the portal overlap logic inside the !this.isMapView block for safety.
+    if (!this.isMapView && this.player && this.player.body.velocity.x !== 0 || this.player.body.velocity.y !== 0) {
+        const isCurrentlyOverlappingPortal = this.physics.overlap(this.player, this.gamePortal);
 
       // CAS 1: Le joueur ENTRE dans la zone
       if (isCurrentlyOverlappingPortal && !this.isOverlappingPortal) {
@@ -458,6 +522,7 @@ export default class HubScene extends Phaser.Scene {
     if (this.firestoreListenerUnsubscribe) {
       this.firestoreListenerUnsubscribe();
     }
+    this.game.events.off("toggleMapView", this.handleMapViewToggle, this); // Clean up map view listener
     this.events.off("shutdown", this.shutdown, this);
   }
 }
