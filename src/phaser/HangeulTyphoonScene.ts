@@ -9,6 +9,7 @@ interface HangeulBlock extends Phaser.GameObjects.Container {
   spawnTime: number;
   isProtected: boolean;
   isVulnerable: boolean;
+  isDestroyed?: boolean; // Ajouté pour le suivi de destruction
 }
 
 export default class HangeulTyphoonScene extends Phaser.Scene {
@@ -63,17 +64,19 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     const gameAreaHeight = height - hudHeight; // Hauteur restante pour les zones de jeu et saisie
     const mainZoneHeight = gameAreaHeight * 0.8; // 80% pour la zone de jeu principale
     const inputZoneHeight = gameAreaHeight * 0.2; // 20% pour la zone de saisie
-
+    // Définissez cette constante au début de votre classe de scène pour un réglage facile
+    // Plus la valeur est petite, plus les blocs descendent vite.
+    
     const playerZoneWidth = width * this.MAIN_PLAYER_ZONE_WIDTH_RATIO;
     const opponentZoneWidth = width * this.OPPONENT_ZONE_WIDTH_RATIO;
     const opponentZoneX = playerZoneWidth;
-
-
+    
+    
     // Zone Joueur principale
     const mainPlayerZone = this.add.graphics();
     mainPlayerZone.fillStyle(0x000033, 0.8);
     mainPlayerZone.fillRect(0, hudHeight, playerZoneWidth, mainZoneHeight);
-
+    
     // Ligne de "sol" Joueur
     const playerGroundY = hudHeight + mainZoneHeight - 20;
     this.playerGroundLevel = playerGroundY;
@@ -85,14 +88,14 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     this.groundLine.closePath();
     this.groundLine.strokePath();
     this.add.text(10, this.playerGroundLevel - 25, 'GAME OVER LINE', { fontSize: '10px', color: '#ff0000' });
-
-
+    
+    
     // Zone Adversaire
     const opponentZone = this.add.graphics();
     opponentZone.fillStyle(0x330000, 0.8);
     opponentZone.fillRect(opponentZoneX, hudHeight, opponentZoneWidth, mainZoneHeight);
     this.add.text(opponentZoneX + 10, hudHeight + 10, 'Zone Adversaire', { fontSize: '16px', color: '#fff' });
-
+    
     // Ligne de "sol" Adversaire (initiale)
     const opponentGroundY = hudHeight + mainZoneHeight - 20; // Même position initiale que le joueur
     this.opponentGroundLevel = opponentGroundY;
@@ -104,22 +107,22 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     this.opponentGroundLine.closePath();
     this.opponentGroundLine.strokePath();
     this.add.text(opponentZoneX + 10, this.opponentGroundLevel - 25, 'OPPONENT GAME OVER', { fontSize: '10px', color: '#0000ff' });
-
-
+    
+    
     // Zone de Saisie
     const inputZoneY = hudHeight + mainZoneHeight;
     const inputZoneGraphics = this.add.graphics();
     inputZoneGraphics.fillStyle(0x222222, 1);
     inputZoneGraphics.fillRect(0, inputZoneY, width, inputZoneHeight);
-
+    
     this.inputDisplay = this.add.text(width / 2, inputZoneY + inputZoneHeight / 2, '', {
       fontSize: '32px',
       color: '#ffffff',
       backgroundColor: '#333333',
       padding: { x: 10, y: 5 }
     }).setOrigin(0.5);
-
-
+    
+    
     // Implémentation du HUD
     // Score
     this.add.text(10, 10, `Score: ${this.score}`, {
@@ -134,24 +137,27 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
       color: '#fff',
       fontStyle: 'bold'
     }).setName('comboText').setOrigin(1, 0);
-
+    
     // Mode de Jeu
     this.add.text(width / 2, 10, `Mode: ${this.gameMode}`, {
       fontSize: '20px',
       color: '#e0e0e0' // Couleur légèrement différente pour le mode
     }).setOrigin(0.5, 0).setName('gameModeText');
-
+    
     // Spawn d'un bloc de test initial
     this.spawnBlock(playerZoneWidth * 0.5, hudHeight + 50, "한글"); // Placé au milieu de la zone joueur, en haut
-
+    
     // --- Gestionnaire d'événements clavier ---
-    this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
-      this.handlePlayerInput(event);
-    });
-
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+        this.handlePlayerInput(event);
+      });
+    }
+    
   }
-
-  update() {
+  
+  update(delta: number) {
+    const BLOCK_SPEED = 0.5; // Vitesse de descente en pixels par milliseconde
     // Logique de mise à jour de la scène
     // Par exemple, mettre à jour le texte du score si la variable this.score change
     const scoreText = this.children.getByName('scoreText') as Phaser.GameObjects.Text;
@@ -177,14 +183,34 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
         console.log(`Block ${block.hangeulWord} is now vulnerable.`);
       }
 
-      // TODO: Ajouter la logique de descente des blocs ici
-      // block.y += 1; // Exemple de descente
-      // TODO: Ajouter la logique de destruction si le bloc touche le sol
-      // if (block.y + block.height > this.playerGroundLevel) { ... }
+      // --- TODO 1: Logique de descente des blocs ---
+      // Nous utilisons `delta` pour une descente fluide, indépendante du framerate.
+      // `delta` est le temps écoulé en millisecondes depuis la dernière frame.
+      block.y += BLOCK_SPEED * delta;
+      block.textObject.setY(block.y); // Mettez à jour la position Y de l'objet Phaser
+
+      // --- TODO 2: Logique de destruction si le bloc touche le sol ---
+      // this.playerGroundLevel doit être la coordonnée Y du sol de votre joueur.
+      // On vérifie si le bas du bloc (son Y + sa hauteur) a dépassé le niveau du sol.
+      if (block.y + block.textObject.height > this.playerGroundLevel) {
+        console.log(`Block ${block.hangeulWord} hit the ground and was destroyed.`);
+        
+        // Appliquer une pénalité : faire monter le sol du joueur
+        // C'est une excellente mécanique pour augmenter la pression !
+        this.riseOwnGround(1); // Fait monter le sol d'un niveau
+
+        // Détruire l'objet de jeu Phaser pour libérer la mémoire
+        block.textObject.destroy();
+        
+        // Marquer le bloc pour suppression de notre tableau de suivi
+        block.isDestroyed = true;
+      }
     });
 
-    // Supprimer les blocs marqués pour destruction (si on implémente cela)
-    // this.activeBlocks = this.activeBlocks.filter(block => block.active);
+    // Après la boucle, nous retirons tous les blocs marqués comme détruits
+    // de notre tableau `activeBlocks`. C'est plus sûr que de modifier le tableau
+    // pendant qu'on boucle dessus.
+    this.activeBlocks = this.activeBlocks.filter(block => !block.isDestroyed);
   }
 
   // --- Gestion des Blocs ---
@@ -338,8 +364,6 @@ export default class HangeulTyphoonScene extends Phaser.Scene {
     }
   }
 
-  // Wrapper pour updateOpponentGroundVisual pour gérer l'augmentation
-  private opponentCurrentGroundFillAmount: number = 0; // en pixels, depuis le bas de leur zone
   private updateOpponentGroundVisualBasedOnRiseAmount(riseAmount: number) {
     const { height } = this.scale;
     const hudHeight = 50;

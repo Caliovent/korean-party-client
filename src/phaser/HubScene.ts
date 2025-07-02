@@ -57,11 +57,11 @@ export default class HubScene extends Phaser.Scene {
   preload() {
     this.load.image("hub_background_village", "assets/hub.png");
     this.load.image("player_avatar", "assets/player_32.png");
-    this.load.image("other_player_avatar", "assets/player_32.png"); // Can be a different asset or tinted
+    this.load.image("other_player_avatar", "assets/black.png"); // Can be a different asset or tinted
     this.load.image("game_portal", "assets/game_portal.jpeg"); // Placeholder for portal/NPC
     this.load.image("guild_panel", "assets/guild_panel.jpeg"); // Placeholder for guild panel
-    this.load.image("daily_challenge_board", "assets/game_portal.jpeg"); // Placeholder for daily challenge board (using game_portal asset for now)
-    this.load.image("shop_sign", "assets/game_portal.jpeg"); // Placeholder for shop sign (using game_portal asset for now)
+    this.load.image("daily_challenge_board", "assets/black.png"); // Placeholder for daily challenge board (using game_portal asset for now)
+    this.load.image("shop_sign", "assets/black.png"); // Placeholder for shop sign (using game_portal asset for now)
     this.load.image("transparent", "assets/effects/transparent.png");
 
     // NPC Assets - placeholders, will fallback if not found
@@ -88,17 +88,17 @@ export default class HubScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
 
-    // Add example obstacles
-    this.obstacles
-      .create(400, 300, "transparent")
-      .setSize(200, 150)
-      .setVisible(false)
-      .refreshBody();
-    this.obstacles
-      .create(100, 500, "transparent")
-      .setSize(150, 100)
-      .setVisible(false)
-      .refreshBody();
+    // // Add example obstacles
+    // this.obstacles
+    //   .create(400, 300, "transparent")
+    //   .setSize(200, 150)
+    //   .setVisible(false)
+    //   .refreshBody();
+    // this.obstacles
+    //   .create(100, 500, "transparent")
+    //   .setSize(150, 100)
+    //   .setVisible(false)
+    //   .refreshBody();
 
     // Initialize other players group
     this.otherPlayers = this.add.group();
@@ -109,6 +109,7 @@ export default class HubScene extends Phaser.Scene {
         this.cameras.main.width / 2,
         this.cameras.main.height / 2,
         "player_avatar",
+        0
       ) as any;
       this.player?.setScale(1); // Optional chaining
     } else {
@@ -142,7 +143,7 @@ export default class HubScene extends Phaser.Scene {
       // ÉTAPE 2: Définir la taille du monde - this.physics.world.setBounds(0, 0, worldWidth, worldHeight); - This is done earlier.
 
       // ÉTAPE 3 (NOUVEAU) : Appliquer le zoom par défaut
-      this.cameras.main.setZoom(2.5);
+      this.cameras.main.setZoom(5);
       // ÉTAPE 4 : Lier la caméra au joueur
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
       // ÉTAPE 5 : Limiter la caméra aux bords du monde
@@ -158,64 +159,64 @@ export default class HubScene extends Phaser.Scene {
     // Listen for other players
     this.listenForOtherPlayers();
 
-    // Add Game Lobby Portal/NPC
-    // Le portail de jeu pourrait se trouver au nord-est du village.
-    this.gamePortal = this.triggerZones
-      .create(900, 250, "game_portal")
-      .setScale(0.1) // Adjusted as per new suggestion
-      .setInteractive()
-      .refreshBody(); // Important for a static physics body
+    // // Add Game Lobby Portal/NPC
+    // // Le portail de jeu pourrait se trouver au nord-est du village.
+    // this.gamePortal = this.triggerZones
+    //   .create(900, 250, "game_portal")
+    //   .setScale(0.1) // Adjusted as per new suggestion
+    //   .setInteractive()
+    //   .refreshBody(); // Important for a static physics body
 
-    if (this.gamePortal) { // Null check
-      this.gamePortal.on("pointerdown", () => {
-        console.log("Game portal clicked");
-        this.game.events.emit("openGameLobbyModal");
-      });
-    }
+    // if (this.gamePortal) { // Null check
+    //   this.gamePortal.on("pointerdown", () => {
+    //     console.log("Game portal clicked");
+    //     this.game.events.emit("openGameLobbyModal");
+    //   });
+    // }
 
-    // Add Guild Panel
-    // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
-    const guildPanel = this.triggerZones
-      .create(150, 800, "guild_panel")
-      .setScale(0.1) // Adjusted as per new suggestion
-      .setInteractive()
-      .refreshBody();
+    // // Add Guild Panel
+    // // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
+    // const guildPanel = this.triggerZones
+    //   .create(150, 800, "guild_panel")
+    //   .setScale(0.1) // Adjusted as per new suggestion
+    //   .setInteractive()
+    //   .refreshBody();
 
-    guildPanel.on("pointerdown", () => {
-      console.log("Guild panel clicked");
-      this.game.events.emit("openGuildManagementModal");
-    });
+    // guildPanel.on("pointerdown", () => {
+    //   console.log("Guild panel clicked");
+    //   this.game.events.emit("openGuildManagementModal");
+    // });
 
-    // Add Daily Challenge Board
-    const dailyChallengeBoard = this.triggerZones
-      .create(
-        this.cameras.main.width / 2, // Centered horizontally
-        100, // Positioned towards the top
-        "daily_challenge_board",
-      )
-      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
-      .setInteractive()
-      .refreshBody();
+    // // Add Daily Challenge Board
+    // const dailyChallengeBoard = this.triggerZones
+    //   .create(
+    //     this.cameras.main.width / 2, // Centered horizontally
+    //     100, // Positioned towards the top
+    //     "daily_challenge_board",
+    //   )
+    //   .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+    //   .setInteractive()
+    //   .refreshBody();
 
-    dailyChallengeBoard.on("pointerdown", () => {
-      console.log("Daily challenge board clicked");
-      this.game.events.emit("openDailyChallengeModal");
-    });
+    // dailyChallengeBoard.on("pointerdown", () => {
+    //   console.log("Daily challenge board clicked");
+    //   this.game.events.emit("openDailyChallengeModal");
+    // });
 
-    // Add Shop Sign (Maître Kim's Shop)
-    const shopSign = this.triggerZones.create(
-      this.cameras.main.width / 2 + 150, // Example position
-      this.cameras.main.height - 100, // Example position (bottom-ish)
-      "shop_sign"
-    )
-    .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
-    .setInteractive()
-    .refreshBody();
+    // // Add Shop Sign (Maître Kim's Shop)
+    // const shopSign = this.triggerZones.create(
+    //   this.cameras.main.width / 2 + 150, // Example position
+    //   this.cameras.main.height - 100, // Example position (bottom-ish)
+    //   "shop_sign"
+    // )
+    // .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+    // .setInteractive()
+    // .refreshBody();
 
-    shopSign.on("pointerdown", () => {
-      console.log("Shop sign clicked");
-      this.game.events.emit("openShopModal");
-    });
+    // shopSign.on("pointerdown", () => {
+    //   console.log("Shop sign clicked");
+    //   this.game.events.emit("openShopModal");
+    // });
 
     // Add overlap physics for guildPanel (example, if you want overlap for it too)
     // For now, let's keep it consistent with click for all new elements for simplicity
@@ -253,21 +254,23 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openDialogueModal", { pnjId: "directeur" });
     });
 
-    // Maître Cheon Mun
-    const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
-    const maitreCheon = this.add.sprite(
-      150, // Position: Example towards top-left, "welcome" area
-      150,
-      maitreCheonKey
-    )
-    .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
-    .setInteractive();
+  //   // Maître Cheon Mun
+  //   const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
+  //   const maitreCheon = this.add.sprite(
+  //     150, // Position: Example towards top-left, "welcome" area
+  //     150,
+  //     maitreCheonKey
+  //   )
+  //   .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
+  //   .setInteractive();
 
-    maitreCheon.on("pointerdown", () => {
-      console.log("Maître Cheon Mun clicked");
-      this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
-    });
-  }
+  //   maitreCheon.on("pointerdown", () => {
+  //     console.log("Maître Cheon Mun clicked");
+  //     this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
+  //   });
+  
+
+}
 
   updatePlayerPositionInFirestore(x: number, y: number) {
     if (!this.currentUser) return;
