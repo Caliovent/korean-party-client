@@ -159,13 +159,10 @@ export default class HubScene extends Phaser.Scene {
     this.listenForOtherPlayers();
 
     // Add Game Lobby Portal/NPC
+    // Le portail de jeu pourrait se trouver au nord-est du village.
     this.gamePortal = this.triggerZones
-      .create(
-        this.cameras.main.width - 150,
-        this.cameras.main.height / 2,
-        "game_portal",
-      )
-      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+      .create(900, 250, "game_portal")
+      .setScale(0.1) // Adjusted as per new suggestion
       .setInteractive()
       .refreshBody(); // Important for a static physics body
 
@@ -175,12 +172,12 @@ export default class HubScene extends Phaser.Scene {
         this.game.events.emit("openGameLobbyModal");
       });
     }
-    // Removed extra });
 
     // Add Guild Panel
+    // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
     const guildPanel = this.triggerZones
-      .create(150, this.cameras.main.height / 2, "guild_panel")
-      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+      .create(150, 800, "guild_panel")
+      .setScale(0.1) // Adjusted as per new suggestion
       .setInteractive()
       .refreshBody();
 
