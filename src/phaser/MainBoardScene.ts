@@ -480,13 +480,20 @@ export default class MainBoardScene extends Phaser.Scene {
               let hangeulTyphoonOptions: any = null;
               const currentTileConfig = tileConfig; // tileConfig is already the config for the clicked tile (index)
 
+              // Récupérer les mots depuis le Registry de Phaser pour HangeulTyphoon
+              const hangeulTyphoonWordsFromRegistry = this.registry.get('hangeulTyphoonWords');
+              if (!hangeulTyphoonWordsFromRegistry || hangeulTyphoonWordsFromRegistry.length === 0) {
+                console.warn('MainBoardScene: hangeulTyphoonWords non trouvés ou vides dans le registry. HangeulTyphoonScene utilisera des mots par défaut si elle en a.');
+              }
+
               switch (currentTileConfig.type) {
                   case 'DOJO_DU_CLAVIER':
                       console.log('[Phaser] Landing on Dojo du Clavier. Launching Hangeul Typhoon (Scribe Mode).');
                       hangeulTyphoonOptions = {
                           gameMode: 'eupreuveDuScribe',
                           isDuel: false,
-                          attackerPlayerId: currentPlayer.uid
+                          attackerPlayerId: currentPlayer.uid,
+                          words: hangeulTyphoonWordsFromRegistry || [] // Passer les mots
                       };
                       break;
 
@@ -495,30 +502,33 @@ export default class MainBoardScene extends Phaser.Scene {
                       const opponent = this.gameState?.players.find(p => p.uid !== currentPlayer.uid);
                       if (opponent) {
                           hangeulTyphoonOptions = {
-                              gameMode: 'eupreuveDuScribe',
+                              gameMode: 'eupreuveDuScribe', // Devrait probablement être un mode duel spécifique si le gameplay diffère
                               isDuel: true,
                               gameId: `duel_${currentPlayer.uid}_vs_${opponent.uid}_${Date.now()}`,
                               attackerPlayerId: currentPlayer.uid,
-                              targetPlayerId: opponent.uid
+                              targetPlayerId: opponent.uid,
+                              words: hangeulTyphoonWordsFromRegistry || [] // Passer les mots
                           };
                       } else {
                           console.warn('[Phaser] Duel tile landed, but no opponent found to start Hangeul Typhoon duel.');
                       }
                       break;
 
-                  case 'MINI_GAME_QUIZ':
+                  case 'MINI_GAME_QUIZ': // Ce cas lance aussi Hangeul Typhoon (Interprète/Traducteur)
                       console.log('[Phaser] Landing on Mini Game Quiz. Offering Hangeul Typhoon (Interpreter/Translator Mode).');
                       const translationModes = ['defiDeLInterprete', 'testDuTraducteur'];
                       const selectedTranslationMode = Phaser.Utils.Array.GetRandom(translationModes);
                       hangeulTyphoonOptions = {
                           gameMode: selectedTranslationMode,
                           isDuel: false,
-                          attackerPlayerId: currentPlayer.uid
+                          attackerPlayerId: currentPlayer.uid,
+                          words: hangeulTyphoonWordsFromRegistry || [] // Passer les mots
                       };
                       break;
               }
 
               if (hangeulTyphoonOptions) {
+                  console.log('[Phaser] Starting HangeulTyphoonScene with options:', hangeulTyphoonOptions);
                   this.scene.start('HangeulTyphoonScene', hangeulTyphoonOptions);
               }
           } else {

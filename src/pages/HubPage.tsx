@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import HubScene from '../phaser/HubScene';
-import HangeulTyphoonScene from '../phaser/HangeulTyphoonScene'; // Importer la scène de jeu
+import HangeulTyphoonScene, { type HangeulWordDefinition } from '../phaser/HangeulTyphoonScene'; // Importer la scène et le type
+import { useContent } from '../contexts/ContentContext'; // <<< Import useContent
 import GameLobbyModal from '../components/GameLobbyModal';
 import GuildManagementModal from '../components/GuildManagementModal';
 import QuestLogModal from '../components/QuestLogModal'; // Importer le nouveau modal
@@ -38,6 +39,7 @@ const npcDialogues: Record<string, NpcInfo> = {
 
 const HubPage: React.FC = () => {
   const { t } = useTranslation(); // Hook de traduction
+  const { gameData, isLoading: isContentLoading, error: contentError } = useContent(); // <<< Use ContentContext
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const [isGameLobbyModalOpen, setIsGameLobbyModalOpen] = useState(false);
@@ -133,7 +135,27 @@ const HubPage: React.FC = () => {
         phaserGameRef.current = null;
       }
     };
-  }, []);
+  }, []); // Phaser game instance effect
+
+  useEffect(() => {
+    // Effect to pass data to Phaser game registry once content and game are ready
+    if (phaserGameRef.current && gameData && !isContentLoading) {
+      if (gameData.hangeulTyphoonWords) {
+        // S'assurer que les mots sont bien typés comme HangeulWordDefinition[]
+        // Si ce n'est pas le cas depuis Firestore, une transformation pourrait être nécessaire ici.
+        // Pour l'instant, on suppose qu'ils correspondent à HangeulWordDefinition[].
+        const wordsForPhaser = gameData.hangeulTyphoonWords as HangeulWordDefinition[];
+        phaserGameRef.current.registry.set('hangeulTyphoonWords', wordsForPhaser);
+        console.log('[HubPage] hangeulTyphoonWords passés au registry de Phaser:', wordsForPhaser.length);
+      } else {
+        console.log('[HubPage] hangeulTyphoonWords non trouvés dans gameData ou vides. Le registry ne sera pas mis à jour pour ces mots.');
+        // On pourrait vouloir mettre une liste vide pour éviter que la scène Phaser n'utilise des données d'une session précédente
+        phaserGameRef.current.registry.set('hangeulTyphoonWords', []);
+      }
+      // On pourrait faire de même pour d'autres données globales nécessaires aux scènes Phaser
+      // Exemple: phaserGameRef.current.registry.set('globalGameSettings', gameData.settings);
+    }
+  }, [gameData, isContentLoading, phaserGameRef.current]); // Dépend de gameData, de son état de chargement, et de l'instance du jeu
 
   useEffect(() => {
     // Stop other potential music and start hub music
@@ -145,7 +167,19 @@ const HubPage: React.FC = () => {
       soundService.stopSound('music_hub');
       // console.log("HubPage unmounted, stopping music_hub.");
     };
-  }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
+  }, []); // Music effect
+
+  // Gérer l'état de chargement du contenu ou les erreurs avant de rendre le Hub
+  if (isContentLoading) {
+    // LoadingScreen est déjà géré globalement dans App.tsx, mais on pourrait mettre un placeholder spécifique au Hub si besoin.
+    // Pour l'instant, on laisse App.tsx gérer l'écran de chargement global.
+    // return <div>Chargement du Hub et de ses merveilles...</div>;
+  }
+
+  if (contentError) {
+    // De même, App.tsx gère l'erreur globale.
+    // return <div>Erreur de chargement du contenu pour le Hub: {contentError.message}</div>;
+  }
 
   return (
     <div className="hub-page-container" style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

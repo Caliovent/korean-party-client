@@ -1,0 +1,35 @@
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(20, 20, 40, 0.95); /* Fond sombre semi-transparent */
+  color: #e0e0e0; /* Texte clair */
+  z-index: 9999; /* Pour être au-dessus de tout */
+  text-align: center;
+}
+
+.loading-spinner {
+  border: 8px solid #f3f3f3; /* Gris clair */
+  border-top: 8px solid #8b4513; /* Brun-Selle - couleur thématique */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1.5s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-screen p {
+  font-size: 1.2em;
+  font-family: 'Arial', sans-serif; /* Police simple */
+}
