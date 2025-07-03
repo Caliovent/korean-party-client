@@ -163,6 +163,32 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
   }
 };
 
+// --- Mini-Game Challenge Preparation ---
+
+interface PrepareChallengePayload {
+  gameId: string;
+  miniGameType: string; // Consider using MiniGameId type if available and appropriate
+  difficulty: 'easy' | 'medium' | 'hard' | string; // String for flexibility if more difficulties arise
+}
+
+/**
+ * Calls the Cloud Function to prepare a personalized challenge for a mini-game.
+ * @param payload - The data required to prepare the challenge.
+ * @returns A promise that resolves when the function call is complete.
+ */
+export const prepareChallenge = async (payload: PrepareChallengePayload): Promise<void> => {
+  try {
+    console.log(`[CLIENT] Calling 'prepareMiniGameChallenge' function with payload:`, payload);
+    const prepareMiniGameChallengeFunction = httpsCallable(functions, 'prepareMiniGameChallenge');
+    await prepareMiniGameChallengeFunction(payload);
+    console.log("Cloud Function 'prepareMiniGameChallenge' called successfully.");
+  } catch (error) {
+    console.error("Error calling prepareMiniGameChallenge function:", error);
+    // Optionally re-throw or handle as per application's error handling strategy
+    throw error;
+  }
+};
+
 // --- Hangeul Typhoon Mini-Game Service ---
 import type { HangeulTyphoonAttackResponse } from '../types/hangeul'; // Import response type
 

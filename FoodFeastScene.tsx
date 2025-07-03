@@ -1,12 +1,28 @@
 // FoodFeastScene.tsx
 import React, { useState, useEffect } from 'react';
-// Assuming foodApi.ts is in the same directory & MOCK_FOOD_ITEMS is exported
-import type { FoodGameData, FoodGameSubmitResult, FoodGameRoundResult, FoodItem } from './foodApi';
-import { getFoodGameData, MOCK_FOOD_ITEMS, submitFoodGameResults } from './foodApi';
+// MOCK_FOOD_ITEMS might still be needed if options have pronunciation URLs not included in challengeData
+import { MOCK_FOOD_ITEMS } from './foodApi'; // Assuming FoodItem type is also here or defined below
 import soundService from './src/services/soundService';
+import type { FoodItem } from './foodApi'; // Ensure FoodItem is imported if not part of ChallengeData structure directly
+
+// Define the structure of the challenge data passed from GamePage
+// This should align with what `currentChallengeData` will hold for this mini-game
+export interface FoodFeastChallengeData {
+  questions: FoodGameQuestion[]; // Array of questions
+  // Add any other global challenge settings if needed
+}
+
+// Single question structure, similar to FoodGameData but part of an array
+export interface FoodGameQuestion {
+  foodItem: FoodItem; // The item to identify (image, name for alt text)
+  options: string[];    // Array of answer choices (names of food items)
+  correctAnswer: string; // The correct food item name
+  // Add pronunciationUrl directly here if it's per question and not globally in FoodItem
+}
 
 interface FoodFeastSceneProps {
-  onFinish: () => Promise<void>;
+  challengeData: FoodFeastChallengeData;
+  onFinish: (score: number, totalQuestions: number) => Promise<void>; // Pass score and total to onFinish
 }
 
 // Defines the state of feedback after an answer
@@ -17,174 +33,96 @@ type FeedbackState = {
   clickedOption: string | null;
 };
 
-const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ onFinish }) => { // Added gameId and onFinish to props destructuring
-  const [gameData, setGameData] = useState<FoodGameData | null>(null);
+const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ challengeData, onFinish }) => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [isAnswered, setIsAnswered] = useState<boolean>(false);
-  const [questionsAnswered, setQuestionsAnswered] = useState<number>(0);
-  const [isRoundOver, setIsRoundOver] = useState<boolean>(false);
-  const [submissionResult, setSubmissionResult] = useState<FoodGameSubmitResult | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isAnswered, setIsAnswered] = useState<boolean>(false); // If the current question has been answered
+  const [isChallengeOver, setIsChallengeOver] = useState<boolean>(false);
 
+  const totalQuestions = challengeData.questions.length;
+  const currentQuestion = challengeData.questions[currentQuestionIndex];
 
-  const QUESTIONS_PER_ROUND = 5; // Define how many questions make a round
-
-  const handleGameEnd = async () => {
-    setIsSubmitting(true);
-    try {
-      const roundResult: FoodGameRoundResult = {
-        score,
-        correctAnswers: score, // Assuming 1 point per correct answer
-        totalQuestions: QUESTIONS_PER_ROUND,
-      };
-      const result = await submitFoodGameResults(roundResult);
-      setSubmissionResult(result);
-      onFinish(); // Call onFinish after successful submission
-    } catch (e) {
-      console.error("Failed to submit game results:", e);
-      setSubmissionResult({ finalScore: score, message: "Erreur lors de la soumission du score." });
-      // Consider if onFinish() should be called even on error, depends on desired game flow
-      // For now, calling it only on success. If it should always be called, move to finally block.
-    } finally {
-      setIsSubmitting(false);
+  // Effect to play sound for new question if pronunciationUrl is available
+  useEffect(() => {
+    if (currentQuestion?.foodItem.pronunciationUrl) {
+      soundService.playSound(currentQuestion.foodItem.pronunciationUrl);
+    } else if (currentQuestion) {
+      // Fallback sound if specific pronunciation isn't available but question exists
+      soundService.playSound('new_question_default');
     }
-  };
-
-  const resetGame = () => {
-    setScore(0);
-    setQuestionsAnswered(0);
-    setIsRoundOver(false);
-    setSubmissionResult(null);
+    // Reset feedback and answered state when question changes
     setFeedback(null);
     setIsAnswered(false);
-    // setLoading(true); // fetchNewQuestion will set it
-    fetchNewQuestion(); // Fetch the first question for the new round
-  };
+  }, [currentQuestionIndex, currentQuestion]);
 
-  const fetchNewQuestion = () => {
-    if (questionsAnswered >= QUESTIONS_PER_ROUND && !isRoundOver) { // Ensure isRoundOver is set only once
-      setIsRoundOver(true);
-      setLoading(false);
-      handleGameEnd(); // Call submission logic when round is effectively over
-      return;
+
+  const advanceToNextQuestion = () => {
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+    } else {
+      setIsChallengeOver(true);
+      onFinish(score, totalQuestions); // Call onFinish with final score
     }
-    if (isRoundOver) { // If round is already marked over, don't fetch
-        setLoading(false);
-        return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setFeedback(null); // Clear previous feedback
-    setIsAnswered(false); // Re-enable options for new question
-
-    getFoodGameData()
-      .then(data => {
-        setGameData(data);
-        setLoading(false);
-        // Play sound for new question display
-        if (data.foodItem.pronunciationUrl) {
-          soundService.playSound(data.foodItem.pronunciationUrl);
-        } else {
-          // Fallback sound if specific pronunciation isn't available
-          soundService.playSound('new_question_default');
-        }
-      })
-      .catch(err => {
-        console.error("Failed to load food game data:", err);
-        setError("Impossible de charger la question. Veuillez réessayer.");
-        setLoading(false);
-      });
   };
-
-  useEffect(() => {
-    fetchNewQuestion();
-  }, []);
 
   const handleOptionClick = (selectedOption: string) => {
-    if (!gameData || isAnswered) return; // Don't process if no data or already answered
+    if (!currentQuestion || isAnswered) return;
 
     setIsAnswered(true);
-    const isCorrect = selectedOption === gameData.correctAnswer;
+    const isCorrect = selectedOption === currentQuestion.correctAnswer;
 
     if (isCorrect) {
       setScore(prevScore => prevScore + 1);
       setFeedback({ message: "Correct!", isCorrect: true, show: true, clickedOption: selectedOption });
-      soundService.playSound('correct_answer'); // Generic success sound
+      soundService.playSound('correct_answer');
     } else {
       setFeedback({
-        message: `Incorrect. La bonne réponse était: ${gameData.correctAnswer}`,
+        message: `Incorrect. La bonne réponse était: ${currentQuestion.correctAnswer}`,
         isCorrect: false,
         show: true,
         clickedOption: selectedOption
       });
-      soundService.playSound('incorrect_answer'); // Generic failure sound
+      soundService.playSound('incorrect_answer');
     }
 
-    // Play pronunciation sound of the selected option (if available and desired)
-    const clickedFoodItemDetails = MOCK_FOOD_ITEMS.find((item: FoodItem) => item.name === selectedOption); // Assuming MOCK_FOOD_ITEMS is accessible or options have pronunciation URLs
+    const clickedFoodItemDetails = MOCK_FOOD_ITEMS.find((item: FoodItem) => item.name === selectedOption);
     if (clickedFoodItemDetails?.pronunciationUrl) {
        soundService.playSound(clickedFoodItemDetails.pronunciationUrl);
     }
 
-
-    // TODO: In next step (Game Flow), add logic to fetch next question after a delay
-    // For now, feedback is shown, and options are disabled.
     setTimeout(() => {
-      setQuestionsAnswered(prev => prev + 1); // Increment before fetching or checking round over
-      fetchNewQuestion();
+      advanceToNextQuestion();
     }, 2000); // 2-second delay for feedback
   };
 
-  if (loading && !isRoundOver) { // Only show loading if not round over
-    return <div aria-live="polite">Chargement de la question...</div>;
-  }
-
-  if (error) {
-    return <div role="alert" style={{ color: 'red' }}>{error}</div>;
-  }
-
-  if (isRoundOver) {
+  if (isChallengeOver) {
     return (
       <div className="food-feast-scene" style={{ padding: '20px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
-        <h2>Round Terminé!</h2>
-        {isSubmitting && <p>Envoi des résultats...</p>}
-        {submissionResult && (
-          <div data-testid="submission-result-message" style={{ margin: '20px 0', padding: '15px', border: '1px solid #007bff', borderRadius: '5px', backgroundColor: '#e7f3ff'}}>
-            <p><strong>Résultat Final: {submissionResult.finalScore}</strong></p>
-            {submissionResult.message && <p>{submissionResult.message}</p>}
-            {/* Display rewards if any: {submissionResult.rewards?.experience} XP */}
-          </div>
-        )}
-        <p style={{fontSize: '1.2em', margin: '20px'}}>Votre score : {score} / {QUESTIONS_PER_ROUND}</p>
-        <button
-          onClick={resetGame}
-          style={{ padding: '10px 20px', fontSize: '1.1em', marginRight: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px' }}
-        >
-          Rejouer
-        </button>
-        {/* Optional: <button onClick={() => navigate('/hub')}>Retour au Hub</button> */}
+        <h2>Défi Terminé!</h2>
+        <p style={{fontSize: '1.2em', margin: '20px'}}>Votre score : {score} / {totalQuestions}</p>
+        {/* The onFinish prop is called, GamePage will handle exiting/next steps */}
+        <p>Retour au jeu principal...</p>
       </div>
     );
   }
 
-  if (!gameData) {
-    return <div>Aucune donnée de jeu disponible.</div>;
+  if (!currentQuestion) {
+    // This case should ideally not be reached if challengeData is validated upstream
+    // or if isChallengeOver is handled correctly.
+    return <div>Chargement du défi... ou défi invalide.</div>;
   }
 
   return (
     <div className="food-feast-scene" style={{ padding: '20px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
-      <h2>Festin des Mots Coréens! (Question {questionsAnswered + 1}/{QUESTIONS_PER_ROUND})</h2>
+      <h2>Festin des Mots Coréens! (Question {currentQuestionIndex + 1}/{totalQuestions})</h2>
       <div data-testid="score-display" style={{ margin: '10px', fontSize: '1.2em' }}>Score: {score}</div>
 
-      <div className="question-area" style={{ margin: '20px 0', minHeight: '310px' /* Prevents layout jump for feedback */ }}>
+      <div className="question-area" style={{ margin: '20px 0', minHeight: '310px' }}>
         <img
           data-testid="food-image"
-          src={gameData.foodItem.imageUrl}
-          alt={gameData.foodItem.imageAlt}
+          src={currentQuestion.foodItem.imageUrl}
+          alt={currentQuestion.foodItem.imageAlt}
           style={{ maxWidth: '300px', maxHeight: '300px', border: '1px solid #ccc', borderRadius: '8px', display: 'block', margin: '0 auto' }}
         />
       </div>
@@ -196,7 +134,7 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ onFinish }) => { // Add
             margin: '15px 0',
             padding: '10px',
             borderRadius: '5px',
-            backgroundColor: feedback.isCorrect ? '#d4edda' : '#f8d7da', // Green for correct, Red for incorrect
+            backgroundColor: feedback.isCorrect ? '#d4edda' : '#f8d7da',
             color: feedback.isCorrect ? '#155724' : '#721c24',
             fontWeight: 'bold'
           }}
@@ -206,16 +144,15 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ onFinish }) => { // Add
       )}
 
       <div className="options-container" data-testid="options-container" style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: feedback?.show ? '10px' : '20px' }}>
-        {gameData.options.map((option, index) => {
+        {currentQuestion.options.map((option, index) => {
           let buttonStyle: React.CSSProperties = { padding: '10px 20px', fontSize: '1.1em', minWidth: '100px', cursor: isAnswered ? 'default' : 'pointer' };
           if (isAnswered && feedback?.clickedOption === option) {
             buttonStyle.backgroundColor = feedback.isCorrect ? 'lightgreen' : 'lightcoral';
             buttonStyle.fontWeight = 'bold';
-          } else if (isAnswered && option === gameData.correctAnswer && !feedback?.isCorrect) {
-            // Highlight correct answer if user chose incorrectly
+          } else if (isAnswered && option === currentQuestion.correctAnswer && !feedback?.isCorrect) {
             buttonStyle.backgroundColor = 'lightgreen';
           } else if (isAnswered) {
-            buttonStyle.opacity = 0.7; // Dim other options
+            buttonStyle.opacity = 0.7;
           }
 
           return (
@@ -231,7 +168,6 @@ const FoodFeastScene: React.FC<FoodFeastSceneProps> = ({ onFinish }) => { // Add
           );
         })}
       </div>
-      {/* Next question button will be added in game flow step */}
     </div>
   );
 };

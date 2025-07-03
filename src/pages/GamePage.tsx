@@ -6,7 +6,7 @@ import { CSSTransition } from 'react-transition-group'; // Import CSSTransition
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebaseConfig';
-import { castSpell, finishMiniGame } from '../services/gameService'; // Importer castSpell and finishMiniGame
+import { castSpell, finishMiniGame, prepareChallenge } from '../services/gameService'; // Importer castSpell, finishMiniGame, and prepareChallenge
 import soundService from '../services/soundService'; // Import soundService
 import { SPELL_DEFINITIONS, type SpellId } from '../data/spells'; // Importer le type SpellId, SpellType removed
 import PhaserGame from '../components/PhaserGame';
@@ -126,6 +126,29 @@ const GamePage: React.FC = () => {
     };
   }, [game?.lastEventCard, currentEvent]); // currentEvent is needed because it's used in the condition
 
+  // Effect to prepare challenge when mini-game is starting
+  useEffect(() => {
+    if (game && game.status === 'MINI_GAME_STARTING' && game.currentMiniGame && gameId && !game.currentChallengeData) {
+      // Check if a challenge preparation is already underway (e.g., by a local state flag) to prevent multiple calls.
+      // For now, we rely on `!game.currentChallengeData` but a dedicated state like `isPreparingChallenge` might be more robust.
+      console.log(`[GamePage] Status is MINI_GAME_STARTING for ${game.currentMiniGame}. Preparing challenge.`);
+      const payload = {
+        gameId: gameId,
+        miniGameType: game.currentMiniGame,
+        difficulty: 'medium', // Placeholder difficulty
+      };
+      prepareChallenge(payload)
+        .then(() => {
+          console.log(`[GamePage] Challenge preparation requested for ${game.currentMiniGame}. Waiting for data...`);
+          // The game document update via onSnapshot will handle the next steps.
+        })
+        .catch(error => {
+          console.error(`[GamePage] Error preparing challenge for ${game.currentMiniGame}:`, error);
+          // TODO: Handle error state in UI, e.g., show error message, allow retry, or transition game state.
+        });
+    }
+  }, [game, gameId]); // Dependencies: game object and gameId
+
   const handleCloseEventModal = () => {
     soundService.playSound('ui_modal_close');
     setCurrentEvent(null);
@@ -220,16 +243,18 @@ const GamePage: React.FC = () => {
   const activePlayer = game.players.find(p => p.uid === game.currentPlayerId);
   const activePlayerName = activePlayer ? activePlayer.displayName : 'Adversaire inconnu';
 
-  const handleMiniGameFinish = async () => {
+  const handleMiniGameFinish = async (score?: number, totalQuestions?: number) => {
     if (!gameId) {
       console.error("No gameId available to finish mini-game.");
       return;
     }
     try {
-      console.log(`[GamePage] Mini-game finished for game ${gameId}. Calling backend...`);
+      console.log(`[GamePage] Mini-game finished for game ${gameId}. Score: ${score}/${totalQuestions}. Calling backend...`);
+      // The backend's `finishMiniGame` function will determine if it uses the score.
+      // Currently, our `finishMiniGame` service only sends gameId.
+      // If the backend needs the score, the `finishMiniGame` cloud function and service call would need an update.
       await finishMiniGame(gameId);
       // The backend will update the game state, and onSnapshot will refresh the UI.
-      // No direct state change here needed other than what backend dictates.
     } catch (error) {
       console.error("Error finishing mini-game:", error);
       // Potentially show a toast to the user
@@ -237,15 +262,45 @@ const GamePage: React.FC = () => {
   };
 
   const renderMiniGame = () => {
-    if (!game || game.status !== 'MINI_GAME_STARTING' || !game.currentMiniGame || !gameId) {
+    if (!game || !gameId) {
+      return null;
+    }
+
+    // Display loading message if challenge data is not yet available
+    if (game.status === 'MINI_GAME_STARTING' && !game.currentChallengeData) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.5em' }}>
+          <p>Le Maître des Runes prépare votre épreuve...</p>
+          {/* TODO: Add a more visually appealing loading spinner/animation here */}
+        </div>
+      );
+    }
+
+    // Only render the mini-game if data is present and status is appropriate
+    if (game.status !== 'MINI_GAME_STARTING' || !game.currentMiniGame || !game.currentChallengeData) {
       return null;
     }
 
     switch (game.currentMiniGame) {
       case 'FOOD_FEAST':
-        return <FoodFeastScene onFinish={handleMiniGameFinish} />;
+        // Ensure currentChallengeData is correctly typed or asserted for FoodFeastChallengeData
+        // For now, we'll cast it, assuming the backend sends the correct structure for this game.currentMiniGame type.
+        // A more robust solution might involve a type guard or ensuring `currentChallengeData` is a discriminated union.
+        if (!game.currentChallengeData || typeof game.currentChallengeData !== 'object' || !('questions' in game.currentChallengeData)) {
+            console.error("FoodFeastScene: currentChallengeData is missing or not in the expected format.", game.currentChallengeData);
+            return <div>Erreur: Données du défi pour FoodFeastScene sont invalides.</div>;
+        }
+        return <FoodFeastScene challengeData={game.currentChallengeData as any} onFinish={handleMiniGameFinish} />;
       case 'DOKKAEBI_SAYS':
-        return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+        // Similarly, DokkaebiSaysScene will need its challengeData prop
+        // return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+        // For now, assuming it will also receive challengeData
+        if (!game.currentChallengeData) {
+            console.error("DokkaebiSaysScene: currentChallengeData is missing.");
+            return <div>Erreur: Données du défi pour DokkaebiSaysScene sont manquantes.</div>;
+        }
+        // TODO: Refactor DokkaebiSaysScene and pass appropriate challengeData
+        return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} challengeData={game.currentChallengeData as any} />;
       case 'LOST_POEM':
         return <LostPoemScene onFinish={handleMiniGameFinish} />;
       case 'NAMDAEMUN_MARKET':
