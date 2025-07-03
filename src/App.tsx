@@ -4,6 +4,8 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
 import Phaser from 'phaser';
 import GuildManagementModal from './components/GuildManagementModal';
+import LoadingScreen from './components/LoadingScreen'; // Import LoadingScreen
+import { ContentProvider, useContent } from './contexts/ContentContext'; // Import ContentProvider and useContent
 import { game } from './phaser/game';
 import { auth, functions } from './firebaseConfig'; // Import functions
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
@@ -14,21 +16,23 @@ import { useToasts } from './contexts/ToastContext';
 import soundService, { SOUND_DEFINITIONS } from './services/soundService';
 import { getSyncQueueItems, deleteFromSyncQueue } from './services/dbService'; // Import IndexedDB sync functions, removed SyncQueueItem
 
-function App() {
+// Wrapper component to use useContent hook
+const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { toasts, dismissToast, addToast } = useToasts(); // addToast from useToasts
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true); // Renamed from 'loading' for clarity
   const [isGuildModalOpen, setIsGuildModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const gameInstanceRef = useRef<Phaser.Game | null>(null);
   const mainNodeRef = useRef<HTMLElement>(null);
-  const isSyncingRef = useRef(false); // Use ref for sync lock
-  const [lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty] = useState(false); // New state for controlling toast repetition
-  const onlineSyncDebounceTimer = useRef<NodeJS.Timeout | null>(null); // For debouncing online sync
+  const isSyncingRef = useRef(false);
+  const [lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty] = useState(false);
+  const onlineSyncDebounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Define updateReviewItemCallable here as it's used by the sync service
+  const { gameData, isLoading: isContentLoading, error: contentError } = useContent();
+
   const updateReviewItemCallable = httpsCallable(functions, 'updateReviewItem');
 
   const processSyncQueue = useCallback(async (currentUser: User) => {
@@ -42,7 +46,6 @@ function App() {
     }
     if (!navigator.onLine) {
       console.log("Sync: Offline, skipping queue processing.");
-      // When offline, reset the flag so that "Aucun progrès" can be shown when coming back online if queue is empty.
       setLastSyncAttemptWasEmpty(false);
       return;
     }
@@ -54,19 +57,14 @@ function App() {
       const itemsToSync = await getSyncQueueItems(currentUser.uid);
       if (itemsToSync.length === 0) {
         console.log("Sync: Queue is empty.");
-        if (!lastSyncAttemptWasEmpty) { // Only show this toast if the last attempt wasn't also empty
+        if (!lastSyncAttemptWasEmpty) {
           addToast('Aucun progrès local à synchroniser.', 'info');
         }
-        setLastSyncAttemptWasEmpty(true); // Mark that this attempt found an empty queue
-        // No setIsSyncing(false) here, will be handled by finally block
+        setLastSyncAttemptWasEmpty(true);
         return;
       }
 
-      // If we've reached here, it means itemsToSync.length > 0.
-      // Show "in progress" toast only if there are items.
       addToast('Synchronisation du progres hors-ligne en cours...', 'info');
-      // So, the previous attempt (if any) was not empty, or this is a new situation.
-      // Reset the flag to allow "Aucun progrès..." if the next attempt is empty.
       setLastSyncAttemptWasEmpty(false);
 
       console.log(`Sync: Found ${itemsToSync.length} items to sync.`);
@@ -76,72 +74,61 @@ function App() {
       for (const item of itemsToSync) {
         try {
           await updateReviewItemCallable({ itemId: item.itemId, isCorrect: item.isCorrect });
-          await deleteFromSyncQueue(item.id!); // id will be defined for items from DB
+          await deleteFromSyncQueue(item.id!);
           successCount++;
           console.log(`Sync: Item ${item.itemId} (ID: ${item.id}) synced and removed from queue.`);
         } catch (error) {
           failureCount++;
           console.error(`Sync: Failed to sync item ${item.itemId} (ID: ${item.id}). Error:`, error);
-          // Item remains in queue for next attempt
         }
       }
 
       if (successCount > 0) {
         addToast(`${successCount} élément(s) de progrès synchronisé(s) avec succès.`, 'success');
-        // After a successful sync, the next "empty" message is relevant if the queue becomes empty again.
         setLastSyncAttemptWasEmpty(false);
       }
       if (failureCount > 0) {
         addToast(`${failureCount} élément(s) n'ont pas pu être synchronisés. Ils seront réessayés plus tard.`, 'warning');
       } else if (successCount === 0 && failureCount === 0 && itemsToSync.length > 0) {
-        // This case should ideally not happen if itemsToSync.length > 0
-        // but if it does, it means no actual data changed, so it's like an empty sync in terms of user feedback.
         addToast('File de synchronisation traitée, aucun changement majeur.', 'info');
       }
-       // TODO: Consider triggering a refresh of runesToReviewCount in GrimoireVivant
-       // This might require a global state or event bus, or simply rely on the next Firestore snapshot.
 
     } catch (error) {
       console.error("Sync: Error processing sync queue:", error);
       addToast('Erreur majeure lors de la synchronisation du progrès local.', 'error');
-      // In case of a major error, allow the "empty" message next time, as the state is uncertain.
       setLastSyncAttemptWasEmpty(false);
     } finally {
-      isSyncingRef.current = false; // Release lock
+      isSyncingRef.current = false;
       console.log("Sync: Queue processing finished.");
     }
-  }, [addToast, updateReviewItemCallable, setLastSyncAttemptWasEmpty]); // Removed isSyncing and lastSyncAttemptWasEmpty
+  }, [addToast, updateReviewItemCallable, lastSyncAttemptWasEmpty, setLastSyncAttemptWasEmpty]);
 
   const handleOnline = useCallback(() => {
     addToast('Connexion internet rétablie.', 'info');
-    // Only proceed if a user is logged in and not anonymous, AND not currently syncing (ref check).
     if (user && !user.isAnonymous && !isSyncingRef.current) {
       if (onlineSyncDebounceTimer.current) {
         clearTimeout(onlineSyncDebounceTimer.current);
       }
       onlineSyncDebounceTimer.current = setTimeout(() => {
-        // Double check isSyncingRef.current again inside setTimeout
         if (!isSyncingRef.current) {
           processSyncQueue(user);
         } else {
           console.log("Sync: Debounced online sync skipped, another sync is already in progress (ref lock).");
         }
-      }, 5000); // Debounce for 5 seconds
+      }, 5000);
     } else if (isSyncingRef.current) {
       console.log("Sync: Online event received, but a sync is already in progress (ref lock). Ignoring.");
     }
-  }, [user, processSyncQueue, addToast]); // Removed isSyncing from dependencies
+  }, [user, processSyncQueue, addToast]);
 
   const handleOffline = useCallback(() => {
     addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
-    // Clear any pending debounced sync if we go offline
     if (onlineSyncDebounceTimer.current) {
       clearTimeout(onlineSyncDebounceTimer.current);
     }
   }, [addToast]);
 
   useEffect(() => {
-    // Initialize Phaser game instance
     if (!gameInstanceRef.current && location.pathname.includes('/hub')) {
       gameInstanceRef.current = game;
     }
@@ -159,45 +146,22 @@ function App() {
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false); // Auth state determined
       if (currentUser && !currentUser.isAnonymous) {
         if (location.pathname === '/' || location.pathname === '/login') {
           navigate('/hub');
         }
-        // Attempt to sync when user logs in and is online
-        if (navigator.onLine && !isSyncingRef.current) { // Check ref lock
+        if (navigator.onLine && !isSyncingRef.current) {
           processSyncQueue(currentUser);
         } else if (isSyncingRef.current) {
           console.log("Sync: Login sync attempt skipped, another sync is already in progress (ref lock).");
         }
       } else if (currentUser && currentUser.isAnonymous) {
-        // Handle anonymous user login, typically no user-specific data to sync from a previous session
         if (location.pathname === '/' || location.pathname === '/login') {
           navigate('/hub');
         }
       }
     });
-
-    // Listen for online event to trigger sync
-    // const handleOnline = useCallback(() => { // Will be moved outside and wrapped with useCallback
-    //   addToast('Connexion internet rétablie.', 'info');
-    //   if (user && !user.isAnonymous) { // Ensure user is logged in
-    //     if (onlineSyncDebounceTimer.current) {
-    //       clearTimeout(onlineSyncDebounceTimer.current);
-    //     }
-    //     onlineSyncDebounceTimer.current = setTimeout(() => {
-    //       processSyncQueue(user);
-    //     }, 5000); // Debounce for 5 seconds
-    //   }
-    // }, [user, processSyncQueue, addToast]);
-
-    // const handleOffline = () => { // Will be moved outside and wrapped with useCallback
-    //   addToast('Connexion internet perdue. Le progrès sera sauvegardé localement.', 'warning');
-    //   // Clear any pending debounced sync if we go offline
-    //   if (onlineSyncDebounceTimer.current) {
-    //     clearTimeout(onlineSyncDebounceTimer.current);
-    //   }
-    // };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -210,20 +174,16 @@ function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       if (onlineSyncDebounceTimer.current) {
-        clearTimeout(onlineSyncDebounceTimer.current); // Cleanup timer on unmount
+        clearTimeout(onlineSyncDebounceTimer.current);
       }
     };
   }, [navigate, location.pathname, user, addToast, handleOffline, handleOnline, processSyncQueue]);
 
   useEffect(() => {
-    // Preload all sounds
     soundService.loadSounds(SOUND_DEFINITIONS)
-      .then(() => {
-        console.log("All sounds preloaded via App.tsx");
-      })
+      .then(() => console.log("All sounds preloaded via App.tsx"))
       .catch(error => console.error("Error preloading sounds:", error));
 
-    // Unlock audio context on first user interaction
     const unlockAudio = () => {
       soundService.unlockAudio();
       window.removeEventListener('click', unlockAudio);
@@ -237,21 +197,17 @@ function App() {
     return () => {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
-      // Optional: soundService.stopAllSounds(); // if sounds should stop when App unmounts
     };
-  }, []); // Empty dependency array ensures this runs once on mount
+  }, []);
 
   const handleLogout = () => {
     soundService.playSound('ui_click');
     signOut(auth).catch(error => console.error("Erreur de déconnexion", error));
   };
 
-  // Fonction pour afficher le statut de connexion de manière propre
-  const renderAuthStatus = () => {
-    if (loading) {
-      return <p>{t('loading', 'Chargement...')}</p>;
-    }
-
+  const renderAuthRelatedStatus = () => {
+    // This function is now only for user info / login/logout button
+    // The global loading/error screen is handled outside
     const isUserLoggedIn = user && !user.isAnonymous;
 
     if (isUserLoggedIn) {
@@ -264,39 +220,60 @@ function App() {
       );
     }
 
-    // N'affiche pas le bouton "Connexion" si on est déjà sur la page de connexion
     if (location.pathname === '/login') {
       return null;
     }
-
     return <Link to="/login">{t('loginPageTitle', 'Connexion')}</Link>;
   };
 
+  // Global loading and error display
+  if (authLoading) {
+    return <LoadingScreen message={t('loadingAuth', 'Vérification de l’identité magique...')} />;
+  }
+  if (isContentLoading) {
+    return <LoadingScreen message={t('loadingContent', 'Invocation des parchemins de connaissance...')} />;
+  }
+  if (contentError) {
+    return (
+      <div className="app-error-screen">
+        <h1>{t('error.title', 'Erreur de Chargement Cosmique')}</h1>
+        <p>{t('error.message', 'Un flux de mana instable a interrompu le chargement du contenu de l’Observatoire.')}</p>
+        <p><i>{contentError.message}</i></p>
+        <button onClick={() => window.location.reload()}>{t('error.reloadButton', 'Réessayer')}</button>
+      </div>
+    );
+  }
+  // Only render the main app if auth is resolved AND content is loaded AND no content error
   return (
     <div className="App">
-      <ToastContainer toasts={toasts} dismissToast={dismissToast} /> {/* Render ToastContainer */}
+      <ToastContainer toasts={toasts} dismissToast={dismissToast} />
       <header className="app-header">
-        {/* Link itself is not a button, but if it were styled as one and had an action other than navigation, it would need sound */}
         <Link to="/" style={{textDecoration: 'none'}}><h2>{t('nav.home')}</h2></Link>
-        <Link to="/hub" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.hub', 'Hub')}</h2></Link> {/* Assuming 'Hub' is a reasonable default */}
+        <Link to="/hub" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.hub', 'Hub')}</h2></Link>
         <Link to="/lost-poem" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.lostPoem', 'Poème Perdu')}</h2></Link>
         <Link to="/food-feast" style={{textDecoration: 'none', marginLeft: '1rem'}}><h2>{t('nav.foodFeast', 'Festin des Mots')}</h2></Link>
         <div className="firebase-status">
-          {renderAuthStatus()}
+          {renderAuthRelatedStatus()}
         </div>
       </header>
 
       <TransitionGroup>
         <CSSTransition
           key={location.key}
-          nodeRef={mainNodeRef} // Add nodeRef
+          nodeRef={mainNodeRef}
           classNames="fade"
           timeout={300}
-          unmountOnExit // Optional: good practice for CSSTransition with routes
-          mountOnEnter // Optional: good practice for CSSTransition with routes
+          unmountOnExit
+          mountOnEnter
         >
-          <main ref={mainNodeRef} className="app-content"> {/* Add ref */}
+          <main ref={mainNodeRef} className="app-content">
             <Suspense fallback={<div className="page-loading-fallback">Chargement de la page...</div>}>
+              {/* Ensure gameData is available before rendering Outlet if needed by routes,
+                  or let individual routes/components handle missing gameData if they can function without it.
+                  For now, assuming Outlet and its children will use useContent() and handle gameData being potentially null initially
+                  if not all data is critical for all routes.
+                  However, the global loading screen should prevent rendering Outlet until gameData is loaded.
+              */}
               <Outlet />
             </Suspense>
           </main>
@@ -317,6 +294,15 @@ function App() {
         <p>{t('footerText')}</p>
       </footer>
     </div>
+  );
+};
+
+// The main App component now simply provides the ContentContext
+function App() {
+  return (
+    <ContentProvider>
+      <AppContent />
+    </ContentProvider>
   );
 }
 
