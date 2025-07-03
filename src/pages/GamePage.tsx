@@ -281,73 +281,93 @@ const GamePage: React.FC = () => {
       return null;
     }
 
+    const isSpectator = user ? user.uid !== game.currentPlayerId : true; // Default to spectator if user is undefined for safety
+
     switch (game.currentMiniGame) {
       case 'FOOD_FEAST':
-        // Ensure currentChallengeData is correctly typed or asserted for FoodFeastChallengeData
-        // For now, we'll cast it, assuming the backend sends the correct structure for this game.currentMiniGame type.
-        // A more robust solution might involve a type guard or ensuring `currentChallengeData` is a discriminated union.
         if (!game.currentChallengeData || typeof game.currentChallengeData !== 'object' || !('questions' in game.currentChallengeData)) {
             console.error("FoodFeastScene: currentChallengeData is missing or not in the expected format.", game.currentChallengeData);
             return <div>Erreur: Données du défi pour FoodFeastScene sont invalides.</div>;
         }
-        return <FoodFeastScene challengeData={game.currentChallengeData as any} onFinish={handleMiniGameFinish} />;
+        return (
+          <FoodFeastScene
+            challengeData={game.currentChallengeData as any}
+            onFinish={handleMiniGameFinish}
+            isSpectator={isSpectator}
+            game={game}
+          />
+        );
       case 'DOKKAEBI_SAYS':
-        // Similarly, DokkaebiSaysScene will need its challengeData prop
-        // return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} />;
-        // For now, assuming it will also receive challengeData
         if (!game.currentChallengeData) {
             console.error("DokkaebiSaysScene: currentChallengeData is missing.");
             return <div>Erreur: Données du défi pour DokkaebiSaysScene sont manquantes.</div>;
         }
-        // TODO: Refactor DokkaebiSaysScene and pass appropriate challengeData
-        return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} challengeData={game.currentChallengeData as any} />;
+        return (
+          <DokkaebiSaysScene
+            gameId={gameId} // Keep gameId if still needed by scene internally, though game object is preferred
+            onFinish={handleMiniGameFinish}
+            challengeData={game.currentChallengeData as any}
+            isSpectator={isSpectator}
+            game={game}
+          />
+        );
       case 'LOST_POEM':
-        return <LostPoemScene onFinish={handleMiniGameFinish} />;
+        // LostPoemScene might not need specific challengeData if it fetches its own,
+        // but it will need isSpectator and game for spectator mode.
+        // Assuming onFinish signature is compatible or can be adapted.
+        // The onFinish for LostPoemScene was onFinish: () => Promise<void>;
+        // We are passing handleMiniGameFinish which is (score?: number, totalQuestions?: number) => Promise<void>
+        // This should be compatible if LostPoemScene calls it without arguments or with undefined.
+        return (
+          <LostPoemScene
+            onFinish={handleMiniGameFinish}
+            isSpectator={isSpectator}
+            game={game}
+          />
+        );
       case 'NAMDAEMUN_MARKET':
-        // NamdaemunMarketScene has more complex props.
-        // It requires gameData for the current round, score management, etc.
-        // This basic router setup might need a more sophisticated state management
-        // for NamdaemunMarketScene if it's driven by GamePage.
-        // For now, assuming it can operate with just gameId and onFinish,
-        // or its internal state is sufficient for this flow.
-        // This will likely need refinement based on Namdaemun's actual data needs.
-        // However, the props interface was updated to include gameId and onFinish.
-        // The component itself needs to be able to fetch/manage its round data if not provided.
-        // This is a simplification for the current task.
-        // A more robust solution would involve GamePage fetching and passing round-specific data.
-        // For now, this is a placeholder to fit the routing structure.
-        // It's possible NamdaemunMarketScene is not intended to be routed this way without a wrapper.
-        // Let's assume for now it can manage itself or this is a temporary step.
-        // To make it runnable, we'd need to provide mock or placeholder for its other required props if they are not optional.
-        // The NamdaemunMarketSceneProps requires gameData, score, onCorrectChoice, onIncorrectChoice, roundTimeLimit, onRoundTimeout.
-        // This indicates this direct rendering won't work without more state in GamePage or a wrapper.
-        // For the purpose of this task (implementing the router), I will log an error for this case
-        // and return null, highlighting that it needs special handling.
-        console.error(`Rendering NamdaemunMarketScene via this generic mini-game router needs special data handling in GamePage for its props (gameData, score, etc). Placeholder rendering.`);
-        // return <NamdaemunMarketScene gameId={gameId} onFinish={handleMiniGameFinish} {...anyOtherRequiredPropsFromSomewhere} />;
-        // For now, to avoid breaking, and since this task is about routing:
-        // I will render it with minimal props as a test, assuming its internal logic can handle missing optional data or has defaults.
-        // This is a known simplification.
-        // The props 'gameData', 'score', 'onCorrectChoice', 'onIncorrectChoice', 'roundTimeLimit', 'onRoundTimeout' are NOT optional.
-        // This will cause a TypeScript error.
-        // TODO: Address NamdaemunMarketScene's specific data requirements.
-        // For now, I will pass dummy/mock values to satisfy TypeScript and allow testing the flow.
-        // This is a significant simplification and should be documented.
-        const dummyNamdaemunGameData = {
-          customerRequest: { itemWanted: { id: '1', name: '사과', altText: '사과', imageUrl: '' }, displayText: '사과 주세요' },
-          choices: [{ id: '1', name: '사과', altText: '사과', imageUrl: '' }],
-        };
-        return <NamdaemunMarketScene
-                  onFinish={handleMiniGameFinish}
-                  gameData={dummyNamdaemunGameData}
-                  score={0}
-                  onCorrectChoice={() => console.log("NMDM Correct (dummy)")}
-                  onIncorrectChoice={() => console.log("NMDM Incorrect (dummy)")}
-                  roundTimeLimit={60}
-                  onRoundTimeout={() => console.log("NMDM Timeout (dummy)")}
-                />;
+        // NamdaemunMarketScene requires specific props like gameData (for the round), score etc.
+        // These would need to be part of game.currentChallengeData or passed differently.
+        // For now, this is a placeholder assuming currentChallengeData contains what Namdaemun needs for its 'gameData' prop.
+        // This part needs careful review based on NamdaemunMarketScene's actual data structure needs.
+        if (!game.currentChallengeData || typeof game.currentChallengeData !== 'object') {
+            console.error("NamdaemunMarketScene: currentChallengeData is missing or not in the expected object format.", game.currentChallengeData);
+            return <div>Erreur: Données du défi pour NamdaemunMarketScene sont invalides.</div>;
+        }
+        // The NamdaemunMarketSceneProps expects: gameData, score, onCorrectChoice, onIncorrectChoice, roundTimeLimit, onRoundTimeout.
+        // We need to ensure these are correctly mapped or provided.
+        // For spectator mode, `score` should reflect active player's score.
+        // `onCorrectChoice` and `onIncorrectChoice` are for the active player. Spectators don't trigger these.
+        // The dummy data previously used will be replaced by actual challenge data.
+        // It's crucial that `game.currentChallengeData` for NAMDAEMUN_MARKET contains the structure
+        // that NamdaemunMarketScene expects for its `gameData` prop (customerRequest, choices, roundNumber etc.)
+        // And also `roundTimeLimit`. The `score` prop will be from the main `game` state for the active player.
+
+        // Placeholder for Namdaemun's specific props from currentChallengeData
+        // This assumes currentChallengeData for Namdaemun is an object containing these fields.
+        const namdaemunChallengeData = game.currentChallengeData as any; // Cast for now
+        const activePlayerForNamdaemun = game.players.find(p => p.uid === game.currentPlayerId);
+
+        return (
+          <NamdaemunMarketScene
+            onFinish={handleMiniGameFinish} // This is for when the entire mini-game sequence finishes
+            gameData={namdaemunChallengeData.roundData} // Assuming roundData is part of currentChallengeData
+            score={activePlayerForNamdaemun?.mana || 0} // Example: using mana as score, or get from specific game state
+            // onCorrectChoice, onIncorrectChoice, onRoundTimeout are more complex:
+            // These are callbacks that the active player's scene instance uses to report round outcomes.
+            // GamePage needs to provide implementations that update game state via backend.
+            // For simplicity in this step, passing console logs or basic handlers.
+            // These should ideally trigger backend updates for round progression.
+            onCorrectChoice={(item) => console.log(`[GamePage] Namdaemun Correct: ${item.name}`)}
+            onIncorrectChoice={(item, timeout) => console.log(`[GamePage] Namdaemun Incorrect: ${item.name}, Timeout: ${timeout}`)}
+            onRoundTimeout={() => console.log("[GamePage] Namdaemun Round Timeout")}
+            roundTimeLimit={namdaemunChallengeData.timeLimit || 60} // Assuming timeLimit in challengeData
+            isSpectator={isSpectator}
+            game={game}
+          />
+        );
       // case 'HANGEUL_TYPHOON':
-      //   return <HangeulTyphoonScene gameId={gameId} onFinish={handleMiniGameFinish} />;
+      //   return <HangeulTyphoonScene gameId={gameId} onFinish={handleMiniGameFinish} isSpectator={isSpectator} game={game} />;
       default:
         console.error("Unknown mini-game:", game.currentMiniGame);
         return <div>Error: Unknown Mini-Game ({game.currentMiniGame})</div>;
