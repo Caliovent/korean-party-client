@@ -122,15 +122,65 @@ const HubPage: React.FC = () => {
           console.warn(`Dialogue data not found for pnjId: ${data.pnjId}`);
         }
       });
+
+      // Listener for starting Hangeul Typhoon Minigame
+      const handleStartHangeulTyphoon = () => {
+        console.log('[HubPage] startHangeulTyphoonMinigame event received');
+        soundService.playSound('ui_click_match'); // Or a more specific sound
+        soundService.stopSound('music_hub');
+
+        if (phaserGameRef.current) {
+          if (phaserGameRef.current.scene.isActive('HubScene')) {
+            phaserGameRef.current.scene.stop('HubScene');
+            console.log('[HubPage] HubScene stopped.');
+          }
+
+          const wordsForGame = (gameData?.hangeulTyphoonWords as HangeulWordDefinition[] | undefined) || [];
+          if (wordsForGame.length === 0) {
+            console.warn('[HubPage] No words found for Hangeul Typhoon. Starting with empty/default list.');
+          }
+
+          phaserGameRef.current.scene.start('HangeulTyphoonScene', {
+            gameMode: 'Practice', // Or any other appropriate mode
+            words: wordsForGame
+          });
+          console.log('[HubPage] HangeulTyphoonScene started with mode: Practice.');
+        } else {
+          console.error('[HubPage] Phaser game instance not available. Cannot start HangeulTyphoonScene.');
+        }
+      };
+      phaserGameRef.current.events.on('startHangeulTyphoonMinigame', handleStartHangeulTyphoon);
+
+      // Listener for Hangeul Typhoon game over
+      const handleHangeulTyphoonGameOver = (data: { score: number, reason: string }) => {
+        console.log(`[HubPage] Hangeul Typhoon game over. Score: ${data.score}, Reason: ${data.reason}`);
+        if (phaserGameRef.current) {
+          if (phaserGameRef.current.scene.isActive('HangeulTyphoonScene')) {
+            phaserGameRef.current.scene.stop('HangeulTyphoonScene');
+            console.log('[HubPage] HangeulTyphoonScene stopped.');
+          }
+          phaserGameRef.current.scene.start('HubScene');
+          console.log('[HubPage] HubScene restarted.');
+          soundService.playSound('music_hub'); // Restart hub music
+        }
+      };
+      // Assuming HangeulTyphoonScene emits 'gameOver' on the global game event emitter
+      // If HangeulTyphoonScene itself is obtained and events listened on it, that's also an option
+      // For now, assuming global emitter as it's simpler from HubPage
+      phaserGameRef.current.events.on('gameOver', handleHangeulTyphoonGameOver);
+
+
     }
 
     return () => {
       if (phaserGameRef.current) {
         phaserGameRef.current.events.off('openGameLobbyModal');
-        phaserGameRef.current.events.off('openGuildManagementModal'); // Clean up guild listener
-        phaserGameRef.current.events.off('openDailyChallengeModal'); // Clean up daily challenge listener
-        phaserGameRef.current.events.off('openShopModal'); // Clean up shop listener
-        phaserGameRef.current.events.off('openDialogueModal'); // <<< Clean up dialogue listener
+        phaserGameRef.current.events.off('openGuildManagementModal');
+        phaserGameRef.current.events.off('openDailyChallengeModal');
+        phaserGameRef.current.events.off('openShopModal');
+        phaserGameRef.current.events.off('openDialogueModal');
+        phaserGameRef.current.events.off('startHangeulTyphoonMinigame'); // Cleanup
+        phaserGameRef.current.events.off('gameOver'); // Cleanup for game over
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
       }
