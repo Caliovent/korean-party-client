@@ -71,6 +71,9 @@ export default class HubScene extends Phaser.Scene {
     // Fallback assets if placeholders are missing
     this.load.image("directeur_fallback_npc", "assets/sprites/orb-red.png");
     this.load.image("maitre_cheon_fallback_npc", "assets/sprites/orb-green.png");
+
+    // Asset for Hangeul Typhoon Minigame Entry Point
+    this.load.image("hangeul_typhoon_entry", "assets/minigames/background.png"); // Placeholder
   }
 
   create() {
@@ -280,6 +283,22 @@ export default class HubScene extends Phaser.Scene {
     // Listen for map view toggle
     this.game.events.on("toggleMapView", this.handleMapViewToggle, this);
     // Ensure to clean up this listener in shutdown
+
+    // Add Hangeul Typhoon Minigame Entry Point
+    // Position it near Maître Cheon Mun (approx. 150, 150)
+    // Maître Cheon Mun sprite itself is added around line 257, let's place this next to him.
+    const hangeulTyphoonEntry = this.add.sprite(
+      200, // x position (a bit to the right of Maître Cheon)
+      150, // y position (same as Maître Cheon)
+      "hangeul_typhoon_entry"
+    )
+    .setScale(0.05) // Scale down the placeholder background image
+    .setInteractive();
+
+    hangeulTyphoonEntry.on("pointerdown", () => {
+      console.log("Hangeul Typhoon entry point clicked");
+      this.game.events.emit("startHangeulTyphoonMinigame");
+    });
   }
 
   handleMapViewToggle() {
