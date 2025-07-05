@@ -27,11 +27,15 @@ export default class HubScene extends Phaser.Scene {
     body: Phaser.Physics.Arcade.Body;
   };
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keys: any; // Added for ZQSD/WASD controls
+  private keys!: Record<string, Phaser.Input.Keyboard.Key>; // Added for ZQSD/WASD controls
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private triggerZones!: Phaser.Physics.Arcade.StaticGroup;
   private gamePortal?: Phaser.GameObjects.Sprite; // Added gamePortal property
   private moveSpeed = 200;
+
+  // New properties for click-to-move
+  private targetPosition: Phaser.Math.Vector2 | null = null;
+  private targetIndicator: Phaser.GameObjects.Graphics | null = null;
 
   private currentUser: User | null = null;
   private otherPlayers!: Phaser.GameObjects.Group; // Group to manage other player sprites
@@ -66,7 +70,7 @@ export default class HubScene extends Phaser.Scene {
     this.load.image("transparent", "assets/effects/transparent.png");
 
     // NPC Assets - placeholders, will fallback if not found
-    this.load.image("directeur_npc", "assets/directeur_placeholder.png");
+    this.load.image("directeur_npc", "assets/sprites/directeur_npc.png");
     this.load.image("maitre_cheon_npc", "assets/maitre_cheon_placeholder.png");
     // Fallback assets if placeholders are missing
     this.load.image("directeur_fallback_npc", "assets/sprites/orb-red.png");
@@ -92,18 +96,6 @@ export default class HubScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.triggerZones = this.physics.add.staticGroup();
 
-    // // Add example obstacles
-    // this.obstacles
-    //   .create(400, 300, "transparent")
-    //   .setSize(200, 150)
-    //   .setVisible(false)
-    //   .refreshBody();
-    // this.obstacles
-    //   .create(100, 500, "transparent")
-    //   .setSize(150, 100)
-    //   .setVisible(false)
-    //   .refreshBody();
-
     // Initialize other players group
     this.otherPlayers = this.add.group();
 
@@ -114,7 +106,7 @@ export default class HubScene extends Phaser.Scene {
         this.cameras.main.height / 2,
         "player_avatar",
         0
-      ) as any;
+      ) as Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body };
       this.player?.setScale(1); // Optional chaining
     } else {
       // Fallback for player avatar (as before)
@@ -147,7 +139,7 @@ export default class HubScene extends Phaser.Scene {
       // ÉTAPE 2: Définir la taille du monde - this.physics.world.setBounds(0, 0, worldWidth, worldHeight); - This is done earlier.
 
       // ÉTAPE 3 (NOUVEAU) : Appliquer le zoom par défaut
-      this.cameras.main.setZoom(5);
+      this.cameras.main.setZoom(2.5); // ZOOM ADJUSTED
       // ÉTAPE 4 : Lier la caméra au joueur
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
       // ÉTAPE 5 : Limiter la caméra aux bords du monde
@@ -157,8 +149,29 @@ export default class HubScene extends Phaser.Scene {
     // Initialize keyboard controls
     if (this.input.keyboard) { // Null check
       this.cursors = this.input.keyboard.createCursorKeys();
-      this.keys = this.input.keyboard.addKeys('W,S,A,D,Z,Q'); // Added for ZQSD/WASD controls
+      this.keys = this.input.keyboard.addKeys('W,S,A,D,Z,Q') as Record<string, Phaser.Input.Keyboard.Key>; // Added for ZQSD/WASD controls
     }
+
+    // NEW: Add listener for click-to-move
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (this.isMapView) return; // Don't process clicks if map is open
+
+        this.targetPosition = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+
+        // Optional: show a visual indicator where the player is going
+        if (!this.targetIndicator) {
+            this.targetIndicator = this.add.graphics();
+            this.targetIndicator.setDepth(999); // High depth to be on top
+        }
+        this.targetIndicator.clear();
+        this.targetIndicator.lineStyle(2, 0x00ff00, 0.7); // Green circle
+        this.targetIndicator.strokeCircle(this.targetPosition.x, this.targetPosition.y, 10);
+
+        // Make it disappear after a short time
+        this.time.delayedCall(300, () => {
+            if(this.targetIndicator) this.targetIndicator.clear();
+        });
+    });
 
     // Listen for other players
     this.listenForOtherPlayers();
@@ -167,7 +180,8 @@ export default class HubScene extends Phaser.Scene {
     // Le portail de jeu pourrait se trouver au nord-est du village.
     this.gamePortal = this.triggerZones
       .create(900, 250, "game_portal")
-      .setScale(0.1) // Adjusted as per new suggestion
+      .setSize(64, 64)
+      .setDisplaySize(64, 64)
       .setInteractive()
       .refreshBody(); // Important for a static physics body
 
@@ -182,7 +196,8 @@ export default class HubScene extends Phaser.Scene {
     // Le panneau de guilde pourrait être près d'un grand bâtiment au sud-ouest.
     const guildPanel = this.triggerZones
       .create(150, 800, "guild_panel")
-      .setScale(0.1) // Adjusted as per new suggestion
+      .setSize(64, 64)
+      .setDisplaySize(64, 64)
       .setInteractive()
       .refreshBody();
 
@@ -198,7 +213,8 @@ export default class HubScene extends Phaser.Scene {
         100, // Positioned towards the top
         "daily_challenge_board",
       )
-      .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+      .setSize(64, 64)
+      .setDisplaySize(64, 64)
       .setInteractive()
       .refreshBody();
 
@@ -213,7 +229,8 @@ export default class HubScene extends Phaser.Scene {
       this.cameras.main.height - 100, // Example position (bottom-ish)
       "shop_sign"
     )
-    .setScale(1) // TASK REQUIREMENT: Base size 64x64, zoom 2.5 => 160x160 on screen
+    .setSize(64, 64)
+    .setDisplaySize(64, 64)
     .setInteractive()
     .refreshBody();
 
@@ -221,23 +238,6 @@ export default class HubScene extends Phaser.Scene {
       console.log("Shop sign clicked");
       this.game.events.emit("openShopModal");
     });
-
-
-    // Add overlap physics for guildPanel (example, if you want overlap for it too)
-    // For now, let's keep it consistent with click for all new elements for simplicity
-    // If overlap is desired for the shop, it can be added similarly:
-    /*
-    this.physics.add.overlap(
-      this.player!,
-      shopSign,
-      () => {
-        console.log("Player is overlapping with shop sign");
-        this.game.events.emit("openShopModal");
-      },
-      undefined,
-      this
-    );
-    */
 
     // Handle scene shutdown to remove player from Firestore
     this.events.on("shutdown", this.shutdown, this);
@@ -251,7 +251,8 @@ export default class HubScene extends Phaser.Scene {
       this.cameras.main.height / 2,
       directeurKey
     )
-    .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
+    .setSize(32, 32)
+    .setDisplaySize(32, 32)
     .setInteractive();
 
     directeurYong.on("pointerdown", () => {
@@ -259,21 +260,16 @@ export default class HubScene extends Phaser.Scene {
       this.game.events.emit("openDialogueModal", { pnjId: "directeur" });
     });
 
-  //   // Maître Cheon Mun
-  //   const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
-  //   const maitreCheon = this.add.sprite(
-  //     150, // Position: Example towards top-left, "welcome" area
-  //     150,
-  //     maitreCheonKey
-  //   )
-  //   .setScale(1) // TASK REQUIREMENT: Base size 32x32, zoom 2.5 => 80x80 on screen
-  //   .setInteractive();
-
-  //   maitreCheon.on("pointerdown", () => {
-  //     console.log("Maître Cheon Mun clicked");
-  //     this.game.events.emit("openDialogueModal", { pnjId: "maitre_cheon" });
-  //   });
-  
+    // Maître Cheon Mun
+    const maitreCheonKey = this.textures.exists("maitre_cheon_npc") ? "maitre_cheon_npc" : "maitre_cheon_fallback_npc";
+    const maitreCheon = this.add.sprite(
+      150, // Position: Example towards top-left, "welcome" area
+      150,
+      maitreCheonKey
+    )
+    .setSize(32, 32)
+    .setDisplaySize(32, 32)
+    .setInteractive();
 
     maitreCheon.on("pointerdown", () => {
       console.log("Maître Cheon Mun clicked");
@@ -313,11 +309,6 @@ export default class HubScene extends Phaser.Scene {
       this.cameras.main.stopFollow();
       // Pan to the center of the world (e.g., 1024x1024 map, center is 512,512)
       this.cameras.main.pan(worldWidth / 2, worldHeight / 2, 1000, 'Sine.easeInOut');
-      // Zoom to fit the map (0.75 might need adjustment depending on actual game screen size vs world size)
-      // Let's try to calculate a zoom that would fit the larger dimension of the world into the camera view
-      // This is a simplification; true "fit" might need to consider aspect ratios.
-      // For a 1024x1024 world and e.g. 800x600 camera, zoom to show 1024 width would be 800/1024 = ~0.78
-      // Or to show 1024 height would be 600/1024 = ~0.58. We take the smaller zoom to ensure everything is visible.
       const zoomX = this.cameras.main.width / worldWidth;
       const zoomY = this.cameras.main.height / worldHeight;
       const targetZoom = Math.min(zoomX, zoomY, 0.75); // Cap at 0.75 or calculated if smaller
@@ -358,9 +349,6 @@ export default class HubScene extends Phaser.Scene {
     if (!this.currentUser) return; // Cannot filter self without current user
 
     const hubPlayersRef = collection(db, "hub_players");
-    // Query for players other than the current user.
-    // Firestore doesn't support "not-equal" queries directly in this manner for onSnapshot efficiently.
-    // We will filter client-side after getting all players.
     const q = query(hubPlayersRef);
 
     this.firestoreListenerUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -368,7 +356,6 @@ export default class HubScene extends Phaser.Scene {
         const playerData = change.doc.data() as HubPlayerData;
         const playerUid = playerData.uid;
 
-        // Skip current player
         if (playerUid === this.currentUser!.uid) return;
 
         let existingSprite = this.otherPlayers
@@ -381,23 +368,22 @@ export default class HubScene extends Phaser.Scene {
               playerData.x,
               playerData.y,
               "other_player_avatar",
-            ) as Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body }; // Removed uid from direct type
+            ) as Phaser.GameObjects.Sprite & { body: Phaser.Physics.Arcade.Body };
 
             newSprite.setScale(1);
-            newSprite.setData('uid', playerUid); // Store UID using setData
-            this.otherPlayers.add(newSprite); // newSprite is definitely not undefined
-            this.physics.world.enable(newSprite); // newSprite is definitely not undefined
-            if (newSprite.body) { // Standard body check
+            newSprite.setData('uid', playerUid);
+            this.otherPlayers.add(newSprite);
+            this.physics.world.enable(newSprite);
+            if (newSprite.body) {
               newSprite.body.setImmovable(true);
             }
-            existingSprite = newSprite; // existingSprite is now the newSprite for target setting
+            existingSprite = newSprite;
             console.log(
               `Player ${playerData.displayName || playerUid} added/re-added to hub scene.`,
             );
           }
 
-          // existingSprite should be defined here, either found or newly created.
-          if (existingSprite) { // Check existingSprite before setting target
+          if (existingSprite) {
              this.remotePlayerTargets.set(
                playerUid,
                new Phaser.Math.Vector2(playerData.x, playerData.y),
@@ -405,8 +391,8 @@ export default class HubScene extends Phaser.Scene {
           }
 
         } else if (change.type === "removed") {
-          if (existingSprite) { // Use existingSprite here as well
-            this.otherPlayers.remove(existingSprite, true, true); // Remove from group and destroy
+          if (existingSprite) {
+            this.otherPlayers.remove(existingSprite, true, true);
             this.remotePlayerTargets.delete(playerUid);
             console.log(
               `Player ${playerData.displayName || playerUid} removed from hub scene.`,
@@ -417,24 +403,30 @@ export default class HubScene extends Phaser.Scene {
     });
   }
 
-  update(_time: number, _delta: number) { // Parameters time and delta are unused
-    // Current player movement
-    if (!this.player || !this.player.body || !this.cursors || !this.keys) { // Added null check for this.keys
+  update() {
+    if (!this.player || !this.player.body || !this.cursors || !this.keys) {
       return;
     }
 
-    // Disable player movement if map view is active
     if (this.isMapView) {
-      this.player.body.setVelocity(0); // Stop any existing movement
-      // Potentially add other logic here if needed when map is active, e.g., different cursor
-    } else {
-      // Normal player movement logic
       this.player.body.setVelocity(0);
+      if (this.targetIndicator) this.targetIndicator.clear();
+      return;
+    }
+
+    // --- Keyboard Movement ---
+    const isKeyboardActive = this.cursors.left.isDown || this.keys.A.isDown || this.keys.Q.isDown ||
+                             this.cursors.right.isDown || this.keys.D.isDown ||
+                             this.cursors.up.isDown || this.keys.W.isDown || this.keys.Z.isDown ||
+                             this.cursors.down.isDown || this.keys.S.isDown;
+
+    if (isKeyboardActive) {
+      this.targetPosition = null; // Cancel click-to-move
+      if (this.targetIndicator) this.targetIndicator.clear();
 
       let velocityX = 0;
       let velocityY = 0;
 
-      // Updated movement conditions to include ZQSD/WASD
       if (this.cursors.left.isDown || this.keys.A.isDown || this.keys.Q.isDown) {
         velocityX = -this.moveSpeed;
       } else if (this.cursors.right.isDown || this.keys.D.isDown) {
@@ -447,56 +439,63 @@ export default class HubScene extends Phaser.Scene {
         velocityY = this.moveSpeed;
       }
 
-      this.player.body.setVelocityX(velocityX);
-      this.player.body.setVelocityY(velocityY);
+      this.player.body.setVelocity(velocityX, velocityY);
 
       if (velocityX !== 0 && velocityY !== 0) {
-        const vector = new Phaser.Math.Vector2(velocityX, velocityY)
-          .normalize()
-          .scale(this.moveSpeed);
+        const vector = new Phaser.Math.Vector2(velocityX, velocityY).normalize().scale(this.moveSpeed);
         this.player.body.setVelocity(vector.x, vector.y);
       }
+    }
+    // --- Mouse Click Movement ---
+    else if (this.targetPosition) {
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.targetPosition.x,
+        this.targetPosition.y
+      );
 
-      if (
-        this.player.body.velocity.x !== 0 ||
-        this.player.body.velocity.y !== 0
-      ) {
-        this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+      if (distance < 4) { // Close enough to the target
+        this.player.body.setVelocity(0);
+        this.targetPosition = null;
+        if (this.targetIndicator) this.targetIndicator.clear();
+      } else {
+        this.physics.moveTo(this.player, this.targetPosition.x, this.targetPosition.y, this.moveSpeed);
       }
     }
+    // --- No Input ---
+    else {
+      this.player.body.setVelocity(0);
+    }
 
-    // Overlap checks should probably only happen if not in map view,
-    // or if they are passive and don't trigger UI pop-ups that would interfere with map view.
-    // For now, let's assume gamePortal overlap logic is fine as it's a state toggle (isOverlappingPortal)
-    // and doesn't immediately pan/zoom camera, but this might need review.
-    // If map is active, maybe we don't want these modals popping up.
-    // Let's move the portal overlap logic inside the !this.isMapView block for safety.
-    if (!this.isMapView && this.player && this.player.body.velocity.x !== 0 || this.player.body.velocity.y !== 0) {
+    // --- Firestore Update ---
+    if (this.player.body.velocity.x !== 0 || this.player.body.velocity.y !== 0) {
+      this.updatePlayerPositionInFirestore(this.player.x, this.player.y);
+    }
+
+    // --- Overlap Checks ---
+    if (!this.isMapView && this.player) {
         const isCurrentlyOverlappingPortal = this.physics.overlap(this.player, this.gamePortal);
 
-      // CAS 1: Le joueur ENTRE dans la zone
       if (isCurrentlyOverlappingPortal && !this.isOverlappingPortal) {
-        // On met le drapeau à true pour ne plus rentrer dans ce 'if'
         this.isOverlappingPortal = true;
-        console.log("Le joueur COMMENCE la superposition avec le portail.");
+        console.log("Player ENTERED portal zone.");
         this.game.events.emit("openGameLobbyModal");
       }
-      // CAS 2: Le joueur QUITTE la zone
       else if (!isCurrentlyOverlappingPortal && this.isOverlappingPortal) {
-        // On réinitialise le drapeau pour que la détection puisse se refaire plus tard
         this.isOverlappingPortal = false;
-        console.log("Le joueur TERMINE la superposition avec le portail.");
-  
+        console.log("Player EXITED portal zone.");
       }
     }
 
-    // Other players movement (interpolation)
+    // --- Other Players Movement ---
     this.otherPlayers.getChildren().forEach((sprite) => {
       const remotePlayer = sprite as Phaser.GameObjects.Sprite & {
-        uid: string;
+        getData: (key: string) => any;
         body: Phaser.Physics.Arcade.Body;
       };
-      const target = this.remotePlayerTargets.get(remotePlayer.uid);
+      const uid = remotePlayer.getData('uid');
+      const target = this.remotePlayerTargets.get(uid);
       if (target) {
         const distance = Phaser.Math.Distance.Between(
           remotePlayer.x,
@@ -504,24 +503,10 @@ export default class HubScene extends Phaser.Scene {
           target.x,
           target.y,
         );
-        if (distance > 2) {
-          // Only move if not already close
-          // Simple linear interpolation (can be replaced with Phaser.Physics.moveToObject for smoother movement)
-          // this.physics.moveToObject(remotePlayer, target, this.moveSpeed * 0.8); // Move slightly slower
-          const angle = Phaser.Math.Angle.Between(
-            remotePlayer.x,
-            remotePlayer.y,
-            target.x,
-            target.y,
-          );
-          const speed = this.moveSpeed * 0.8; // Can adjust speed
-          remotePlayer.x +=
-            Math.cos(angle) * speed * (this.game.loop.delta / 1000);
-          remotePlayer.y +=
-            Math.sin(angle) * speed * (this.game.loop.delta / 1000);
+        if (distance > 4) {
+          this.physics.moveToObject(remotePlayer, target, this.moveSpeed * 0.8);
         } else {
-          // remotePlayer.body.setVelocity(0,0); // Stop if using physics move
-          // If not using physics move, just set position to ensure it's exact
+          remotePlayer.body.setVelocity(0,0);
           remotePlayer.setPosition(target.x, target.y);
         }
       }
@@ -541,7 +526,7 @@ export default class HubScene extends Phaser.Scene {
     if (this.firestoreListenerUnsubscribe) {
       this.firestoreListenerUnsubscribe();
     }
-    this.game.events.off("toggleMapView", this.handleMapViewToggle, this); // Clean up map view listener
+    this.game.events.off("toggleMapView", this.handleMapViewToggle, this);
     this.events.off("shutdown", this.shutdown, this);
   }
 }
