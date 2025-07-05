@@ -163,6 +163,33 @@ export const createGuild = async (name: string, tag: string): Promise<any> => {
   }
 };
 
+// --- Mini-Game Action Broadcasting ---
+
+interface BroadcastActionPayload {
+  gameId: string;
+  action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: any; // Consider defining a more specific type based on possible actions
+}
+
+/**
+ * Calls the Cloud Function to broadcast a player's action in a mini-game.
+ * @param params - The data required for the action.
+ * @returns A promise that resolves when the function call is complete.
+ */
+export const broadcastAction = async (params: BroadcastActionPayload): Promise<void> => {
+  try {
+    console.log(`[CLIENT] Calling 'updateMiniGameAction' function with payload:`, params);
+    const updateMiniGameActionFunction = httpsCallable(functions, 'updateMiniGameAction');
+    await updateMiniGameActionFunction(params);
+    console.log("Cloud Function 'updateMiniGameAction' called successfully.");
+  } catch (error) {
+    console.error("Error calling updateMiniGameAction function:", error);
+    // Optionally re-throw or handle as per application's error handling strategy
+    throw error;
+  }
+};
+
 // --- Mini-Game Challenge Preparation ---
 
 interface PrepareChallengePayload {

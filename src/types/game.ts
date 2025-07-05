@@ -67,6 +67,13 @@ export interface Game {
   } | null;
   winnerId: string | null;
   createdAt: Timestamp;
+  miniGameLiveState?: MiniGameLiveState;
+}
+
+export interface MiniGameLiveState {
+  lastAction: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: any; // Define a more specific type based on possible actions
 }
 
 export interface SpellMasteryData {
