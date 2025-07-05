@@ -14,6 +14,7 @@ import App from './App.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import LostPoemScene from '../LostPoemScene.tsx'; // Assuming LostPoemScene.tsx is in src/
 import FoodFeastScene from '../FoodFeastScene.tsx'; // New Minigame Scene
+import type { FoodFeastChallengeData } from '../FoodFeastScene.tsx'; // Import the type
 
 // Lazy load page components
 const HomePage = lazy(() => import('./pages/HomePage.tsx'));
@@ -42,7 +43,13 @@ const router = createBrowserRouter([
           { path: 'waiting-room/:gameId', element: <WaitingRoomPage /> },
           { path: 'game/:gameId', element: <GamePage /> },
           { path: 'lost-poem', element: <LostPoemScene onFinish={async () => console.log('LostPoemScene finished (dev route)')} /> },
-          { path: 'food-feast', element: <FoodFeastScene onFinish={async () => console.log('FoodFeastScene finished (dev route)')} /> }, // New route for FoodFeastScene
+          { path: 'food-feast', element: <FoodFeastScene challengeData={{
+            questions: [{
+              foodItem: { name: 'Bibimbap', imageUrl: 'https://via.placeholder.com/300', imageAlt: 'Bibimbap', pronunciationUrl: '' },
+              options: ['Bibimbap', 'Kimchi', 'Bulgogi'],
+              correctAnswer: 'Bibimbap'
+            }]
+          } as FoodFeastChallengeData} onFinish={async () => console.log('FoodFeastScene finished (dev route)')} /> }, // New route for FoodFeastScene
         ],
       },
     ],
