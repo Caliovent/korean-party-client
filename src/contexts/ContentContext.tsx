@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { loadGameContent, type GameContent } from '../services/contentService';
 
 // Interface pour l'état du contexte

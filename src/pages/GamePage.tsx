@@ -300,7 +300,7 @@ const GamePage: React.FC = () => {
             return <div>Erreur: Données du défi pour DokkaebiSaysScene sont manquantes.</div>;
         }
         // TODO: Refactor DokkaebiSaysScene and pass appropriate challengeData
-        return <DokkaebiSaysScene gameId={gameId} onFinish={handleMiniGameFinish} challengeData={game.currentChallengeData as any} />;
+        return <DokkaebiSaysScene onFinish={handleMiniGameFinish} challengeData={game.currentChallengeData as any} />;
       case 'LOST_POEM':
         return <LostPoemScene onFinish={handleMiniGameFinish} />;
       case 'NAMDAEMUN_MARKET':

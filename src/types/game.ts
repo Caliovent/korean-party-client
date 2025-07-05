@@ -56,6 +56,7 @@ export interface Game {
   currentTurn: number;
   turnState: TurnState;
   currentMiniGame?: MiniGameId; // Optional: only present when status is MINI_GAME_STARTING
+  currentChallengeData?: any; // Data for the current mini-game challenge
   board: BoardTile[]; // Changed from { type: string; trap?: 'RUNE_TRAP' | string; }[]
   lastDiceRoll: number | null;
   lastEventCard: { titleKey: string, descriptionKey: string, GfxUrl: string } | null;
