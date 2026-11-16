@@ -1,0 +1,10 @@
+default:
+  sca:
+    enabled: true
+    pullRequest:
+      comments:
+        enabled: true
+        threshold: "low"     # Permissive: comments on Low, Medium, High, and Critical (or "all")
+      statusCheck:
+        enabled: true
+        threshold: "high"    # Strict: blocks / fails the PR check on High or Critical only
